@@ -1,0 +1,217 @@
+{
+	"categories": [
+		{
+			"uuid": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"title": "Task",
+			"color": "569eff"
+		}
+	],
+	"stages": [
+		{
+			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
+			"title": "Todo",
+			"tasks": [
+				"23aa4f3e-0446-4cca-a319-08e3bca9dc98",
+				"04c54de6-3fba-46d4-b14a-d22490d434f2",
+				"8c192fbd-e827-401c-845f-dcfbd80bf296",
+				"a8d0280b-6c4c-403c-bbcc-6ae7b5653015",
+				"9c7c3e07-eb5f-464e-9f38-76f4c415fb2c",
+				"13ab05ce-ed2d-4c70-8495-5f9512eb1e4c",
+				"8f4c0591-041e-4d12-a0f7-879d6d0f7bcd"
+			]
+		},
+		{
+			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
+			"title": "Doing",
+			"tasks": []
+		},
+		{
+			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
+			"title": "Done",
+			"tasks": []
+		}
+	],
+	"tasks": [
+		{
+			"uuid": "23aa4f3e-0446-4cca-a319-08e3bca9dc98",
+			"title": "DG-1",
+			"description": "Task: Game shell and driving core.\nGoal: Create the first playable slice with a main run scene, wagon controller, camera framing, and scrolling road.\nEnd state: The player can launch the project, start driving immediately, steer left/right, and stay centered in a readable top-down road view.\nOut of scope for this ticket: hazards, failures, results, polish.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Create the gameplay scene flow and any lightweight state holder needed for a run.",
+					"done": false
+				},
+				{
+					"details": "Implement wagon steering with simple constant forward motion.",
+					"done": false
+				},
+				{
+					"details": "Add camera framing so the wagon sits slightly below center.",
+					"done": false
+				},
+				{
+					"details": "Build a scrolling road/background solution that supports continuous forward travel.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "04c54de6-3fba-46d4-b14a-d22490d434f2",
+			"title": "DG-2",
+			"description": "Task: Hazard and damage loop.\nGoal: Add the first three readable hazards and make collisions matter.\nEnd state: Potholes, rocks, and tumbleweeds appear on the route, can be avoided, and reduce wagon health with clear feedback when hit.\nOut of scope for this ticket: failures, recovery sequences, end screens.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Create a simple hazard spawning/content pattern that can support multiple hazard types.",
+					"done": false
+				},
+				{
+					"details": "Implement pothole, rock, and tumbleweed hazards with readable visuals and lane placement.",
+					"done": false
+				},
+				{
+					"details": "Add collision handling and wagon health reduction.",
+					"done": false
+				},
+				{
+					"details": "Add immediate impact feedback hooks such as hit flash, wobble, or shake.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "8c192fbd-e827-401c-845f-dcfbd80bf296",
+			"title": "DG-3",
+			"description": "Task: Finite delivery run and outcome rules.\nGoal: Turn the prototype into a short start-to-finish run with a win state and a basic lose state.\nEnd state: A run lasts roughly 1 to 3 minutes, tracks progress to Dust Gulch, ramps hazard pressure, and ends in either success or collapse.\nOut of scope for this ticket: failure mini-events and recovery gameplay.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Expand run state to track distance remaining, health, speed, cargo value placeholder, and result.",
+					"done": false
+				},
+				{
+					"details": "Add hazard pacing escalation over the course of the route.",
+					"done": false
+				},
+				{
+					"details": "Trigger win when the player reaches Dust Gulch.",
+					"done": false
+				},
+				{
+					"details": "Trigger loss when wagon health or the chosen critical threshold is exhausted and support restart.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "a8d0280b-6c4c-403c-bbcc-6ae7b5653015",
+			"title": "DG-4",
+			"description": "Task: Failure event system.\nGoal: Add the everything-going-wrong layer without allowing overlapping failure states.\nEnd state: The run can enter exactly one active failure at a time, with at least wheel_loose and horse_panic implemented.\nOut of scope for this ticket: full recovery input sequences.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Define the minimal failure data/state model.",
+					"done": false
+				},
+				{
+					"details": "Add trigger rules tied to impacts and or timed bad-luck events.",
+					"done": false
+				},
+				{
+					"details": "Implement wheel_loose gameplay effects.",
+					"done": false
+				},
+				{
+					"details": "Implement horse_panic gameplay effects and enforce single-active-failure behavior.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "9c7c3e07-eb5f-464e-9f38-76f4c415fb2c",
+			"title": "DG-5",
+			"description": "Task: Recovery sequences and penalties.\nGoal: Give the player short active responses to failures instead of passive waiting.\nEnd state: At least two recovery sequences are playable, resolve back into driving cleanly, and apply penalties on failure rather than instant death.\nOut of scope for this ticket: extra failure types beyond the first two.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Implement the wheel_loose recovery input sequence.",
+					"done": false
+				},
+				{
+					"details": "Implement the horse_panic recovery input sequence.",
+					"done": false
+				},
+				{
+					"details": "Apply success and failure outcomes using health, speed, cargo, or temporary control instability.",
+					"done": false
+				},
+				{
+					"details": "Return cleanly to normal driving after each recovery.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "13ab05ce-ed2d-4c70-8495-5f9512eb1e4c",
+			"title": "DG-6",
+			"description": "Task: Player communication and presentation pass.\nGoal: Make the run readable and legible at all times.\nEnd state: The player can clearly read health, progress, active failure state, recovery prompts, and success/failure results, with core western feedback in place.\nOut of scope for this ticket: deep asset hunt or nonessential menu systems.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add HUD elements for health, distance progress, and any cargo or condition stat that is actively used.",
+					"done": false
+				},
+				{
+					"details": "Add failure warnings and recovery prompt UI.",
+					"done": false
+				},
+				{
+					"details": "Add success and failure result screens with a small stats summary.",
+					"done": false
+				},
+				{
+					"details": "Add the first pass of western-flavored particles, dust, shake, signage, and priority sound effects.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "8f4c0591-041e-4d12-a0f7-879d6d0f7bcd",
+			"title": "DG-7",
+			"description": "Task: Balance, cohesion, and ship prep.\nGoal: Convert the feature-complete MVP into a jam-ready build.\nEnd state: The game meets the GDD acceptance criteria, feels fair enough to finish, and is ready for export and submission.\nOut of scope for this ticket: scoring, extra hazards or failures, combat, or any other stretch feature.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Tune hazard density, failure cadence, and recovery pressure so the run lands in the 1 to 3 minute target.",
+					"done": false
+				},
+				{
+					"details": "Verify readable success and failure paths through repeated smoke playtests.",
+					"done": false
+				},
+				{
+					"details": "Replace the worst placeholder presentation gaps that harm cohesion.",
+					"done": false
+				},
+				{
+					"details": "Run the export build checklist and confirm the project is submission-ready.",
+					"done": false
+				}
+			]
+		}
+	],
+	"layout": {
+		"columns": [
+			[
+				"26ce163a-2aca-45c2-9ad4-9c0cba3727bb"
+			],
+			[
+				"c670d77d-01d6-45a7-aa5b-94f564b959c3"
+			],
+			[
+				"bcdfc14b-1917-44f0-948d-fece03972128"
+			]
+		]
+	}
+}

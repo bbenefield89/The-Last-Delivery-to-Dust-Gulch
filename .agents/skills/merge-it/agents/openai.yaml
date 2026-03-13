@@ -1,0 +1,4 @@
+interface:
+  display_name: "Merge It"
+  short_description: "Finish and merge a ticket cleanly"
+  default_prompt: "Use $merge-it to finish the current ticket, update the kanban board, and fast-forward main."
