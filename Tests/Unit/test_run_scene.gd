@@ -299,3 +299,61 @@ func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
 	var status_label: Label = scene.get_node("%StatusLabel")
 	assert_string_contains(status_label.text, "Result: collapsed")
 	assert_string_contains(status_label.text, "Press R to restart.")
+
+
+func test_rock_collision_triggers_wheel_loose_failure() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	scene._attempt_failure_trigger_from_collision(&"rock")
+
+	assert_eq(state.active_failure, &"wheel_loose")
+	assert_eq(state.current_failure.source_hazard, &"rock")
+
+
+func test_tumbleweed_collision_triggers_horse_panic_failure() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	scene._attempt_failure_trigger_from_collision(&"tumbleweed")
+
+	assert_eq(state.active_failure, &"horse_panic")
+	assert_eq(state.current_failure.source_hazard, &"tumbleweed")
+
+
+func test_bad_luck_timer_triggers_failure_when_no_active_failure_exists() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.2
+	scene.setup(state)
+
+	scene._advance_failure_triggers(6.0)
+
+	assert_eq(state.active_failure, &"horse_panic")
+	assert_eq(state.current_failure.source_hazard, &"bad_luck")
+
+
+func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+
+	scene._advance_failure_triggers(10.0)
+
+	assert_eq(state.active_failure, &"wheel_loose")
+	assert_eq(state.current_failure.source_hazard, &"rock")

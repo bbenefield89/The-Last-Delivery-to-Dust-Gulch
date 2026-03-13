@@ -117,7 +117,7 @@
 				},
 				{
 					"details": "Add trigger rules tied to impacts and or timed bad-luck events.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Implement wheel_loose gameplay effects.",

@@ -16,6 +16,8 @@ const IMPACT_SHAKE_DURATION := 0.28
 const IMPACT_WOBBLE_DEGREES := 9.0
 const IMPACT_WOBBLE_FREQUENCY := 22.0
 const IMPACT_SHAKE_AMPLITUDE := 10.0
+const BAD_LUCK_INTERVAL_EARLY := 9.0
+const BAD_LUCK_INTERVAL_LATE := 4.5
 const SCROLL_LOOP_HEIGHT := 2880.0
 const CENTER_DASH_SPACING := 240.0
 const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
@@ -33,6 +35,7 @@ var _impact_flash_remaining := 0.0
 var _impact_wobble_remaining := 0.0
 var _impact_shake_remaining := 0.0
 var _impact_time := 0.0
+var _bad_luck_elapsed := 0.0
 
 @onready var _camera: Camera2D = %Camera
 @onready var _hazard_spawner: HazardSpawnerType = %HazardSpawner
@@ -80,6 +83,7 @@ func _process(delta: float) -> void:
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 	_hazard_spawner.advance(_run_state.current_speed * delta, _run_state.get_delivery_progress_ratio())
 	_apply_hazard_collisions()
+	_advance_failure_triggers(delta)
 	_check_for_loss()
 	_check_for_success()
 	_update_impact_feedback(delta)
@@ -143,8 +147,51 @@ func _apply_hazard_collisions() -> void:
 	for collision in collisions:
 		_run_state.wagon_health = max(0, _run_state.wagon_health - collision["damage"])
 		_run_state.last_hit_hazard = collision["type"]
+		_attempt_failure_trigger_from_collision(collision["type"])
 		_trigger_impact_feedback()
 		(collision["node"] as Node).queue_free()
+
+
+func _advance_failure_triggers(delta: float) -> void:
+	if _run_state == null:
+		return
+
+	_run_state.tick_failure(delta)
+	if _run_state.has_active_failure():
+		return
+
+	_bad_luck_elapsed += delta
+	if _bad_luck_elapsed < _get_bad_luck_interval():
+		return
+
+	_bad_luck_elapsed = 0.0
+	_run_state.start_failure(&"horse_panic", &"bad_luck")
+
+
+func _attempt_failure_trigger_from_collision(hazard_type: StringName) -> void:
+	if _run_state == null:
+		return
+	if _run_state.has_active_failure():
+		return
+
+	match hazard_type:
+		&"rock", &"pothole":
+			if _run_state.start_failure(&"wheel_loose", hazard_type):
+				_bad_luck_elapsed = 0.0
+		&"tumbleweed":
+			if _run_state.start_failure(&"horse_panic", hazard_type):
+				_bad_luck_elapsed = 0.0
+
+
+func _get_bad_luck_interval() -> float:
+	if _run_state == null:
+		return BAD_LUCK_INTERVAL_EARLY
+
+	return lerp(
+		BAD_LUCK_INTERVAL_EARLY,
+		BAD_LUCK_INTERVAL_LATE,
+		_run_state.get_delivery_progress_ratio()
+	)
 
 
 func _check_for_success() -> void:
