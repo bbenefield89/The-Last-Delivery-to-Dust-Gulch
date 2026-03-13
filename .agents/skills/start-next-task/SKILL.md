@@ -1,6 +1,6 @@
 ---
 name: start-next-task
-description: Start or resume the repository's next ticket workflow only when invoked as `$start-next-task <ticket-number>`. Check `Doing` first. If one ticket is already in `Doing` and it has unfinished steps, work only the first unfinished step in order. If `$start-next-task` is invoked again while that stepped ticket remains in `Doing`, treat that as approval to mark the current reviewed step done and advance to the next unfinished step. If a ticket is already in `Doing` and it has no remaining steps, stop and report that the current ticket must be finished or merged before starting a new one. Only when `Doing` is empty should the skill select from `Todo`; if `<ticket-number>` is omitted, select the first ticket in `Todo`, and if `<ticket-number>` is provided, select the matching `DG-<ticket-number>` ticket from `Todo` only.
+description: Start or resume the repository's next ticket workflow only when invoked as `$start-next-task <ticket-number>`. Check `Doing` first. If one ticket is already in `Doing` and it has unfinished steps, work only the first unfinished step in order. If `$start-next-task` is invoked again while that stepped ticket remains in `Doing`, treat that as approval to mark the current reviewed step done and advance to the next unfinished step. If that approval completes all steps on the active ticket, run the `merge-it` skill immediately and then continue the `start-next-task` workflow to pick up the next eligible ticket. Only when `Doing` is empty should the skill select from `Todo`; if `<ticket-number>` is omitted, select the first ticket in `Todo`, and if `<ticket-number>` is provided, select the matching `DG-<ticket-number>` ticket from `Todo` only.
 ---
 
 # Start Next Task
@@ -18,11 +18,12 @@ Follow this workflow for this repository when invoked as `$start-next-task <tick
      - mark the current first unfinished step `done: true`
      - commit the current ticket work, including the kanban step-state change, with a conventional commit before beginning the next unfinished step
      - if another unfinished step remains, begin that next step only
-     - if no unfinished steps remain, stop and report that the ticket is still active and must be finished or merged before another ticket can begin
+     - if no unfinished steps remain, invoke the `merge-it` skill immediately, then resume `start-next-task` and continue from the refreshed board state
    - After completing any single step implementation, report the summary as usual and include a concise manual in-game test checklist for the human reviewer.
    - If the session is in Plan Mode, stop after that summary and wait for review/confirmation before beginning the next step.
    - If the session is not in Plan Mode, do not stop to ask for plan review; continue executing the current workflow normally.
-   - If the active `Doing` ticket has no steps, or all steps are already done, stop and report that there is already an active ticket and it must be finished or merged before starting the next ticket.
+   - If the active `Doing` ticket has no steps, stop and report that there is already an active ticket and it must be finished or merged before starting the next ticket.
+   - If the active `Doing` ticket has steps and they are all already done, invoke the `merge-it` skill immediately, then resume `start-next-task` and continue from the refreshed board state.
 3. Only if `Doing` is empty, identify the target ticket from the `Todo` column.
    - If `<ticket-number>` is omitted, use the first ticket in `Todo`.
    - If `<ticket-number>` is provided, use the matching `DG-<ticket-number>` ticket in `Todo`.
@@ -44,12 +45,14 @@ Follow this workflow for this repository when invoked as `$start-next-task <tick
 - For stepped tickets, only one step may be worked at a time.
 - Do not mark a step done immediately after implementation; wait until a later `$start-next-task` invocation confirms review approval and advances the ticket.
 - After a reviewed step is approved, commit the current ticket work before starting the next unfinished step.
+- When a stepped ticket becomes fully complete, `start-next-task` should hand off to `merge-it` instead of stopping for a separate manual merge command.
 
 ## Required Outcome
 
 - `Doing` is checked before `Todo`.
 - A stepped `Doing` ticket is resumed step-by-step in order, one step at a time.
 - An approved stepped-ticket increment is committed before the next step begins.
+- When a stepped ticket becomes fully complete, `merge-it` is invoked immediately and `start-next-task` continues afterward from the updated board state.
 - A new `Todo` ticket is only started when `Doing` is empty.
 - The current branch matches the active ticket title exactly.
 - The ticket, GDD context, and current implementation are reviewed.
