@@ -7,10 +7,21 @@ const STEER_SPEED := 300.0
 const ROAD_HALF_WIDTH := 220.0
 const WAGON_BASE_Y := 0.0
 const CAMERA_VERTICAL_OFFSET := 260.0
+const SCROLL_LOOP_HEIGHT := 2400.0
+const CENTER_DASH_SPACING := 240.0
+const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
+const ROADSIDE_DECOR_SPACING := 320.0
+
+const DASH_COLOR := Color(0.886275, 0.811765, 0.572549, 0.8)
+const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 
 var _run_state: RunStateType
+var _scroll_offset := 0.0
 
 @onready var _camera: Camera2D = %Camera
+@onready var _scroll_root: Node2D = %ScrollRoot
+@onready var _scroll_segment_a: Node2D = %ScrollSegmentA
+@onready var _scroll_segment_b: Node2D = %ScrollSegmentB
 @onready var _wagon: Polygon2D = %Wagon
 @onready var _status_label: Label = %StatusLabel
 
@@ -22,7 +33,9 @@ func setup(run_state: RunStateType) -> void:
 
 func _ready() -> void:
 	_ensure_input_actions()
+	_ensure_scroll_visuals()
 	_update_wagon_visual()
+	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
 
@@ -41,7 +54,9 @@ func _process(delta: float) -> void:
 		0.0,
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
+	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 	_update_wagon_visual()
+	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
 
@@ -75,6 +90,63 @@ func _update_camera_framing() -> void:
 		return
 
 	_camera.position = Vector2(0.0, _wagon.position.y - CAMERA_VERTICAL_OFFSET)
+
+
+func _ensure_scroll_visuals() -> void:
+	if _scroll_root == null:
+		return
+
+	if _scroll_segment_a.get_child_count() == 0:
+		_populate_scroll_segment(_scroll_segment_a)
+
+	if _scroll_segment_b.get_child_count() == 0:
+		_populate_scroll_segment(_scroll_segment_b)
+
+
+func _update_scroll_visuals() -> void:
+	if _scroll_root == null or _scroll_segment_a == null or _scroll_segment_b == null:
+		return
+
+	_scroll_segment_a.position.y = _scroll_offset
+	_scroll_segment_b.position.y = _scroll_offset - SCROLL_LOOP_HEIGHT
+
+
+func _populate_scroll_segment(segment: Node2D) -> void:
+	for i in range(11):
+		var dash := Polygon2D.new()
+		dash.polygon = PackedVector2Array([
+			Vector2(-CENTER_DASH_SIZE.x * 0.5, -CENTER_DASH_SIZE.y * 0.5),
+			Vector2(CENTER_DASH_SIZE.x * 0.5, -CENTER_DASH_SIZE.y * 0.5),
+			Vector2(CENTER_DASH_SIZE.x * 0.5, CENTER_DASH_SIZE.y * 0.5),
+			Vector2(-CENTER_DASH_SIZE.x * 0.5, CENTER_DASH_SIZE.y * 0.5),
+		])
+		dash.position = Vector2(0.0, -SCROLL_LOOP_HEIGHT + (i * CENTER_DASH_SPACING))
+		dash.color = DASH_COLOR
+		segment.add_child(dash)
+
+	for i in range(8):
+		var left_scrub := _make_scrub_cluster()
+		left_scrub.position = Vector2(-300.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING))
+		segment.add_child(left_scrub)
+
+		var right_scrub := _make_scrub_cluster()
+		right_scrub.position = Vector2(300.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING) + 120.0)
+		right_scrub.scale.x = -1.0
+		segment.add_child(right_scrub)
+
+
+func _make_scrub_cluster() -> Polygon2D:
+	var scrub := Polygon2D.new()
+	scrub.polygon = PackedVector2Array([
+		Vector2(-26.0, 20.0),
+		Vector2(-8.0, -12.0),
+		Vector2(0.0, 6.0),
+		Vector2(10.0, -18.0),
+		Vector2(28.0, 18.0),
+		Vector2(4.0, 28.0),
+	])
+	scrub.color = SCRUB_COLOR
+	return scrub
 
 
 func _ensure_input_actions() -> void:

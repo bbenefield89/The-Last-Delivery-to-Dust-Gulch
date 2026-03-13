@@ -25,6 +25,16 @@ position = Vector2(90, 0)
 polygon = PackedVector2Array(-4, -1800, 4, -1800, 4, 1800, -4, 1800)
 color = Color(0.74902, 0.658824, 0.427451, 0.45)
 
+[node name="ScrollRoot" type="Node2D" parent="World"]
+unique_name_in_owner = true
+
+[node name="ScrollSegmentA" type="Node2D" parent="World/ScrollRoot"]
+unique_name_in_owner = true
+
+[node name="ScrollSegmentB" type="Node2D" parent="World/ScrollRoot"]
+unique_name_in_owner = true
+position = Vector2(0, -2400)
+
 [node name="Wagon" type="Polygon2D" parent="World"]
 unique_name_in_owner = true
 polygon = PackedVector2Array(-36, -56, 36, -56, 36, 56, -36, 56)

@@ -19,7 +19,9 @@ Follow this workflow for this repository when invoked as `$start-next-task <tick
      - commit the current ticket work, including the kanban step-state change, with a conventional commit before beginning the next unfinished step
      - if another unfinished step remains, begin that next step only
      - if no unfinished steps remain, stop and report that the ticket is still active and must be finished or merged before another ticket can begin
-   - After completing any single step implementation, report the summary as usual and wait for review/confirmation before beginning the next step.
+   - After completing any single step implementation, report the summary as usual and include a concise manual in-game test checklist for the human reviewer.
+   - If the session is in Plan Mode, stop after that summary and wait for review/confirmation before beginning the next step.
+   - If the session is not in Plan Mode, do not stop to ask for plan review; continue executing the current workflow normally.
    - If the active `Doing` ticket has no steps, or all steps are already done, stop and report that there is already an active ticket and it must be finished or merged before starting the next ticket.
 3. Only if `Doing` is empty, identify the target ticket from the `Todo` column.
    - If `<ticket-number>` is omitted, use the first ticket in `Todo`.
@@ -52,4 +54,6 @@ Follow this workflow for this repository when invoked as `$start-next-task <tick
 - The current branch matches the active ticket title exactly.
 - The ticket, GDD context, and current implementation are reviewed.
 - A brief plan is reported before implementation begins.
-- After a stepped-ticket implementation, the report stops after the current step summary and waits for review/confirmation.
+- After a stepped-ticket implementation, the report includes a short human manual test section focused on the recent change.
+- In Plan Mode, the report stops there and waits for review/confirmation.
+- Outside Plan Mode, the workflow continues without pausing to ask for plan review.

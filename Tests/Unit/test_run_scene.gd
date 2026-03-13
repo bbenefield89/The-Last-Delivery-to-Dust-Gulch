@@ -79,3 +79,34 @@ func test_camera_tracks_wagon_with_below_center_offset() -> void:
 
 	assert_eq(wagon.position, Vector2(-80.0, 0.0))
 	assert_eq(camera.position, Vector2(0.0, -260.0))
+
+
+func test_forward_motion_scrolls_the_environment() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	scene._process(0.5)
+
+	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
+	var segment_b: Node2D = scene.get_node("%ScrollSegmentB")
+	assert_almost_eq(segment_a.position.y, 140.0, 0.01)
+	assert_almost_eq(segment_b.position.y, -2260.0, 0.01)
+
+
+func test_scroll_environment_wraps_for_continuous_travel() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.current_speed = 3000.0
+	scene.setup(state)
+	scene._process(1.0)
+
+	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
+	var segment_b: Node2D = scene.get_node("%ScrollSegmentB")
+	assert_almost_eq(segment_a.position.y, 600.0, 0.01)
+	assert_almost_eq(segment_b.position.y, -1800.0, 0.01)
