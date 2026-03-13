@@ -45,7 +45,7 @@
 				},
 				{
 					"details": "Implement wagon steering with simple constant forward motion.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add camera framing so the wagon sits slightly below center.",
