@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"04c54de6-3fba-46d4-b14a-d22490d434f2",
 				"8c192fbd-e827-401c-845f-dcfbd80bf296",
 				"a8d0280b-6c4c-403c-bbcc-6ae7b5653015",
 				"9c7c3e07-eb5f-464e-9f38-76f4c415fb2c",
@@ -22,7 +21,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"04c54de6-3fba-46d4-b14a-d22490d434f2"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -65,7 +66,7 @@
 			"steps": [
 				{
 					"details": "Create a simple hazard spawning/content pattern that can support multiple hazard types.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Implement pothole, rock, and tumbleweed hazards with readable visuals and lane placement.",

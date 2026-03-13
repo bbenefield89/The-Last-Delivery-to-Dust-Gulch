@@ -1,5 +1,6 @@
 extends Node2D
 
+const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const STEER_ACTION_NEGATIVE := "steer_left"
 const STEER_ACTION_POSITIVE := "steer_right"
@@ -21,6 +22,7 @@ var _run_state: RunStateType
 var _scroll_offset := 0.0
 
 @onready var _camera: Camera2D = %Camera
+@onready var _hazard_spawner: HazardSpawnerType = %HazardSpawner
 @onready var _scroll_root: Node2D = %ScrollRoot
 @onready var _scroll_segment_a: Node2D = %ScrollSegmentA
 @onready var _scroll_segment_b: Node2D = %ScrollSegmentB
@@ -57,6 +59,7 @@ func _process(delta: float) -> void:
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
+	_hazard_spawner.advance(_run_state.current_speed * delta)
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()

@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://v3sqh1pw8m2l"]
+[gd_scene load_steps=3 format=3 uid="uid://v3sqh1pw8m2l"]
 
 [ext_resource type="Script" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
+[ext_resource type="Script" path="res://Scripts/Hazards/hazard_spawner.gd" id="2_ok7u7"]
 
 [node name="RunScene" type="Node2D"]
 script = ExtResource("1_4n0rj")
@@ -34,6 +35,10 @@ unique_name_in_owner = true
 [node name="ScrollSegmentB" type="Node2D" parent="World/ScrollRoot"]
 unique_name_in_owner = true
 position = Vector2(0, -2880)
+
+[node name="HazardSpawner" type="Node2D" parent="World"]
+unique_name_in_owner = true
+script = ExtResource("2_ok7u7")
 
 [node name="Wagon" type="Polygon2D" parent="World"]
 unique_name_in_owner = true
