@@ -86,6 +86,57 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	assert_eq(state.last_hit_hazard, &"pothole")
 
 
+func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var spawner = scene.get_node("%HazardSpawner")
+	spawner.advance(500.0)
+	var hazard: Polygon2D = spawner.get_child(0)
+	for i in range(1, spawner.get_child_count()):
+		spawner.get_child(i).queue_free()
+	hazard.position = Vector2(0.0, 0.0)
+	await wait_process_frames(1)
+	scene._process(0.05)
+
+	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var camera: Camera2D = scene.get_node("%Camera")
+
+	assert_eq(wagon.color, scene.WAGON_HIT_COLOR)
+	assert_ne(wagon.rotation, 0.0)
+	assert_ne(camera.position, Vector2(0.0, -260.0))
+
+
+func test_impact_feedback_recovers_after_timers_expire() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var spawner = scene.get_node("%HazardSpawner")
+	spawner.advance(500.0)
+	var hazard: Polygon2D = spawner.get_child(0)
+	for i in range(1, spawner.get_child_count()):
+		spawner.get_child(i).queue_free()
+	hazard.position = Vector2(0.0, 0.0)
+	await wait_process_frames(1)
+	scene._process(0.05)
+	scene._process(0.4)
+
+	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var camera: Camera2D = scene.get_node("%Camera")
+
+	assert_eq(wagon.color, scene.WAGON_BASE_COLOR)
+	assert_eq(wagon.rotation, 0.0)
+	assert_eq(camera.position, Vector2(0.0, -260.0))
+
+
 func test_camera_tracks_wagon_with_below_center_offset() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)

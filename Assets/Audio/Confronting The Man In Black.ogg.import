@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://b6ornsjqa7v6o"
+path="res://.godot/imported/Confronting The Man In Black.ogg-a3cb511c40ad3d8d6efcd11f7ef1dc62.oggvorbisstr"
+
+[deps]
+
+source_file="res://Assets/Audio/Confronting The Man In Black.ogg"
+dest_files=["res://.godot/imported/Confronting The Man In Black.ogg-a3cb511c40ad3d8d6efcd11f7ef1dc62.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

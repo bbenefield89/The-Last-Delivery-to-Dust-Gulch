@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://dgj3otnvrfkx3"
+path="res://.godot/imported/We Don't Need Railroads (loop).mp3-e02e8e3738a737fd0ce7076789a8c4d4.mp3str"
+
+[deps]
+
+source_file="res://Assets/Audio/Wild West Music - Harvey Carman/MP3/We Don't Need Railroads (loop).mp3"
+dest_files=["res://.godot/imported/We Don't Need Railroads (loop).mp3-e02e8e3738a737fd0ce7076789a8c4d4.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

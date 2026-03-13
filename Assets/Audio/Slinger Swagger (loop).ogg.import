@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dsouxa8snrgoi"
+path="res://.godot/imported/Slinger Swagger (loop).ogg-11fde59751074e1c259eef30c28570f6.oggvorbisstr"
+
+[deps]
+
+source_file="res://Assets/Audio/Slinger Swagger (loop).ogg"
+dest_files=["res://.godot/imported/Slinger Swagger (loop).ogg-11fde59751074e1c259eef30c28570f6.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

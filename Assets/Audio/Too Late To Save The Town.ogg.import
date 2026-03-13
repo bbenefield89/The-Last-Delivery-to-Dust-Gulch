@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://3mhnfpe8tlya"
+path="res://.godot/imported/Too Late To Save The Town.ogg-e55f7224bdbf01277bc87370a21cf0cb.oggvorbisstr"
+
+[deps]
+
+source_file="res://Assets/Audio/Too Late To Save The Town.ogg"
+dest_files=["res://.godot/imported/Too Late To Save The Town.ogg-e55f7224bdbf01277bc87370a21cf0cb.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

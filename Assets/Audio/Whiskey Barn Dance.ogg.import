@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bfhi0h7xlxonc"
+path="res://.godot/imported/Whiskey Barn Dance.ogg-fe1eb47d0722280a2f867648730691e1.oggvorbisstr"
+
+[deps]
+
+source_file="res://Assets/Audio/Whiskey Barn Dance.ogg"
+dest_files=["res://.godot/imported/Whiskey Barn Dance.ogg-fe1eb47d0722280a2f867648730691e1.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

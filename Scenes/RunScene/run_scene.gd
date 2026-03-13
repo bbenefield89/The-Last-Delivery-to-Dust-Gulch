@@ -7,7 +7,15 @@ const STEER_ACTION_POSITIVE := "steer_right"
 const STEER_SPEED := 300.0
 const ROAD_HALF_WIDTH := 220.0
 const WAGON_BASE_Y := 0.0
+const WAGON_BASE_COLOR := Color(0.301961, 0.180392, 0.101961, 1.0)
+const WAGON_HIT_COLOR := Color(0.760784, 0.447059, 0.239216, 1.0)
 const CAMERA_VERTICAL_OFFSET := 260.0
+const IMPACT_FLASH_DURATION := 0.18
+const IMPACT_WOBBLE_DURATION := 0.32
+const IMPACT_SHAKE_DURATION := 0.28
+const IMPACT_WOBBLE_DEGREES := 9.0
+const IMPACT_WOBBLE_FREQUENCY := 22.0
+const IMPACT_SHAKE_AMPLITUDE := 10.0
 const SCROLL_LOOP_HEIGHT := 2880.0
 const CENTER_DASH_SPACING := 240.0
 const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
@@ -21,6 +29,10 @@ const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 
 var _run_state: RunStateType
 var _scroll_offset := 0.0
+var _impact_flash_remaining := 0.0
+var _impact_wobble_remaining := 0.0
+var _impact_shake_remaining := 0.0
+var _impact_time := 0.0
 
 @onready var _camera: Camera2D = %Camera
 @onready var _hazard_spawner: HazardSpawnerType = %HazardSpawner
@@ -62,6 +74,7 @@ func _process(delta: float) -> void:
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 	_hazard_spawner.advance(_run_state.current_speed * delta)
 	_apply_hazard_collisions()
+	_update_impact_feedback(delta)
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
@@ -96,7 +109,15 @@ func _update_camera_framing() -> void:
 	if _camera == null or _wagon == null:
 		return
 
-	_camera.position = Vector2(0.0, _wagon.position.y - CAMERA_VERTICAL_OFFSET)
+	var camera_position := Vector2(0.0, _wagon.position.y - CAMERA_VERTICAL_OFFSET)
+	if _impact_shake_remaining > 0.0:
+		var shake_strength := _impact_shake_remaining / IMPACT_SHAKE_DURATION
+		camera_position += Vector2(
+			cos(_impact_time * 31.0),
+			sin(_impact_time * 43.0)
+		) * IMPACT_SHAKE_AMPLITUDE * shake_strength
+
+	_camera.position = camera_position
 
 
 func _apply_hazard_collisions() -> void:
@@ -107,7 +128,32 @@ func _apply_hazard_collisions() -> void:
 	for collision in collisions:
 		_run_state.wagon_health = max(0, _run_state.wagon_health - collision["damage"])
 		_run_state.last_hit_hazard = collision["type"]
+		_trigger_impact_feedback()
 		(collision["node"] as Node).queue_free()
+
+
+func _update_impact_feedback(delta: float) -> void:
+	if _wagon == null:
+		return
+
+	_impact_time += delta
+	_impact_flash_remaining = max(0.0, _impact_flash_remaining - delta)
+	_impact_wobble_remaining = max(0.0, _impact_wobble_remaining - delta)
+	_impact_shake_remaining = max(0.0, _impact_shake_remaining - delta)
+
+	_wagon.color = WAGON_HIT_COLOR if _impact_flash_remaining > 0.0 else WAGON_BASE_COLOR
+	if _impact_wobble_remaining > 0.0:
+		var wobble_strength := _impact_wobble_remaining / IMPACT_WOBBLE_DURATION
+		_wagon.rotation = sin(_impact_time * IMPACT_WOBBLE_FREQUENCY) * deg_to_rad(IMPACT_WOBBLE_DEGREES) * wobble_strength
+	else:
+		_wagon.rotation = 0.0
+
+
+func _trigger_impact_feedback() -> void:
+	_impact_flash_remaining = IMPACT_FLASH_DURATION
+	_impact_wobble_remaining = IMPACT_WOBBLE_DURATION
+	_impact_shake_remaining = IMPACT_SHAKE_DURATION
+	_impact_time = 0.0
 
 
 func _ensure_scroll_visuals() -> void:

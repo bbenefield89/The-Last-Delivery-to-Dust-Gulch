@@ -78,7 +78,7 @@
 				},
 				{
 					"details": "Add immediate impact feedback hooks such as hit flash, wobble, or shake.",
-					"done": false
+					"done": true
 				}
 			]
 		},
