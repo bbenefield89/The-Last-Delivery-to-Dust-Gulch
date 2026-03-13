@@ -13,6 +13,7 @@ config_version=5
 config/name="Last Delivery to Dust Gulch"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
+run/main_scene="res://Scenes/AppRoot/AppRoot.tscn"
 
 [editor_plugins]
 
