@@ -80,6 +80,7 @@ func _process(delta: float) -> void:
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 	_hazard_spawner.advance(_run_state.current_speed * delta, _run_state.get_delivery_progress_ratio())
 	_apply_hazard_collisions()
+	_check_for_loss()
 	_check_for_success()
 	_update_impact_feedback(delta)
 	_update_wagon_visual()
@@ -96,13 +97,18 @@ func _refresh_status() -> void:
 		_status_label.text = "Run scene loaded.\nAwaiting run state."
 		return
 
-	_status_label.text = "Run ready.\nDistance: %.0f\nHealth: %d\nCargo: %d\nSpeed: %.0f\nLane offset: %.0f\nResult: %s" % [
+	var restart_hint := ""
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		restart_hint = "\nPress R to restart."
+
+	_status_label.text = "Run ready.\nDistance: %.0f\nHealth: %d\nCargo: %d\nSpeed: %.0f\nLane offset: %.0f\nResult: %s%s" % [
 		_run_state.distance_remaining,
 		_run_state.wagon_health,
 		_run_state.cargo_value,
 		_run_state.current_speed,
 		_run_state.lateral_position,
 		String(_run_state.result),
+		restart_hint,
 	]
 
 
@@ -143,13 +149,26 @@ func _apply_hazard_collisions() -> void:
 func _check_for_success() -> void:
 	if _run_state == null:
 		return
-	if _run_state.distance_remaining > 0.0:
-		return
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		return
+	if _run_state.distance_remaining > 0.0:
 		return
 
 	_run_state.distance_remaining = 0.0
 	_run_state.result = RunStateType.RESULT_SUCCESS
+	_run_state.current_speed = 0.0
+
+
+func _check_for_loss() -> void:
+	if _run_state == null:
+		return
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		return
+	if _run_state.wagon_health > 0:
+		return
+
+	_run_state.wagon_health = 0
+	_run_state.result = RunStateType.RESULT_COLLAPSED
 	_run_state.current_speed = 0.0
 
 

@@ -9,8 +9,31 @@ func test_app_root_bootstraps_run_state_and_run_scene() -> void:
 	await wait_process_frames(1)
 
 	assert_not_null(app_root.run_state)
-	assert_not_null(app_root.get_node_or_null("RunScene"))
+	assert_not_null(app_root._run_scene)
 	assert_eq(app_root.starting_distance, 500.0)
 	assert_eq(app_root.run_state.route_distance, 500.0)
 	assert_true(app_root.run_state.distance_remaining <= 500.0)
 	assert_true(app_root.run_state.distance_remaining >= 0.0)
+
+
+func test_app_root_restart_rebuilds_run_state_for_completed_run() -> void:
+	var app_root = APP_ROOT_SCENE.instantiate()
+	add_child_autofree(app_root)
+	await wait_process_frames(1)
+
+	var original_run_state = app_root.run_state
+	var original_run_scene = app_root._run_scene
+	app_root.run_state.result = &"collapsed"
+	app_root.run_state.distance_remaining = 0.0
+
+	var event := InputEventAction.new()
+	event.action = "restart_run"
+	event.pressed = true
+	app_root._unhandled_input(event)
+	await wait_process_frames(1)
+
+	assert_ne(app_root.run_state, original_run_state)
+	assert_ne(app_root._run_scene, original_run_scene)
+	assert_eq(app_root.run_state.result, &"in_progress")
+	assert_eq(app_root.run_state.route_distance, 500.0)
+	assert_true(app_root.run_state.distance_remaining <= 500.0)

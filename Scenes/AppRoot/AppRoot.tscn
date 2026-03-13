@@ -4,4 +4,4 @@
 
 [node name="AppRoot" type="Node" unique_id=563153013]
 script = ExtResource("1_ohg6a")
-starting_distance = 2000.0
+starting_distance = 5000.0

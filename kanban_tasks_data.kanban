@@ -102,7 +102,7 @@
 				},
 				{
 					"details": "Trigger loss when wagon health or the chosen critical threshold is exhausted and support restart.",
-					"done": false
+					"done": true
 				}
 			]
 		},

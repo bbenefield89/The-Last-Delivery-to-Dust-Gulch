@@ -277,3 +277,23 @@ func test_success_state_freezes_progress_on_later_frames() -> void:
 
 	var status_label: Label = scene.get_node("%StatusLabel")
 	assert_string_contains(status_label.text, "Result: success")
+
+
+func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.wagon_health = 0
+	state.current_speed = 280.0
+	scene.setup(state)
+
+	scene._process(0.1)
+
+	assert_eq(state.result, RunStateType.RESULT_COLLAPSED)
+	assert_eq(state.current_speed, 0.0)
+
+	var status_label: Label = scene.get_node("%StatusLabel")
+	assert_string_contains(status_label.text, "Result: collapsed")
+	assert_string_contains(status_label.text, "Press R to restart.")
