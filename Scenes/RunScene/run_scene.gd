@@ -101,12 +101,13 @@ func _refresh_status() -> void:
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		restart_hint = "\nPress R to restart."
 
-	_status_label.text = "Run ready.\nDistance: %.0f\nHealth: %d\nCargo: %d\nSpeed: %.0f\nLane offset: %.0f\nResult: %s%s" % [
+	_status_label.text = "Run ready.\nDistance: %.0f\nHealth: %d\nCargo: %d\nSpeed: %.0f\nLane offset: %.0f\nFailure: %s\nResult: %s%s" % [
 		_run_state.distance_remaining,
 		_run_state.wagon_health,
 		_run_state.cargo_value,
 		_run_state.current_speed,
 		_run_state.lateral_position,
+		String(_run_state.active_failure),
 		String(_run_state.result),
 		restart_hint,
 	]

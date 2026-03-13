@@ -15,6 +15,7 @@ func test_setup_populates_status_label_with_run_state_values() -> void:
 	state.cargo_value = 63
 	state.current_speed = 345.0
 	state.lateral_position = 12.0
+	state.active_failure = &"wheel_loose"
 	scene.setup(state)
 
 	var status_label: Label = scene.get_node("%StatusLabel")
@@ -23,6 +24,7 @@ func test_setup_populates_status_label_with_run_state_values() -> void:
 	assert_string_contains(status_label.text, "Cargo: 63")
 	assert_string_contains(status_label.text, "Speed: 345")
 	assert_string_contains(status_label.text, "Lane offset: 12")
+	assert_string_contains(status_label.text, "Failure: wheel_loose")
 
 
 func test_ready_registers_steering_input_actions() -> void:

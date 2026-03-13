@@ -13,6 +13,7 @@ func test_defaults_match_expected_mvp_boot_values() -> void:
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
 	assert_eq(state.lateral_position, RunStateType.DEFAULT_LATERAL_POSITION)
 	assert_eq(state.active_failure, RunStateType.DEFAULT_ACTIVE_FAILURE)
+	assert_null(state.current_failure)
 	assert_eq(state.last_hit_hazard, &"")
 	assert_eq(state.result, RunStateType.DEFAULT_RESULT)
 
@@ -37,6 +38,7 @@ func test_reset_for_new_run_restores_all_core_run_values() -> void:
 	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE)
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
 	assert_eq(state.active_failure, RunStateType.DEFAULT_ACTIVE_FAILURE)
+	assert_null(state.current_failure)
 	assert_eq(state.result, RunStateType.DEFAULT_RESULT)
 	assert_eq(state.lateral_position, RunStateType.DEFAULT_LATERAL_POSITION)
 	assert_eq(state.last_hit_hazard, RunStateType.DEFAULT_LAST_HIT_HAZARD)
@@ -57,3 +59,39 @@ func test_configure_route_distance_updates_starting_distance() -> void:
 
 	assert_eq(state.route_distance, 900.0)
 	assert_eq(state.distance_remaining, 900.0)
+
+
+func test_start_failure_creates_a_single_active_failure_record() -> void:
+	var state := RunStateType.new()
+	state.distance_remaining = 200.0
+
+	var did_start := state.start_failure(&"wheel_loose", &"rock")
+
+	assert_true(did_start)
+	assert_true(state.has_active_failure())
+	assert_eq(state.active_failure, &"wheel_loose")
+	assert_eq(state.current_failure.failure_type, &"wheel_loose")
+	assert_eq(state.current_failure.source_hazard, &"rock")
+	assert_eq(state.current_failure.trigger_progress_ratio, 0.6)
+
+
+func test_cannot_start_second_failure_until_current_failure_is_cleared() -> void:
+	var state := RunStateType.new()
+
+	assert_true(state.start_failure(&"wheel_loose", &"rock"))
+	assert_false(state.start_failure(&"horse_panic", &"tumbleweed"))
+	assert_eq(state.active_failure, &"wheel_loose")
+
+	state.clear_failure()
+
+	assert_true(state.start_failure(&"horse_panic", &"tumbleweed"))
+	assert_eq(state.active_failure, &"horse_panic")
+
+
+func test_tick_failure_increments_elapsed_time_for_active_failure() -> void:
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+
+	state.tick_failure(0.75)
+
+	assert_eq(state.current_failure.elapsed_time, 0.75)

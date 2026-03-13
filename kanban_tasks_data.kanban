@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"9c7c3e07-eb5f-464e-9f38-76f4c415fb2c",
 				"13ab05ce-ed2d-4c70-8495-5f9512eb1e4c",
 				"8f4c0591-041e-4d12-a0f7-879d6d0f7bcd"
 			]
@@ -19,7 +18,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"a8d0280b-6c4c-403c-bbcc-6ae7b5653015"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -112,7 +113,7 @@
 			"steps": [
 				{
 					"details": "Define the minimal failure data/state model.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add trigger rules tied to impacts and or timed bad-luck events.",
