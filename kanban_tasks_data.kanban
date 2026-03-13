@@ -125,7 +125,7 @@
 				},
 				{
 					"details": "Implement horse_panic gameplay effects and enforce single-active-failure behavior.",
-					"done": false
+					"done": true
 				}
 			]
 		},

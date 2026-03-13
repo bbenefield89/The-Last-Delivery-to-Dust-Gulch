@@ -21,6 +21,11 @@ const WHEEL_LOOSE_DRIFT_SPEED := 32.0
 const WHEEL_LOOSE_DRIFT_FREQUENCY := 8.0
 const WHEEL_LOOSE_WOBBLE_DEGREES := 14.0
 const WHEEL_LOOSE_WOBBLE_FREQUENCY := 15.0
+const HORSE_PANIC_STEER_MULTIPLIER := 0.3
+const HORSE_PANIC_DRIFT_SPEED := 150.0
+const HORSE_PANIC_DRIFT_FREQUENCY := 5.0
+const HORSE_PANIC_WOBBLE_DEGREES := 8.0
+const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
 const BAD_LUCK_INTERVAL_EARLY := 9.0
 const BAD_LUCK_INTERVAL_LATE := 4.5
 const SCROLL_LOOP_HEIGHT := 2880.0
@@ -78,9 +83,13 @@ func _process(delta: float) -> void:
 	var steer_input := Input.get_axis(STEER_ACTION_NEGATIVE, STEER_ACTION_POSITIVE)
 	var steer_multiplier := 1.0
 	var lateral_drift := 0.0
-	if _run_state.active_failure == &"wheel_loose":
-		steer_multiplier = WHEEL_LOOSE_STEER_MULTIPLIER
-		lateral_drift = sin(_impact_time * WHEEL_LOOSE_DRIFT_FREQUENCY) * WHEEL_LOOSE_DRIFT_SPEED
+	match _run_state.active_failure:
+		&"wheel_loose":
+			steer_multiplier = WHEEL_LOOSE_STEER_MULTIPLIER
+			lateral_drift = sin(_impact_time * WHEEL_LOOSE_DRIFT_FREQUENCY) * WHEEL_LOOSE_DRIFT_SPEED
+		&"horse_panic":
+			steer_multiplier = HORSE_PANIC_STEER_MULTIPLIER
+			lateral_drift = sin(_impact_time * HORSE_PANIC_DRIFT_FREQUENCY) * HORSE_PANIC_DRIFT_SPEED
 
 	_run_state.lateral_position = clamp(
 		_run_state.lateral_position + ((steer_input * STEER_SPEED * steer_multiplier) + lateral_drift) * delta,
@@ -243,6 +252,8 @@ func _update_impact_feedback(delta: float) -> void:
 	_wagon.color = WAGON_HIT_COLOR if _impact_flash_remaining > 0.0 else WAGON_BASE_COLOR
 	if _run_state != null and _run_state.active_failure == &"wheel_loose":
 		_wagon.rotation = sin(_impact_time * WHEEL_LOOSE_WOBBLE_FREQUENCY) * deg_to_rad(WHEEL_LOOSE_WOBBLE_DEGREES)
+	elif _run_state != null and _run_state.active_failure == &"horse_panic":
+		_wagon.rotation = sin(_impact_time * HORSE_PANIC_WOBBLE_FREQUENCY) * deg_to_rad(HORSE_PANIC_WOBBLE_DEGREES)
 	elif _impact_wobble_remaining > 0.0:
 		var wobble_strength := _impact_wobble_remaining / IMPACT_WOBBLE_DURATION
 		_wagon.rotation = sin(_impact_time * IMPACT_WOBBLE_FREQUENCY) * deg_to_rad(IMPACT_WOBBLE_DEGREES) * wobble_strength

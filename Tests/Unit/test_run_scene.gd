@@ -407,3 +407,50 @@ func test_wheel_loose_adds_persistent_wobble_to_wagon_visual() -> void:
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
 	assert_ne(wagon.rotation, 0.0)
+
+
+func test_horse_panic_adds_stronger_side_to_side_instability() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	scene.setup(state)
+
+	scene._process(0.2)
+	var first_position := state.lateral_position
+	scene._process(0.2)
+	var second_position := state.lateral_position
+
+	assert_true(absf(second_position - first_position) > 10.0)
+
+
+func test_horse_panic_adds_distinct_wobble_to_wagon_visual() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	scene.setup(state)
+
+	scene._process(0.2)
+
+	var wagon: Polygon2D = scene.get_node("%Wagon")
+	assert_ne(wagon.rotation, 0.0)
+
+
+func test_collision_trigger_does_not_replace_existing_failure_type() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+
+	scene._attempt_failure_trigger_from_collision(&"tumbleweed")
+
+	assert_eq(state.active_failure, &"wheel_loose")
+	assert_eq(state.current_failure.source_hazard, &"rock")
