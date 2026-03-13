@@ -22,6 +22,8 @@ const DEFAULT_RECOVERY_PROMPT_INDEX := -1
 const DEFAULT_RECOVERY_TIME_REMAINING := 0.0
 const DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING := 0.0
 const DEFAULT_LAST_RECOVERY_OUTCOME := &""
+const DEFAULT_RECOVERY_OUTCOME_DISPLAY_REMAINING := 0.0
+const DEFAULT_RECOVERY_COOLDOWN_REMAINING := 0.0
 
 var route_distance: float = DEFAULT_ROUTE_DISTANCE
 var distance_remaining: float = DEFAULT_DISTANCE_REMAINING
@@ -36,6 +38,8 @@ var recovery_prompt_index: int = DEFAULT_RECOVERY_PROMPT_INDEX
 var recovery_time_remaining: float = DEFAULT_RECOVERY_TIME_REMAINING
 var temporary_control_instability_remaining: float = DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING
 var last_recovery_outcome: StringName = DEFAULT_LAST_RECOVERY_OUTCOME
+var recovery_outcome_display_remaining: float = DEFAULT_RECOVERY_OUTCOME_DISPLAY_REMAINING
+var recovery_cooldown_remaining: float = DEFAULT_RECOVERY_COOLDOWN_REMAINING
 var result: StringName = DEFAULT_RESULT
 var lateral_position: float = DEFAULT_LATERAL_POSITION
 var last_hit_hazard: StringName = DEFAULT_LAST_HIT_HAZARD
@@ -54,6 +58,8 @@ func reset_for_new_run() -> void:
 	recovery_time_remaining = DEFAULT_RECOVERY_TIME_REMAINING
 	temporary_control_instability_remaining = DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING
 	last_recovery_outcome = DEFAULT_LAST_RECOVERY_OUTCOME
+	recovery_outcome_display_remaining = DEFAULT_RECOVERY_OUTCOME_DISPLAY_REMAINING
+	recovery_cooldown_remaining = DEFAULT_RECOVERY_COOLDOWN_REMAINING
 	result = DEFAULT_RESULT
 	lateral_position = DEFAULT_LATERAL_POSITION
 	last_hit_hazard = DEFAULT_LAST_HIT_HAZARD
@@ -81,6 +87,8 @@ func has_active_failure() -> bool:
 
 func can_start_failure(failure_type: StringName) -> bool:
 	if failure_type == DEFAULT_ACTIVE_FAILURE:
+		return false
+	if recovery_cooldown_remaining > 0.0:
 		return false
 
 	return not has_active_failure()
@@ -160,6 +168,14 @@ func tick_temporary_control_instability(delta: float) -> void:
 	)
 
 
+func tick_recovery_transients(delta: float) -> void:
+	recovery_outcome_display_remaining = max(0.0, recovery_outcome_display_remaining - delta)
+	if recovery_outcome_display_remaining == 0.0 and last_recovery_outcome != DEFAULT_LAST_RECOVERY_OUTCOME:
+		last_recovery_outcome = DEFAULT_LAST_RECOVERY_OUTCOME
+
+	recovery_cooldown_remaining = max(0.0, recovery_cooldown_remaining - delta)
+
+
 func recover_speed(delta: float) -> void:
 	if current_speed >= DEFAULT_FORWARD_SPEED:
 		return
@@ -173,6 +189,8 @@ func has_temporary_control_instability() -> bool:
 
 func resolve_recovery_success() -> void:
 	last_recovery_outcome = &"success"
+	recovery_outcome_display_remaining = 1.25
+	recovery_cooldown_remaining = 0.75
 	clear_failure()
 
 
@@ -190,6 +208,8 @@ func apply_recovery_failure_penalty(
 		max(0.0, instability_duration)
 	)
 	last_recovery_outcome = &"failure"
+	recovery_outcome_display_remaining = 1.5
+	recovery_cooldown_remaining = max(1.0, instability_duration * 0.5)
 	clear_failure()
 
 

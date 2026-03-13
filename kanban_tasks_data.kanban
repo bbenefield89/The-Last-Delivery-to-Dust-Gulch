@@ -150,7 +150,7 @@
 				},
 				{
 					"details": "Return cleanly to normal driving after each recovery.",
-					"done": false
+					"done": true
 				}
 			]
 		},

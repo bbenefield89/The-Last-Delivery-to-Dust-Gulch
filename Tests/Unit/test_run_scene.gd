@@ -666,3 +666,50 @@ func test_speed_penalty_recovers_toward_default_speed_over_time() -> void:
 	assert_eq(state.current_speed, 190.0)
 	scene._process(3.0)
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
+
+
+func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+
+	var status_label: Label = scene.get_node("%StatusLabel")
+	scene._refresh_status()
+	assert_string_contains(status_label.text, "Recovery outcome: failure")
+
+	scene._process(3.0)
+	scene._refresh_status()
+
+	assert_eq(state.last_recovery_outcome, &"")
+	assert_eq(state.recovery_cooldown_remaining, 0.0)
+	assert_false(status_label.text.contains("Recovery outcome:"))
+
+
+func test_temporary_instability_resolves_back_to_normal_driving() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = 10000.0
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+	scene._process(0.2)
+	scene._process(3.0)
+
+	var lateral_before := state.lateral_position
+	scene._process(0.2)
+	var lateral_after := state.lateral_position
+	var wagon: Polygon2D = scene.get_node("%Wagon")
+
+	assert_eq(state.temporary_control_instability_remaining, 0.0)
+	assert_almost_eq(lateral_after - lateral_before, 0.0, 0.01)
+	assert_eq(wagon.rotation, 0.0)

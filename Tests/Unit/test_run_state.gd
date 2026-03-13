@@ -162,3 +162,21 @@ func test_recover_speed_restores_forward_speed_over_time() -> void:
 	assert_eq(state.current_speed, 180.0)
 	state.recover_speed(10.0)
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
+
+
+func test_recovery_transients_clear_outcome_and_cooldown_over_time() -> void:
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	state.start_recovery_sequence([&"steer_left"], 1.0)
+
+	state.resolve_recovery_success()
+
+	assert_eq(state.last_recovery_outcome, &"success")
+	assert_true(state.recovery_cooldown_remaining > 0.0)
+	assert_false(state.can_start_failure(&"horse_panic"))
+
+	state.tick_recovery_transients(2.0)
+
+	assert_eq(state.last_recovery_outcome, &"")
+	assert_eq(state.recovery_cooldown_remaining, 0.0)
+	assert_true(state.can_start_failure(&"horse_panic"))
