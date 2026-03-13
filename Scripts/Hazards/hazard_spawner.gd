@@ -13,7 +13,7 @@ const PATTERN := [
 	{"type": &"tumbleweed", "lane_index": 1, "spacing": 460.0},
 ]
 
-const PLACEHOLDER_COLORS := {
+const HAZARD_COLORS := {
 	&"pothole": Color(0.168627, 0.117647, 0.082353, 0.95),
 	&"rock": Color(0.501961, 0.470588, 0.411765, 0.95),
 	&"tumbleweed": Color(0.690196, 0.556863, 0.294118, 0.95),
@@ -69,23 +69,58 @@ func _spawn_current_entry() -> void:
 	var entry: Dictionary = PATTERN[_pattern_index]
 	var hazard_type: StringName = entry["type"]
 	var lane_index: int = entry["lane_index"]
-	var hazard := _build_placeholder_hazard(hazard_type)
+	var hazard := _build_hazard_visual(hazard_type)
 	hazard.position = Vector2(LANE_X_POSITIONS[lane_index], DEFAULT_SPAWN_Y)
 	hazard.set_meta("hazard_type", hazard_type)
 	hazard.set_meta("lane_index", lane_index)
 	add_child(hazard)
 
 
-func _build_placeholder_hazard(hazard_type: StringName) -> Polygon2D:
+func _build_hazard_visual(hazard_type: StringName) -> Polygon2D:
 	var hazard := Polygon2D.new()
-	hazard.polygon = PackedVector2Array([
-		Vector2(0.0, -32.0),
-		Vector2(32.0, 0.0),
-		Vector2(0.0, 32.0),
-		Vector2(-32.0, 0.0),
-	])
-	hazard.color = PLACEHOLDER_COLORS.get(hazard_type, Color.WHITE)
+	hazard.polygon = _get_hazard_polygon(hazard_type)
+	hazard.color = HAZARD_COLORS.get(hazard_type, Color.WHITE)
 	return hazard
+
+
+func _get_hazard_polygon(hazard_type: StringName) -> PackedVector2Array:
+	match hazard_type:
+		&"pothole":
+			return PackedVector2Array([
+				Vector2(-34.0, -6.0),
+				Vector2(-22.0, -20.0),
+				Vector2(12.0, -24.0),
+				Vector2(30.0, -10.0),
+				Vector2(26.0, 10.0),
+				Vector2(4.0, 24.0),
+				Vector2(-24.0, 18.0),
+			])
+		&"rock":
+			return PackedVector2Array([
+				Vector2(-26.0, 22.0),
+				Vector2(-32.0, -4.0),
+				Vector2(-10.0, -30.0),
+				Vector2(18.0, -24.0),
+				Vector2(34.0, 4.0),
+				Vector2(20.0, 26.0),
+			])
+		&"tumbleweed":
+			return PackedVector2Array([
+				Vector2(-12.0, -30.0),
+				Vector2(8.0, -28.0),
+				Vector2(28.0, -10.0),
+				Vector2(24.0, 18.0),
+				Vector2(4.0, 32.0),
+				Vector2(-22.0, 24.0),
+				Vector2(-30.0, 0.0),
+			])
+		_:
+			return PackedVector2Array([
+				Vector2(0.0, -32.0),
+				Vector2(32.0, 0.0),
+				Vector2(0.0, 32.0),
+				Vector2(-32.0, 0.0),
+			])
 
 
 func _cleanup_hazards() -> void:

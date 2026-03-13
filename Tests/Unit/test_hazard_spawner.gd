@@ -33,6 +33,23 @@ func test_advance_cycles_through_multiple_hazard_types() -> void:
 	assert_true(spawned_types.has(&"tumbleweed"))
 
 
+func test_each_hazard_type_has_a_distinct_readable_shape() -> void:
+	var spawner := HazardSpawnerType.new()
+	add_child_autofree(spawner)
+	await wait_process_frames(1)
+
+	var pothole := spawner._build_hazard_visual(&"pothole")
+	var rock := spawner._build_hazard_visual(&"rock")
+	var tumbleweed := spawner._build_hazard_visual(&"tumbleweed")
+	autofree(pothole)
+	autofree(rock)
+	autofree(tumbleweed)
+
+	assert_ne(pothole.polygon, rock.polygon)
+	assert_ne(rock.polygon, tumbleweed.polygon)
+	assert_ne(pothole.polygon, tumbleweed.polygon)
+
+
 func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
 	var spawner := HazardSpawnerType.new()
 	add_child_autofree(spawner)

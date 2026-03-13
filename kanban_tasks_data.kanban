@@ -70,7 +70,7 @@
 				},
 				{
 					"details": "Implement pothole, rock, and tumbleweed hazards with readable visuals and lane placement.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add collision handling and wagon health reduction.",
