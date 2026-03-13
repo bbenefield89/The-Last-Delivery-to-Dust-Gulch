@@ -94,7 +94,7 @@
 				},
 				{
 					"details": "Add hazard pacing escalation over the course of the route.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Trigger win when the player reaches Dust Gulch.",

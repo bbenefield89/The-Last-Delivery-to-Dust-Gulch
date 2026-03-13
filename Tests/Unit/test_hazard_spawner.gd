@@ -78,3 +78,39 @@ func test_collect_collisions_reports_damage_for_intersecting_hazard() -> void:
 	assert_eq(collisions.size(), 1)
 	assert_eq(collisions[0]["type"], &"pothole")
 	assert_eq(collisions[0]["damage"], 10)
+
+
+func test_route_progress_reduces_spawn_spacing_for_faster_pacing() -> void:
+	var spawner := HazardSpawnerType.new()
+	add_child_autofree(spawner)
+	await wait_process_frames(1)
+
+	spawner.advance(300.0, 0.0)
+	assert_eq(spawner.get_child_count(), 0)
+
+	spawner.advance(200.0, 0.0)
+	assert_eq(spawner.get_child_count(), 1)
+
+	var accelerated_spawner := HazardSpawnerType.new()
+	add_child_autofree(accelerated_spawner)
+	await wait_process_frames(1)
+
+	accelerated_spawner.advance(300.0, 1.0)
+	assert_true(accelerated_spawner.get_child_count() >= 1)
+
+
+func test_late_route_progress_adds_pressure_pair_hazard() -> void:
+	var spawner := HazardSpawnerType.new()
+	add_child_autofree(spawner)
+	await wait_process_frames(1)
+
+	spawner.advance(500.0, 0.75)
+
+	assert_eq(spawner.get_child_count(), 2)
+
+	var primary_hazard: Polygon2D = spawner.get_child(0)
+	var pressure_hazard: Polygon2D = spawner.get_child(1)
+
+	assert_eq(primary_hazard.get_meta("lane_index"), 1)
+	assert_eq(pressure_hazard.get_meta("lane_index"), 0)
+	assert_eq(pressure_hazard.get_meta("hazard_type"), &"rock")

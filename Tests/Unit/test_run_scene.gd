@@ -223,3 +223,18 @@ func test_scroll_segment_populates_enough_center_dashes_to_cover_loop_end() -> v
 	dash_positions.sort()
 	assert_true(dash_positions.size() >= 13)
 	assert_true(dash_positions.back() >= 0.0)
+
+
+func test_late_route_progress_spawns_more_hazard_pressure() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.2
+	scene.setup(state)
+
+	var spawner = scene.get_node("%HazardSpawner")
+	scene._process(2.0)
+
+	assert_true(spawner.get_child_count() >= 2)

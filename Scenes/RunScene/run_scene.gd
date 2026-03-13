@@ -72,7 +72,7 @@ func _process(delta: float) -> void:
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
-	_hazard_spawner.advance(_run_state.current_speed * delta)
+	_hazard_spawner.advance(_run_state.current_speed * delta, _run_state.get_delivery_progress_ratio())
 	_apply_hazard_collisions()
 	_update_impact_feedback(delta)
 	_update_wagon_visual()

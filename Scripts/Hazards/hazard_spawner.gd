@@ -4,6 +4,8 @@ class_name HazardSpawner
 const LANE_X_POSITIONS := [-120.0, 0.0, 120.0]
 const DEFAULT_SPAWN_Y := -920.0
 const DEFAULT_DESPAWN_Y := 900.0
+const MAX_PROGRESS_SPAWN_MULTIPLIER := 0.55
+const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.6
 const HAZARD_DAMAGE := {
 	&"pothole": 10,
 	&"rock": 15,
@@ -26,13 +28,18 @@ const HAZARD_COLORS := {
 
 var _pattern_index := 0
 var _distance_until_next_spawn := 0.0
+var _route_progress_ratio := 0.0
 
 
 func _ready() -> void:
 	_prime_next_spawn()
 
 
-func advance(distance_delta: float) -> void:
+func advance(distance_delta: float, route_progress_ratio: float = 0.0) -> void:
+	_route_progress_ratio = clamp(route_progress_ratio, 0.0, 1.0)
+	if not PATTERN.is_empty():
+		var active_spacing: float = _get_scaled_spacing(PATTERN[_pattern_index]["spacing"])
+		_distance_until_next_spawn = min(_distance_until_next_spawn, active_spacing)
 	_move_hazards(distance_delta)
 	_spawn_hazards(distance_delta)
 	_cleanup_hazards()
@@ -67,18 +74,41 @@ func _prime_next_spawn() -> void:
 		_distance_until_next_spawn = INF
 		return
 
-	_distance_until_next_spawn = PATTERN[_pattern_index]["spacing"]
+	var base_spacing: float = PATTERN[_pattern_index]["spacing"]
+	_distance_until_next_spawn = _get_scaled_spacing(base_spacing)
 
 
 func _spawn_current_entry() -> void:
 	var entry: Dictionary = PATTERN[_pattern_index]
 	var hazard_type: StringName = entry["type"]
 	var lane_index: int = entry["lane_index"]
+	_spawn_hazard(hazard_type, lane_index)
+
+	if _route_progress_ratio >= PRESSURE_PAIR_PROGRESS_THRESHOLD:
+		var pressure_lane := _get_pressure_lane_index(lane_index)
+		if pressure_lane != lane_index:
+			var pressure_type: StringName = PATTERN[(_pattern_index + 1) % PATTERN.size()]["type"]
+			_spawn_hazard(pressure_type, pressure_lane, DEFAULT_SPAWN_Y - 110.0)
+
+
+func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DEFAULT_SPAWN_Y) -> void:
 	var hazard := _build_hazard_visual(hazard_type)
-	hazard.position = Vector2(LANE_X_POSITIONS[lane_index], DEFAULT_SPAWN_Y)
+	hazard.position = Vector2(LANE_X_POSITIONS[lane_index], spawn_y)
 	hazard.set_meta("hazard_type", hazard_type)
 	hazard.set_meta("lane_index", lane_index)
 	add_child(hazard)
+
+
+func _get_scaled_spacing(base_spacing: float) -> float:
+	var multiplier: float = lerp(1.0, MAX_PROGRESS_SPAWN_MULTIPLIER, _route_progress_ratio)
+	return max(140.0, base_spacing * multiplier)
+
+
+func _get_pressure_lane_index(primary_lane_index: int) -> int:
+	if primary_lane_index == 1:
+		return 0 if _route_progress_ratio < 0.85 else 2
+
+	return 1
 
 
 func _build_hazard_visual(hazard_type: StringName) -> Polygon2D:
