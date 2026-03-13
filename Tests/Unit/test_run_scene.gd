@@ -7,7 +7,6 @@ const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 func test_setup_populates_status_label_with_run_state_values() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
-	scene.set_size(Vector2(1280.0, 720.0))
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
@@ -36,7 +35,6 @@ func test_ready_registers_steering_input_actions() -> void:
 func test_process_moves_right_and_reduces_distance() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
-	scene.set_size(Vector2(1280.0, 720.0))
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
@@ -65,3 +63,19 @@ func test_process_clamps_lateral_position_to_road_bounds() -> void:
 
 	assert_eq(state.lateral_position, 220.0)
 
+
+func test_camera_tracks_wagon_with_below_center_offset() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.lateral_position = -80.0
+	scene.setup(state)
+	scene._process(0.0)
+
+	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var camera: Camera2D = scene.get_node("%Camera")
+
+	assert_eq(wagon.position, Vector2(-80.0, 0.0))
+	assert_eq(camera.position, Vector2(0.0, -260.0))

@@ -1,15 +1,17 @@
-extends Control
+extends Node2D
 
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const STEER_ACTION_NEGATIVE := "steer_left"
 const STEER_ACTION_POSITIVE := "steer_right"
 const STEER_SPEED := 300.0
 const ROAD_HALF_WIDTH := 220.0
+const WAGON_BASE_Y := 0.0
+const CAMERA_VERTICAL_OFFSET := 260.0
 
 var _run_state: RunStateType
 
-@onready var _playfield: Control = %Playfield
-@onready var _wagon: ColorRect = %Wagon
+@onready var _camera: Camera2D = %Camera
+@onready var _wagon: Polygon2D = %Wagon
 @onready var _status_label: Label = %StatusLabel
 
 
@@ -21,6 +23,7 @@ func setup(run_state: RunStateType) -> void:
 func _ready() -> void:
 	_ensure_input_actions()
 	_update_wagon_visual()
+	_update_camera_framing()
 	_refresh_status()
 
 
@@ -39,6 +42,7 @@ func _process(delta: float) -> void:
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
 	_update_wagon_visual()
+	_update_camera_framing()
 	_refresh_status()
 
 
@@ -60,14 +64,17 @@ func _refresh_status() -> void:
 
 
 func _update_wagon_visual() -> void:
-	if _wagon == null or _playfield == null or _run_state == null:
+	if _wagon == null or _run_state == null:
 		return
 
-	var playfield_size := _playfield.size
-	_wagon.position = Vector2(
-		(playfield_size.x * 0.5) - (_wagon.size.x * 0.5) + _run_state.lateral_position,
-		playfield_size.y - 180.0,
-	)
+	_wagon.position = Vector2(_run_state.lateral_position, WAGON_BASE_Y)
+
+
+func _update_camera_framing() -> void:
+	if _camera == null or _wagon == null:
+		return
+
+	_camera.position = Vector2(0.0, _wagon.position.y - CAMERA_VERTICAL_OFFSET)
 
 
 func _ensure_input_actions() -> void:

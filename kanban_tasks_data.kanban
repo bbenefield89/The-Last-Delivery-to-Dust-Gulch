@@ -49,7 +49,7 @@
 				},
 				{
 					"details": "Add camera framing so the wagon sits slightly below center.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Build a scrolling road/background solution that supports continuous forward travel.",

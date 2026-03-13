@@ -4,7 +4,7 @@ const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 
 var run_state: RunStateType
-var _run_scene: Control
+var _run_scene: Node
 
 
 func _ready() -> void:
