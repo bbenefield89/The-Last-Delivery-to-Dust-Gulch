@@ -121,7 +121,7 @@
 				},
 				{
 					"details": "Implement wheel_loose gameplay effects.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Implement horse_panic gameplay effects and enforce single-active-failure behavior.",

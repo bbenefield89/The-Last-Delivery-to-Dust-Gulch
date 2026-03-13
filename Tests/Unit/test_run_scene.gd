@@ -135,6 +135,7 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 	hazard.position = Vector2(0.0, 0.0)
 	await wait_process_frames(1)
 	scene._process(0.05)
+	state.clear_failure()
 	scene._process(0.4)
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
@@ -357,3 +358,52 @@ func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
 
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
+
+
+func test_wheel_loose_reduces_steering_authority_without_one_side_lock() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+
+	Input.action_press("steer_left")
+	scene._process(1.0)
+	Input.action_release("steer_left")
+
+	assert_almost_eq(state.lateral_position, -180.0, 0.01)
+
+
+func test_wheel_loose_drift_oscillates_instead_of_always_pulling_right() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+
+	scene._process(0.25)
+	var first_position := state.lateral_position
+	scene._process(0.25)
+	var second_position := state.lateral_position
+
+	assert_ne(first_position, second_position)
+	assert_true(first_position != 0.0 or second_position != 0.0)
+
+
+func test_wheel_loose_adds_persistent_wobble_to_wagon_visual() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+
+	scene._process(0.2)
+
+	var wagon: Polygon2D = scene.get_node("%Wagon")
+	assert_ne(wagon.rotation, 0.0)
