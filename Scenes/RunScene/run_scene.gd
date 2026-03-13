@@ -79,7 +79,12 @@ var _bad_luck_elapsed := 0.0
 @onready var _scroll_segment_a: Node2D = %ScrollSegmentA
 @onready var _scroll_segment_b: Node2D = %ScrollSegmentB
 @onready var _wagon: Polygon2D = %Wagon
-@onready var _status_label: Label = %StatusLabel
+@onready var _health_label: Label = %HealthLabel
+@onready var _cargo_label: Label = %CargoLabel
+@onready var _speed_label: Label = %SpeedLabel
+@onready var _progress_label: Label = %ProgressLabel
+@onready var _progress_bar: ProgressBar = %ProgressBar
+@onready var _outcome_label: Label = %OutcomeLabel
 @onready var _recovery_panel: PanelContainer = %RecoveryPanel
 @onready var _recovery_title: Label = %RecoveryTitle
 @onready var _recovery_steps: HBoxContainer = %RecoverySteps
@@ -152,30 +157,38 @@ func _process(delta: float) -> void:
 
 
 func _refresh_status() -> void:
-	if _status_label == null:
+	if _health_label == null or _cargo_label == null or _speed_label == null or _progress_label == null or _progress_bar == null or _outcome_label == null:
 		return
 
 	if _run_state == null:
-		_status_label.text = "Run scene loaded.\nAwaiting run state."
+		_health_label.text = "Health: --"
+		_cargo_label.text = "Cargo: --"
+		_speed_label.text = "Speed: --"
+		_progress_label.text = "Distance: --"
+		_progress_bar.value = 0.0
+		_outcome_label.text = "Run state: awaiting run state"
 		return
 
 	var restart_hint := ""
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		restart_hint = "\nPress R to restart."
+		restart_hint = " | Press R to restart"
 
 	var recovery_outcome_hint := ""
 	if _run_state.last_recovery_outcome != &"":
-		recovery_outcome_hint = "\nRecovery outcome: %s" % String(_run_state.last_recovery_outcome)
+		recovery_outcome_hint = " | Recovery: %s" % String(_run_state.last_recovery_outcome)
 
-	_status_label.text = "Run ready.\nDistance: %.0f\nHealth: %d\nCargo: %d\nSpeed: %.0f\nLane offset: %.0f\nFailure: %s%s\nResult: %s%s" % [
+	_health_label.text = "Health: %d" % _run_state.wagon_health
+	_cargo_label.text = "Cargo: %d" % _run_state.cargo_value
+	_speed_label.text = "Speed: %.0f" % _run_state.current_speed
+	_progress_label.text = "Distance: %.0f / %.0f" % [
 		_run_state.distance_remaining,
-		_run_state.wagon_health,
-		_run_state.cargo_value,
-		_run_state.current_speed,
-		_run_state.lateral_position,
+		_run_state.route_distance,
+	]
+	_progress_bar.value = _run_state.get_delivery_progress_ratio() * 100.0
+	_outcome_label.text = "Run state: %s | Failure: %s%s%s" % [
+		String(_run_state.result),
 		String(_run_state.active_failure),
 		recovery_outcome_hint,
-		String(_run_state.result),
 		restart_hint,
 	]
 

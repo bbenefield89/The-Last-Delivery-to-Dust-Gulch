@@ -4,7 +4,7 @@ const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 
 
-func test_setup_populates_status_label_with_run_state_values() -> void:
+func test_setup_populates_hud_labels_with_run_state_values() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
@@ -18,13 +18,18 @@ func test_setup_populates_status_label_with_run_state_values() -> void:
 	state.active_failure = &"wheel_loose"
 	scene.setup(state)
 
-	var status_label: Label = scene.get_node("%StatusLabel")
-	assert_string_contains(status_label.text, "Distance: 876")
-	assert_string_contains(status_label.text, "Health: 77")
-	assert_string_contains(status_label.text, "Cargo: 63")
-	assert_string_contains(status_label.text, "Speed: 345")
-	assert_string_contains(status_label.text, "Lane offset: 12")
-	assert_string_contains(status_label.text, "Failure: wheel_loose")
+	var health_label: Label = scene.get_node("%HealthLabel")
+	var cargo_label: Label = scene.get_node("%CargoLabel")
+	var speed_label: Label = scene.get_node("%SpeedLabel")
+	var progress_label: Label = scene.get_node("%ProgressLabel")
+	var progress_bar: ProgressBar = scene.get_node("%ProgressBar")
+	var outcome_label: Label = scene.get_node("%OutcomeLabel")
+	assert_eq(health_label.text, "Health: 77")
+	assert_eq(cargo_label.text, "Cargo: 63")
+	assert_eq(speed_label.text, "Speed: 345")
+	assert_eq(progress_label.text, "Distance: 876 / 500")
+	assert_almost_eq(progress_bar.value, 0.0, 0.01)
+	assert_string_contains(outcome_label.text, "Failure: wheel_loose")
 
 
 func test_ready_registers_steering_input_actions() -> void:
@@ -279,8 +284,8 @@ func test_success_state_freezes_progress_on_later_frames() -> void:
 	assert_eq(state.current_speed, 0.0)
 	assert_eq(state.lateral_position, 25.0)
 
-	var status_label: Label = scene.get_node("%StatusLabel")
-	assert_string_contains(status_label.text, "Result: success")
+	var outcome_label: Label = scene.get_node("%OutcomeLabel")
+	assert_string_contains(outcome_label.text, "Run state: success")
 
 
 func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
@@ -298,9 +303,9 @@ func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
 	assert_eq(state.result, RunStateType.RESULT_COLLAPSED)
 	assert_eq(state.current_speed, 0.0)
 
-	var status_label: Label = scene.get_node("%StatusLabel")
-	assert_string_contains(status_label.text, "Result: collapsed")
-	assert_string_contains(status_label.text, "Press R to restart.")
+	var outcome_label: Label = scene.get_node("%OutcomeLabel")
+	assert_string_contains(outcome_label.text, "Run state: collapsed")
+	assert_string_contains(outcome_label.text, "Press R to restart")
 
 
 func test_rock_collision_triggers_wheel_loose_failure() -> void:
@@ -679,16 +684,29 @@ func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window(
 	scene._advance_failure_triggers(0.0)
 	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
 
-	var status_label: Label = scene.get_node("%StatusLabel")
+	var outcome_label: Label = scene.get_node("%OutcomeLabel")
 	scene._refresh_status()
-	assert_string_contains(status_label.text, "Recovery outcome: failure")
+	assert_string_contains(outcome_label.text, "Recovery: failure")
 
 	scene._process(3.0)
 	scene._refresh_status()
 
 	assert_eq(state.last_recovery_outcome, &"")
 	assert_eq(state.recovery_cooldown_remaining, 0.0)
-	assert_false(status_label.text.contains("Recovery outcome:"))
+	assert_false(outcome_label.text.contains("Recovery: failure"))
+
+
+func test_progress_bar_tracks_delivery_completion_ratio() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = 125.0
+	scene.setup(state)
+
+	var progress_bar: ProgressBar = scene.get_node("%ProgressBar")
+	assert_almost_eq(progress_bar.value, 75.0, 0.01)
 
 
 func test_temporary_instability_resolves_back_to_normal_driving() -> void:
