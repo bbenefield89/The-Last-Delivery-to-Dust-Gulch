@@ -33,7 +33,7 @@ unique_name_in_owner = true
 
 [node name="ScrollSegmentB" type="Node2D" parent="World/ScrollRoot"]
 unique_name_in_owner = true
-position = Vector2(0, -2400)
+position = Vector2(0, -2880)
 
 [node name="Wagon" type="Polygon2D" parent="World"]
 unique_name_in_owner = true

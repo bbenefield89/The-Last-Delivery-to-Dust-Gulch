@@ -53,7 +53,7 @@
 				},
 				{
 					"details": "Build a scrolling road/background solution that supports continuous forward travel.",
-					"done": false
+					"done": true
 				}
 			]
 		},

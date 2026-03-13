@@ -93,7 +93,7 @@ func test_forward_motion_scrolls_the_environment() -> void:
 	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
 	var segment_b: Node2D = scene.get_node("%ScrollSegmentB")
 	assert_almost_eq(segment_a.position.y, 140.0, 0.01)
-	assert_almost_eq(segment_b.position.y, -2260.0, 0.01)
+	assert_almost_eq(segment_b.position.y, -2740.0, 0.01)
 
 
 func test_scroll_environment_wraps_for_continuous_travel() -> void:
@@ -108,5 +108,39 @@ func test_scroll_environment_wraps_for_continuous_travel() -> void:
 
 	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
 	var segment_b: Node2D = scene.get_node("%ScrollSegmentB")
-	assert_almost_eq(segment_a.position.y, 600.0, 0.01)
-	assert_almost_eq(segment_b.position.y, -1800.0, 0.01)
+	assert_almost_eq(segment_a.position.y, 120.0, 0.01)
+	assert_almost_eq(segment_b.position.y, -2760.0, 0.01)
+
+
+func test_scroll_segment_populates_enough_roadside_scrub_to_cover_loop_end() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
+	var left_scrub_positions: Array[float] = []
+
+	for child in segment_a.get_children():
+		if child is Polygon2D and child.color == Color(0.47451, 0.443137, 0.219608, 0.95) and child.scale.x > 0.0:
+			left_scrub_positions.append(child.position.y)
+
+	left_scrub_positions.sort()
+	assert_true(left_scrub_positions.size() >= 10)
+	assert_true(left_scrub_positions.back() >= 0.0)
+
+
+func test_scroll_segment_populates_enough_center_dashes_to_cover_loop_end() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
+	var dash_positions: Array[float] = []
+
+	for child in segment_a.get_children():
+		if child is Polygon2D and child.color == Color(0.886275, 0.811765, 0.572549, 0.8):
+			dash_positions.append(child.position.y)
+
+	dash_positions.sort()
+	assert_true(dash_positions.size() >= 13)
+	assert_true(dash_positions.back() >= 0.0)

@@ -7,10 +7,12 @@ const STEER_SPEED := 300.0
 const ROAD_HALF_WIDTH := 220.0
 const WAGON_BASE_Y := 0.0
 const CAMERA_VERTICAL_OFFSET := 260.0
-const SCROLL_LOOP_HEIGHT := 2400.0
+const SCROLL_LOOP_HEIGHT := 2880.0
 const CENTER_DASH_SPACING := 240.0
 const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
+const CENTER_DASH_COUNT := 13
 const ROADSIDE_DECOR_SPACING := 320.0
+const ROADSIDE_DECOR_COUNT := 10
 
 const DASH_COLOR := Color(0.886275, 0.811765, 0.572549, 0.8)
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
@@ -112,7 +114,7 @@ func _update_scroll_visuals() -> void:
 
 
 func _populate_scroll_segment(segment: Node2D) -> void:
-	for i in range(11):
+	for i in range(CENTER_DASH_COUNT):
 		var dash := Polygon2D.new()
 		dash.polygon = PackedVector2Array([
 			Vector2(-CENTER_DASH_SIZE.x * 0.5, -CENTER_DASH_SIZE.y * 0.5),
@@ -124,7 +126,7 @@ func _populate_scroll_segment(segment: Node2D) -> void:
 		dash.color = DASH_COLOR
 		segment.add_child(dash)
 
-	for i in range(8):
+	for i in range(ROADSIDE_DECOR_COUNT):
 		var left_scrub := _make_scrub_cluster()
 		left_scrub.position = Vector2(-300.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING))
 		segment.add_child(left_scrub)
