@@ -454,3 +454,72 @@ func test_collision_trigger_does_not_replace_existing_failure_type() -> void:
 
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
+
+
+func test_wheel_loose_starts_recovery_sequence_prompt() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+
+	scene._advance_failure_triggers(0.0)
+
+	assert_true(state.has_active_recovery_sequence())
+	assert_eq(state.get_current_recovery_prompt(), &"steer_left")
+
+	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
+	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
+	scene._refresh_recovery_prompt()
+
+	assert_true(recovery_panel.visible)
+	assert_eq(recovery_steps.get_child_count(), 3)
+	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, "LEFT")
+	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, "RIGHT")
+	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, "LEFT")
+
+
+func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+
+	for action_name in [&"steer_left", &"steer_right", &"steer_left"]:
+		var event := InputEventAction.new()
+		event.action = action_name
+		event.pressed = true
+		scene._input(event)
+
+	assert_eq(state.active_failure, &"")
+	assert_false(state.has_active_recovery_sequence())
+
+
+func test_recovery_prompt_advances_highlight_with_direct_input_actions() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+
+	var left_event := InputEventAction.new()
+	left_event.action = &"steer_left"
+	left_event.pressed = true
+	scene._input(left_event)
+
+	assert_eq(state.get_current_recovery_prompt(), &"steer_right")
+
+	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
+	var first_step: PanelContainer = recovery_steps.get_child(0)
+	var second_step: PanelContainer = recovery_steps.get_child(1)
+	assert_eq(first_step.modulate, scene.RECOVERY_STEP_DONE_COLOR)
+	assert_eq(second_step.modulate, scene.RECOVERY_STEP_ACTIVE_COLOR)

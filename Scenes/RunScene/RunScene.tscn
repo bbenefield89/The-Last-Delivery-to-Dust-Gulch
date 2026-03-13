@@ -83,3 +83,42 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Run scene loaded.\nAwaiting run state."
 autowrap_mode = 2
+
+[node name="RecoveryLayer" type="CanvasLayer" parent="."]
+
+[node name="RecoveryMargin" type="MarginContainer" parent="RecoveryLayer"]
+anchors_preset = 10
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -180.0
+offset_top = 460.0
+offset_right = 180.0
+offset_bottom = 580.0
+grow_horizontal = 2
+
+[node name="RecoveryPanel" type="PanelContainer" parent="RecoveryLayer/RecoveryMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="RecoveryPadding" type="MarginContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
+
+[node name="RecoveryVBox" type="VBoxContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RecoveryTitle" type="Label" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+text = "Stabilize the Wagon"
+
+[node name="RecoverySteps" type="HBoxContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 10

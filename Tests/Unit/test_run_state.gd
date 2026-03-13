@@ -95,3 +95,17 @@ func test_tick_failure_increments_elapsed_time_for_active_failure() -> void:
 	state.tick_failure(0.75)
 
 	assert_eq(state.current_failure.elapsed_time, 0.75)
+
+
+func test_recovery_sequence_tracks_prompt_progress_and_completion() -> void:
+	var state := RunStateType.new()
+	state.start_recovery_sequence([&"steer_left", &"steer_right"])
+
+	assert_true(state.has_active_recovery_sequence())
+	assert_eq(state.get_current_recovery_prompt(), &"steer_left")
+	assert_false(state.advance_recovery_sequence(&"steer_right"))
+	assert_eq(state.get_current_recovery_prompt(), &"steer_left")
+	assert_false(state.advance_recovery_sequence(&"steer_left"))
+	assert_eq(state.get_current_recovery_prompt(), &"steer_right")
+	assert_true(state.advance_recovery_sequence(&"steer_right"))
+	assert_false(state.has_active_recovery_sequence())

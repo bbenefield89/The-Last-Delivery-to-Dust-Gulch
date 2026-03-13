@@ -28,6 +28,11 @@ const HORSE_PANIC_WOBBLE_DEGREES := 8.0
 const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
 const BAD_LUCK_INTERVAL_EARLY := 9.0
 const BAD_LUCK_INTERVAL_LATE := 4.5
+const WHEEL_LOOSE_RECOVERY_SEQUENCE: Array[StringName] = [
+	&"steer_left",
+	&"steer_right",
+	&"steer_left",
+]
 const SCROLL_LOOP_HEIGHT := 2880.0
 const CENTER_DASH_SPACING := 240.0
 const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
@@ -35,6 +40,9 @@ const CENTER_DASH_COUNT := 13
 const ROADSIDE_DECOR_SPACING := 320.0
 const ROADSIDE_DECOR_COUNT := 10
 const WAGON_COLLISION_SIZE := Vector2(72.0, 112.0)
+const RECOVERY_STEP_PENDING_COLOR := Color(0.25098, 0.203922, 0.145098, 0.92)
+const RECOVERY_STEP_ACTIVE_COLOR := Color(0.780392, 0.623529, 0.317647, 0.98)
+const RECOVERY_STEP_DONE_COLOR := Color(0.419608, 0.54902, 0.290196, 0.95)
 
 const DASH_COLOR := Color(0.886275, 0.811765, 0.572549, 0.8)
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
@@ -54,11 +62,15 @@ var _bad_luck_elapsed := 0.0
 @onready var _scroll_segment_b: Node2D = %ScrollSegmentB
 @onready var _wagon: Polygon2D = %Wagon
 @onready var _status_label: Label = %StatusLabel
+@onready var _recovery_panel: PanelContainer = %RecoveryPanel
+@onready var _recovery_title: Label = %RecoveryTitle
+@onready var _recovery_steps: HBoxContainer = %RecoverySteps
 
 
 func setup(run_state: RunStateType) -> void:
 	_run_state = run_state
 	_refresh_status()
+	_refresh_recovery_prompt()
 
 
 func _ready() -> void:
@@ -68,6 +80,7 @@ func _ready() -> void:
 	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
+	_refresh_recovery_prompt()
 
 
 func _process(delta: float) -> void:
@@ -78,6 +91,7 @@ func _process(delta: float) -> void:
 		_update_wagon_visual()
 		_update_camera_framing()
 		_refresh_status()
+		_refresh_recovery_prompt()
 		return
 
 	var steer_input := Input.get_axis(STEER_ACTION_NEGATIVE, STEER_ACTION_POSITIVE)
@@ -111,6 +125,7 @@ func _process(delta: float) -> void:
 	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
+	_refresh_recovery_prompt()
 
 
 func _refresh_status() -> void:
@@ -135,6 +150,29 @@ func _refresh_status() -> void:
 		String(_run_state.result),
 		restart_hint,
 	]
+
+
+func _refresh_recovery_prompt() -> void:
+	if _recovery_panel == null or _recovery_steps == null or _recovery_title == null:
+		return
+	if _run_state == null:
+		_recovery_panel.visible = false
+		return
+
+	var has_recovery := _run_state.has_active_recovery_sequence()
+	_recovery_panel.visible = has_recovery
+	if not has_recovery:
+		for child in _recovery_steps.get_children():
+			child.queue_free()
+		return
+
+	for child in _recovery_steps.get_children():
+		child.queue_free()
+
+	_recovery_title.text = _get_recovery_title(_run_state.active_failure)
+
+	for i in range(_run_state.recovery_sequence.size()):
+		_recovery_steps.add_child(_build_recovery_step(i))
 
 
 func _update_wagon_visual() -> void:
@@ -177,6 +215,7 @@ func _advance_failure_triggers(delta: float) -> void:
 		return
 
 	_run_state.tick_failure(delta)
+	_sync_recovery_sequence()
 	if _run_state.has_active_failure():
 		return
 
@@ -238,6 +277,36 @@ func _check_for_loss() -> void:
 	_run_state.wagon_health = 0
 	_run_state.result = RunStateType.RESULT_COLLAPSED
 	_run_state.current_speed = 0.0
+
+
+func _sync_recovery_sequence() -> void:
+	if _run_state == null:
+		return
+
+	if _run_state.active_failure == &"wheel_loose":
+		if not _run_state.has_active_recovery_sequence():
+			_run_state.start_recovery_sequence(WHEEL_LOOSE_RECOVERY_SEQUENCE)
+		return
+
+	if _run_state.has_active_recovery_sequence():
+		_run_state.clear_recovery_sequence()
+
+
+func _input(event: InputEvent) -> void:
+	if _run_state == null:
+		return
+	if not _run_state.has_active_recovery_sequence():
+		return
+
+	var action_name := _extract_recovery_action(event)
+	if action_name == &"":
+		return
+
+	if _run_state.advance_recovery_sequence(action_name):
+		_run_state.clear_failure()
+
+	_refresh_status()
+	_refresh_recovery_prompt()
 
 
 func _update_impact_feedback(delta: float) -> void:
@@ -339,3 +408,57 @@ func _register_action(action_name: StringName, keys: Array[int]) -> void:
 		event.physical_keycode = keycode
 		if not InputMap.action_has_event(action_name, event):
 			InputMap.action_add_event(action_name, event)
+
+
+func _extract_recovery_action(event: InputEvent) -> StringName:
+	if event == null:
+		return &""
+	if event.is_action_pressed(STEER_ACTION_NEGATIVE, false, true):
+		return STEER_ACTION_NEGATIVE
+	if event.is_action_pressed(STEER_ACTION_POSITIVE, false, true):
+		return STEER_ACTION_POSITIVE
+	return &""
+
+
+func _get_recovery_title(failure_type: StringName) -> String:
+	match failure_type:
+		&"wheel_loose":
+			return "Wheel Loose Recovery"
+		&"horse_panic":
+			return "Horse Panic Recovery"
+		_:
+			return "Recovery"
+
+
+func _build_recovery_step(index: int) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(90.0, 52.0)
+	panel.modulate = _get_recovery_step_color(index)
+
+	var label := Label.new()
+	label.text = _format_recovery_action(_run_state.recovery_sequence[index])
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 20)
+	panel.add_child(label)
+	return panel
+
+
+func _get_recovery_step_color(index: int) -> Color:
+	if index < _run_state.recovery_prompt_index:
+		return RECOVERY_STEP_DONE_COLOR
+	if index == _run_state.recovery_prompt_index:
+		return RECOVERY_STEP_ACTIVE_COLOR
+	return RECOVERY_STEP_PENDING_COLOR
+
+
+func _format_recovery_action(action_name: StringName) -> String:
+	match action_name:
+		&"steer_left":
+			return "LEFT"
+		&"steer_right":
+			return "RIGHT"
+		_:
+			return String(action_name).to_upper()
