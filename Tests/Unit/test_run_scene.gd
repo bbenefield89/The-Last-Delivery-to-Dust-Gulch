@@ -523,3 +523,50 @@ func test_recovery_prompt_advances_highlight_with_direct_input_actions() -> void
 	var second_step: PanelContainer = recovery_steps.get_child(1)
 	assert_eq(first_step.modulate, scene.RECOVERY_STEP_DONE_COLOR)
 	assert_eq(second_step.modulate, scene.RECOVERY_STEP_ACTIVE_COLOR)
+
+
+func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	scene.setup(state)
+
+	scene._advance_failure_triggers(0.0)
+
+	assert_true(state.has_active_recovery_sequence())
+	assert_eq(state.get_current_recovery_prompt(), &"steer_left")
+	assert_eq(state.recovery_sequence, scene.HORSE_PANIC_RECOVERY_SEQUENCE)
+
+	var recovery_title: Label = scene.get_node("%RecoveryTitle")
+	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
+	scene._refresh_recovery_prompt()
+
+	assert_eq(recovery_title.text, "Calm the Horses")
+	assert_eq(recovery_steps.get_child_count(), 4)
+	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, "LEFT")
+	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, "RIGHT")
+	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, "LEFT")
+	assert_eq((recovery_steps.get_child(3).get_child(0) as Label).text, "RIGHT")
+
+
+func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+
+	for action_name in scene.HORSE_PANIC_RECOVERY_SEQUENCE:
+		var event := InputEventAction.new()
+		event.action = action_name
+		event.pressed = true
+		scene._input(event)
+
+	assert_eq(state.active_failure, &"")
+	assert_false(state.has_active_recovery_sequence())

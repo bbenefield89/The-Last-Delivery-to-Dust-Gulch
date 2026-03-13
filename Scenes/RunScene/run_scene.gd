@@ -33,6 +33,12 @@ const WHEEL_LOOSE_RECOVERY_SEQUENCE: Array[StringName] = [
 	&"steer_right",
 	&"steer_left",
 ]
+const HORSE_PANIC_RECOVERY_SEQUENCE: Array[StringName] = [
+	&"steer_left",
+	&"steer_right",
+	&"steer_left",
+	&"steer_right",
+]
 const SCROLL_LOOP_HEIGHT := 2880.0
 const CENTER_DASH_SPACING := 240.0
 const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
@@ -287,6 +293,10 @@ func _sync_recovery_sequence() -> void:
 		if not _run_state.has_active_recovery_sequence():
 			_run_state.start_recovery_sequence(WHEEL_LOOSE_RECOVERY_SEQUENCE)
 		return
+	if _run_state.active_failure == &"horse_panic":
+		if not _run_state.has_active_recovery_sequence():
+			_run_state.start_recovery_sequence(HORSE_PANIC_RECOVERY_SEQUENCE)
+		return
 
 	if _run_state.has_active_recovery_sequence():
 		_run_state.clear_recovery_sequence()
@@ -425,7 +435,7 @@ func _get_recovery_title(failure_type: StringName) -> String:
 		&"wheel_loose":
 			return "Wheel Loose Recovery"
 		&"horse_panic":
-			return "Horse Panic Recovery"
+			return "Calm the Horses"
 		_:
 			return "Recovery"
 

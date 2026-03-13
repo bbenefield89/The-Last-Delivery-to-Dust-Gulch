@@ -142,7 +142,7 @@
 				},
 				{
 					"details": "Implement the horse_panic recovery input sequence.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Apply success and failure outcomes using health, speed, cargo, or temporary control instability.",
