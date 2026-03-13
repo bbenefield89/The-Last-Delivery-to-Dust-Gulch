@@ -12,6 +12,7 @@ func test_setup_populates_status_label_with_run_state_values() -> void:
 	var state := RunStateType.new()
 	state.distance_remaining = 876.0
 	state.wagon_health = 77
+	state.cargo_value = 63
 	state.current_speed = 345.0
 	state.lateral_position = 12.0
 	scene.setup(state)
@@ -19,6 +20,7 @@ func test_setup_populates_status_label_with_run_state_values() -> void:
 	var status_label: Label = scene.get_node("%StatusLabel")
 	assert_string_contains(status_label.text, "Distance: 876")
 	assert_string_contains(status_label.text, "Health: 77")
+	assert_string_contains(status_label.text, "Cargo: 63")
 	assert_string_contains(status_label.text, "Speed: 345")
 	assert_string_contains(status_label.text, "Lane offset: 12")
 
@@ -45,7 +47,11 @@ func test_process_moves_right_and_reduces_distance() -> void:
 	Input.action_release("steer_right")
 
 	assert_almost_eq(state.lateral_position, 150.0, 0.01)
-	assert_almost_eq(state.distance_remaining, 860.0, 0.01)
+	assert_almost_eq(
+		state.distance_remaining,
+		RunStateType.DEFAULT_DISTANCE_REMAINING - (RunStateType.DEFAULT_FORWARD_SPEED * 0.5),
+		0.01
+	)
 
 
 func test_process_clamps_lateral_position_to_road_bounds() -> void:
