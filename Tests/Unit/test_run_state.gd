@@ -7,6 +7,7 @@ func test_defaults_match_expected_mvp_boot_values() -> void:
 	var state := RunStateType.new()
 
 	assert_eq(state.distance_remaining, RunStateType.DEFAULT_DISTANCE_REMAINING)
+	assert_eq(state.route_distance, RunStateType.DEFAULT_ROUTE_DISTANCE)
 	assert_eq(state.wagon_health, RunStateType.DEFAULT_WAGON_HEALTH)
 	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE)
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
@@ -19,6 +20,7 @@ func test_defaults_match_expected_mvp_boot_values() -> void:
 func test_reset_for_new_run_restores_all_core_run_values() -> void:
 	var state := RunStateType.new()
 	state.distance_remaining = 1200.0
+	state.route_distance = 1600.0
 	state.wagon_health = 18
 	state.cargo_value = 42
 	state.current_speed = 90.0
@@ -29,7 +31,8 @@ func test_reset_for_new_run_restores_all_core_run_values() -> void:
 
 	state.reset_for_new_run()
 
-	assert_eq(state.distance_remaining, RunStateType.DEFAULT_DISTANCE_REMAINING)
+	assert_eq(state.distance_remaining, 1600.0)
+	assert_eq(state.route_distance, 1600.0)
 	assert_eq(state.wagon_health, RunStateType.DEFAULT_WAGON_HEALTH)
 	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE)
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
@@ -45,3 +48,12 @@ func test_delivery_progress_ratio_tracks_route_completion() -> void:
 
 	assert_eq(state.get_distance_traveled(), RunStateType.DEFAULT_ROUTE_DISTANCE * 0.75)
 	assert_eq(state.get_delivery_progress_ratio(), 0.75)
+
+
+func test_configure_route_distance_updates_starting_distance() -> void:
+	var state := RunStateType.new()
+
+	state.configure_route_distance(900.0)
+
+	assert_eq(state.route_distance, 900.0)
+	assert_eq(state.distance_remaining, 900.0)

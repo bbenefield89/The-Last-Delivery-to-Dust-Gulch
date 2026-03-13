@@ -238,3 +238,42 @@ func test_late_route_progress_spawns_more_hazard_pressure() -> void:
 	scene._process(2.0)
 
 	assert_true(spawner.get_child_count() >= 2)
+
+
+func test_reaching_dust_gulch_triggers_success_and_stops_forward_motion() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = 20.0
+	state.current_speed = 280.0
+	scene.setup(state)
+
+	scene._process(0.1)
+
+	assert_eq(state.distance_remaining, 0.0)
+	assert_eq(state.result, RunStateType.RESULT_SUCCESS)
+	assert_eq(state.current_speed, 0.0)
+
+
+func test_success_state_freezes_progress_on_later_frames() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = 0.0
+	state.current_speed = 0.0
+	state.result = RunStateType.RESULT_SUCCESS
+	state.lateral_position = 25.0
+	scene.setup(state)
+
+	scene._process(1.0)
+
+	assert_eq(state.distance_remaining, 0.0)
+	assert_eq(state.current_speed, 0.0)
+	assert_eq(state.lateral_position, 25.0)
+
+	var status_label: Label = scene.get_node("%StatusLabel")
+	assert_string_contains(status_label.text, "Result: success")

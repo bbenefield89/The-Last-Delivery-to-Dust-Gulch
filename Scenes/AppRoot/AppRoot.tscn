@@ -1,7 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://2y4v4ey1f0bqo"]
+[gd_scene format=3 uid="uid://xasy0kahk6gc"]
 
-[ext_resource type="Script" path="res://Scenes/AppRoot/app_root.gd" id="1_ohg6a"]
+[ext_resource type="Script" uid="uid://bipj0acp0r6pr" path="res://Scenes/AppRoot/app_root.gd" id="1_ohg6a"]
 
-[node name="AppRoot" type="Node"]
+[node name="AppRoot" type="Node" unique_id=563153013]
 script = ExtResource("1_ohg6a")
-
+starting_distance = 2000.0

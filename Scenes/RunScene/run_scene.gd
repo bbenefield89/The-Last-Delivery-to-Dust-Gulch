@@ -60,6 +60,12 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _run_state == null:
 		return
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		_update_impact_feedback(delta)
+		_update_wagon_visual()
+		_update_camera_framing()
+		_refresh_status()
+		return
 
 	var steer_input := Input.get_axis(STEER_ACTION_NEGATIVE, STEER_ACTION_POSITIVE)
 	_run_state.lateral_position = clamp(
@@ -74,6 +80,7 @@ func _process(delta: float) -> void:
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 	_hazard_spawner.advance(_run_state.current_speed * delta, _run_state.get_delivery_progress_ratio())
 	_apply_hazard_collisions()
+	_check_for_success()
 	_update_impact_feedback(delta)
 	_update_wagon_visual()
 	_update_scroll_visuals()
@@ -131,6 +138,19 @@ func _apply_hazard_collisions() -> void:
 		_run_state.last_hit_hazard = collision["type"]
 		_trigger_impact_feedback()
 		(collision["node"] as Node).queue_free()
+
+
+func _check_for_success() -> void:
+	if _run_state == null:
+		return
+	if _run_state.distance_remaining > 0.0:
+		return
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		return
+
+	_run_state.distance_remaining = 0.0
+	_run_state.result = RunStateType.RESULT_SUCCESS
+	_run_state.current_speed = 0.0
 
 
 func _update_impact_feedback(delta: float) -> void:
