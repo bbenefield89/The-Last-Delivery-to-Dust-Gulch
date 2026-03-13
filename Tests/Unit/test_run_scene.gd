@@ -550,7 +550,7 @@ func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
 	scene._refresh_recovery_prompt()
 
-	assert_eq(recovery_title.text, "Calm the Horses")
+	assert_eq(recovery_title.text, "Horse Panic: Calm the Team")
 	assert_eq(recovery_steps.get_child_count(), 4)
 	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, "LEFT")
 	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, "RIGHT")
@@ -731,3 +731,43 @@ func test_temporary_instability_resolves_back_to_normal_driving() -> void:
 	assert_eq(state.temporary_control_instability_remaining, 0.0)
 	assert_almost_eq(lateral_after - lateral_before, 0.0, 0.01)
 	assert_eq(wagon.rotation, 0.0)
+
+
+func test_recovery_panel_title_shows_active_failure_warning() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+	scene._refresh_recovery_prompt()
+
+	var recovery_title: Label = scene.get_node("%RecoveryTitle")
+	var recovery_hint: Label = scene.get_node("%RecoveryHint")
+	assert_string_contains(recovery_title.text, "Wheel Loose")
+	assert_string_contains(recovery_hint.text, "lock the wheel")
+
+
+func test_no_persistent_failure_banner_exists_in_scene() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	assert_false(scene.has_node("%FailureBanner"))
+
+
+func test_recovery_hint_matches_active_failure_type() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+	scene._refresh_recovery_prompt()
+
+	var recovery_hint: Label = scene.get_node("%RecoveryHint")
+	assert_string_contains(recovery_hint.text, "left-right pattern")

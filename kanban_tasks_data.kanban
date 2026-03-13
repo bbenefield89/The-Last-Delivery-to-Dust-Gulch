@@ -166,7 +166,7 @@
 				},
 				{
 					"details": "Add failure warnings and recovery prompt UI.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add success and failure result screens with a small stats summary.",

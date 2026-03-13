@@ -87,6 +87,7 @@ var _bad_luck_elapsed := 0.0
 @onready var _outcome_label: Label = %OutcomeLabel
 @onready var _recovery_panel: PanelContainer = %RecoveryPanel
 @onready var _recovery_title: Label = %RecoveryTitle
+@onready var _recovery_hint: Label = %RecoveryHint
 @onready var _recovery_steps: HBoxContainer = %RecoverySteps
 
 
@@ -194,7 +195,7 @@ func _refresh_status() -> void:
 
 
 func _refresh_recovery_prompt() -> void:
-	if _recovery_panel == null or _recovery_steps == null or _recovery_title == null:
+	if _recovery_panel == null or _recovery_steps == null or _recovery_title == null or _recovery_hint == null:
 		return
 	if _run_state == null:
 		_recovery_panel.visible = false
@@ -211,11 +212,10 @@ func _refresh_recovery_prompt() -> void:
 		child.queue_free()
 
 	_recovery_title.text = _get_recovery_title(_run_state.active_failure)
+	_recovery_hint.text = _get_recovery_hint(_run_state.active_failure)
 
 	for i in range(_run_state.recovery_sequence.size()):
 		_recovery_steps.add_child(_build_recovery_step(i))
-
-
 func _update_wagon_visual() -> void:
 	if _wagon == null or _run_state == null:
 		return
@@ -475,11 +475,21 @@ func _extract_recovery_action(event: InputEvent) -> StringName:
 func _get_recovery_title(failure_type: StringName) -> String:
 	match failure_type:
 		&"wheel_loose":
-			return "Wheel Loose Recovery"
+			return "Wheel Loose: Secure the Wagon"
 		&"horse_panic":
-			return "Calm the Horses"
+			return "Horse Panic: Calm the Team"
 		_:
 			return "Recovery"
+
+
+func _get_recovery_hint(failure_type: StringName) -> String:
+	match failure_type:
+		&"wheel_loose":
+			return "Steering is compromised. Match the sequence to lock the wheel."
+		&"horse_panic":
+			return "The wagon is swerving. Complete the full left-right pattern."
+		_:
+			return "Follow the prompts left to right."
 
 
 func _apply_recovery_failure_penalty() -> void:

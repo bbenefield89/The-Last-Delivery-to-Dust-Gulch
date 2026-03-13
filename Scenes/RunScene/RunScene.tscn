@@ -116,10 +116,10 @@ text = "Run state: --"
 anchors_preset = 10
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -180.0
-offset_top = 460.0
-offset_right = 180.0
-offset_bottom = 580.0
+offset_left = -230.0
+offset_top = 430.0
+offset_right = 230.0
+offset_bottom = 590.0
 grow_horizontal = 2
 
 [node name="RecoveryPanel" type="PanelContainer" parent="RecoveryLayer/RecoveryMargin"]
@@ -142,6 +142,13 @@ unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 text = "Stabilize the Wagon"
+
+[node name="RecoveryHint" type="Label" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 2
+text = "Follow the prompts left to right."
 
 [node name="RecoverySteps" type="HBoxContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox"]
 unique_name_in_owner = true
