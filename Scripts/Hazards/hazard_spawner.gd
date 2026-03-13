@@ -4,6 +4,11 @@ class_name HazardSpawner
 const LANE_X_POSITIONS := [-120.0, 0.0, 120.0]
 const DEFAULT_SPAWN_Y := -920.0
 const DEFAULT_DESPAWN_Y := 900.0
+const HAZARD_DAMAGE := {
+	&"pothole": 10,
+	&"rock": 15,
+	&"tumbleweed": 6,
+}
 const PATTERN := [
 	{"type": &"pothole", "lane_index": 1, "spacing": 480.0},
 	{"type": &"rock", "lane_index": 0, "spacing": 420.0},
@@ -127,3 +132,36 @@ func _cleanup_hazards() -> void:
 	for child in get_children():
 		if child is Polygon2D and child.position.y > DEFAULT_DESPAWN_Y:
 			child.queue_free()
+
+
+func collect_collisions(wagon_position: Vector2, wagon_size: Vector2) -> Array[Dictionary]:
+	var collisions: Array[Dictionary] = []
+	var wagon_rect := Rect2(wagon_position - (wagon_size * 0.5), wagon_size)
+
+	for child in get_children():
+		if not child is Polygon2D:
+			continue
+
+		var polygon := child as Polygon2D
+		var hazard_size := _get_hazard_size(polygon.get_meta("hazard_type", &""))
+		var hazard_rect := Rect2(polygon.position - (hazard_size * 0.5), hazard_size)
+		if wagon_rect.intersects(hazard_rect):
+			collisions.append({
+				"type": polygon.get_meta("hazard_type", &""),
+				"damage": HAZARD_DAMAGE.get(polygon.get_meta("hazard_type", &""), 0),
+				"node": polygon,
+			})
+
+	return collisions
+
+
+func _get_hazard_size(hazard_type: StringName) -> Vector2:
+	match hazard_type:
+		&"pothole":
+			return Vector2(64.0, 48.0)
+		&"rock":
+			return Vector2(68.0, 56.0)
+		&"tumbleweed":
+			return Vector2(58.0, 58.0)
+		_:
+			return Vector2(64.0, 64.0)

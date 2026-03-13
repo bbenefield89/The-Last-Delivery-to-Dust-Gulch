@@ -14,6 +14,7 @@ const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
 const CENTER_DASH_COUNT := 13
 const ROADSIDE_DECOR_SPACING := 320.0
 const ROADSIDE_DECOR_COUNT := 10
+const WAGON_COLLISION_SIZE := Vector2(72.0, 112.0)
 
 const DASH_COLOR := Color(0.886275, 0.811765, 0.572549, 0.8)
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
@@ -60,6 +61,7 @@ func _process(delta: float) -> void:
 	)
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 	_hazard_spawner.advance(_run_state.current_speed * delta)
+	_apply_hazard_collisions()
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
@@ -95,6 +97,17 @@ func _update_camera_framing() -> void:
 		return
 
 	_camera.position = Vector2(0.0, _wagon.position.y - CAMERA_VERTICAL_OFFSET)
+
+
+func _apply_hazard_collisions() -> void:
+	if _hazard_spawner == null or _run_state == null:
+		return
+
+	var collisions := _hazard_spawner.collect_collisions(_wagon.position, WAGON_COLLISION_SIZE)
+	for collision in collisions:
+		_run_state.wagon_health = max(0, _run_state.wagon_health - collision["damage"])
+		_run_state.last_hit_hazard = collision["type"]
+		(collision["node"] as Node).queue_free()
 
 
 func _ensure_scroll_visuals() -> void:

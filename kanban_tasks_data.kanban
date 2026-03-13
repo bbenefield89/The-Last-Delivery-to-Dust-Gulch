@@ -74,7 +74,7 @@
 				},
 				{
 					"details": "Add collision handling and wagon health reduction.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add immediate impact feedback hooks such as hit flash, wobble, or shake.",

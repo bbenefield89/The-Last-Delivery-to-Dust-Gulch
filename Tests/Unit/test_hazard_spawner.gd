@@ -65,3 +65,16 @@ func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
 	await wait_process_frames(1)
 
 	assert_eq(spawner.get_child_count(), 0)
+
+
+func test_collect_collisions_reports_damage_for_intersecting_hazard() -> void:
+	var spawner := HazardSpawnerType.new()
+	add_child_autofree(spawner)
+	await wait_process_frames(1)
+
+	spawner.advance(500.0)
+
+	var collisions := spawner.collect_collisions(Vector2(0.0, -920.0), Vector2(72.0, 112.0))
+	assert_eq(collisions.size(), 1)
+	assert_eq(collisions[0]["type"], &"pothole")
+	assert_eq(collisions[0]["damage"], 10)

@@ -64,6 +64,28 @@ func test_process_clamps_lateral_position_to_road_bounds() -> void:
 	assert_eq(state.lateral_position, 220.0)
 
 
+func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var spawner = scene.get_node("%HazardSpawner")
+	spawner.advance(500.0)
+	var hazard: Polygon2D = spawner.get_child(0)
+	for i in range(1, spawner.get_child_count()):
+		spawner.get_child(i).queue_free()
+	hazard.position = Vector2(0.0, 0.0)
+	await wait_process_frames(1)
+	scene._process(0.0)
+	await wait_process_frames(1)
+
+	assert_eq(state.wagon_health, 90)
+	assert_eq(state.last_hit_hazard, &"pothole")
+
+
 func test_camera_tracks_wagon_with_below_center_offset() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
