@@ -84,11 +84,14 @@ var _bad_luck_elapsed := 0.0
 @onready var _speed_label: Label = %SpeedLabel
 @onready var _progress_label: Label = %ProgressLabel
 @onready var _progress_bar: ProgressBar = %ProgressBar
-@onready var _outcome_label: Label = %OutcomeLabel
 @onready var _recovery_panel: PanelContainer = %RecoveryPanel
 @onready var _recovery_title: Label = %RecoveryTitle
 @onready var _recovery_hint: Label = %RecoveryHint
 @onready var _recovery_steps: HBoxContainer = %RecoverySteps
+@onready var _result_panel: PanelContainer = %ResultPanel
+@onready var _result_title: Label = %ResultTitle
+@onready var _result_summary: Label = %ResultSummary
+@onready var _result_stats: Label = %ResultStats
 
 
 func setup(run_state: RunStateType) -> void:
@@ -105,6 +108,7 @@ func _ready() -> void:
 	_update_camera_framing()
 	_refresh_status()
 	_refresh_recovery_prompt()
+	_refresh_result_screen()
 
 
 func _process(delta: float) -> void:
@@ -116,6 +120,7 @@ func _process(delta: float) -> void:
 		_update_camera_framing()
 		_refresh_status()
 		_refresh_recovery_prompt()
+		_refresh_result_screen()
 		return
 
 	var steer_input := Input.get_axis(STEER_ACTION_NEGATIVE, STEER_ACTION_POSITIVE)
@@ -155,10 +160,11 @@ func _process(delta: float) -> void:
 	_update_camera_framing()
 	_refresh_status()
 	_refresh_recovery_prompt()
+	_refresh_result_screen()
 
 
 func _refresh_status() -> void:
-	if _health_label == null or _cargo_label == null or _speed_label == null or _progress_label == null or _progress_bar == null or _outcome_label == null:
+	if _health_label == null or _cargo_label == null or _speed_label == null or _progress_label == null or _progress_bar == null:
 		return
 
 	if _run_state == null:
@@ -167,16 +173,7 @@ func _refresh_status() -> void:
 		_speed_label.text = "Speed: --"
 		_progress_label.text = "Distance: --"
 		_progress_bar.value = 0.0
-		_outcome_label.text = "Run state: awaiting run state"
 		return
-
-	var restart_hint := ""
-	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		restart_hint = " | Press R to restart"
-
-	var recovery_outcome_hint := ""
-	if _run_state.last_recovery_outcome != &"":
-		recovery_outcome_hint = " | Recovery: %s" % String(_run_state.last_recovery_outcome)
 
 	_health_label.text = "Health: %d" % _run_state.wagon_health
 	_cargo_label.text = "Cargo: %d" % _run_state.cargo_value
@@ -186,12 +183,6 @@ func _refresh_status() -> void:
 		_run_state.route_distance,
 	]
 	_progress_bar.value = _run_state.get_delivery_progress_ratio() * 100.0
-	_outcome_label.text = "Run state: %s | Failure: %s%s%s" % [
-		String(_run_state.result),
-		String(_run_state.active_failure),
-		recovery_outcome_hint,
-		restart_hint,
-	]
 
 
 func _refresh_recovery_prompt() -> void:
@@ -201,7 +192,7 @@ func _refresh_recovery_prompt() -> void:
 		_recovery_panel.visible = false
 		return
 
-	var has_recovery := _run_state.has_active_recovery_sequence()
+	var has_recovery := _run_state.result == RunStateType.RESULT_IN_PROGRESS and _run_state.has_active_recovery_sequence()
 	_recovery_panel.visible = has_recovery
 	if not has_recovery:
 		for child in _recovery_steps.get_children():
@@ -216,6 +207,36 @@ func _refresh_recovery_prompt() -> void:
 
 	for i in range(_run_state.recovery_sequence.size()):
 		_recovery_steps.add_child(_build_recovery_step(i))
+
+
+func _refresh_result_screen() -> void:
+	if _result_panel == null or _result_title == null or _result_summary == null or _result_stats == null:
+		return
+	if _run_state == null or _run_state.result == RunStateType.RESULT_IN_PROGRESS:
+		_result_panel.visible = false
+		return
+
+	_result_panel.visible = true
+	match _run_state.result:
+		RunStateType.RESULT_SUCCESS:
+			_result_title.text = "Delivered to Dust Gulch"
+			_result_summary.text = "You made it in one piece. Press R to ride again."
+		RunStateType.RESULT_COLLAPSED:
+			_result_title.text = "Wagon Collapsed"
+			_result_summary.text = "The delivery failed. Press R to try the route again."
+		_:
+			_result_title.text = "Run Complete"
+			_result_summary.text = "Press R to restart."
+
+	_result_stats.text = "Health: %d\nCargo: %d\nDistance traveled: %.0f / %.0f\nSpeed: %.0f" % [
+		_run_state.wagon_health,
+		_run_state.cargo_value,
+		_run_state.get_distance_traveled(),
+		_run_state.route_distance,
+		_run_state.current_speed,
+	]
+
+
 func _update_wagon_visual() -> void:
 	if _wagon == null or _run_state == null:
 		return

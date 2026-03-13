@@ -23,13 +23,12 @@ func test_setup_populates_hud_labels_with_run_state_values() -> void:
 	var speed_label: Label = scene.get_node("%SpeedLabel")
 	var progress_label: Label = scene.get_node("%ProgressLabel")
 	var progress_bar: ProgressBar = scene.get_node("%ProgressBar")
-	var outcome_label: Label = scene.get_node("%OutcomeLabel")
 	assert_eq(health_label.text, "Health: 77")
 	assert_eq(cargo_label.text, "Cargo: 63")
 	assert_eq(speed_label.text, "Speed: 345")
 	assert_eq(progress_label.text, "Distance: 876 / 500")
 	assert_almost_eq(progress_bar.value, 0.0, 0.01)
-	assert_string_contains(outcome_label.text, "Failure: wheel_loose")
+	assert_false(scene.has_node("%OutcomeLabel"))
 
 
 func test_ready_registers_steering_input_actions() -> void:
@@ -284,8 +283,10 @@ func test_success_state_freezes_progress_on_later_frames() -> void:
 	assert_eq(state.current_speed, 0.0)
 	assert_eq(state.lateral_position, 25.0)
 
-	var outcome_label: Label = scene.get_node("%OutcomeLabel")
-	assert_string_contains(outcome_label.text, "Run state: success")
+	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
+	var result_title: Label = scene.get_node("%ResultTitle")
+	assert_true(result_panel.visible)
+	assert_eq(result_title.text, "Delivered to Dust Gulch")
 
 
 func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
@@ -303,9 +304,10 @@ func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
 	assert_eq(state.result, RunStateType.RESULT_COLLAPSED)
 	assert_eq(state.current_speed, 0.0)
 
-	var outcome_label: Label = scene.get_node("%OutcomeLabel")
-	assert_string_contains(outcome_label.text, "Run state: collapsed")
-	assert_string_contains(outcome_label.text, "Press R to restart")
+	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
+	var result_title: Label = scene.get_node("%ResultTitle")
+	assert_true(result_panel.visible)
+	assert_eq(result_title.text, "Wagon Collapsed")
 
 
 func test_rock_collision_triggers_wheel_loose_failure() -> void:
@@ -684,16 +686,11 @@ func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window(
 	scene._advance_failure_triggers(0.0)
 	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
 
-	var outcome_label: Label = scene.get_node("%OutcomeLabel")
-	scene._refresh_status()
-	assert_string_contains(outcome_label.text, "Recovery: failure")
-
 	scene._process(3.0)
 	scene._refresh_status()
 
 	assert_eq(state.last_recovery_outcome, &"")
 	assert_eq(state.recovery_cooldown_remaining, 0.0)
-	assert_false(outcome_label.text.contains("Recovery: failure"))
 
 
 func test_progress_bar_tracks_delivery_completion_ratio() -> void:
@@ -771,3 +768,72 @@ func test_recovery_hint_matches_active_failure_type() -> void:
 
 	var recovery_hint: Label = scene.get_node("%RecoveryHint")
 	assert_string_contains(recovery_hint.text, "left-right pattern")
+
+
+func test_result_panel_stays_hidden_during_active_run() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	scene._refresh_result_screen()
+
+	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
+	assert_false(result_panel.visible)
+
+
+func test_result_panel_includes_small_stats_summary() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 0.0
+	state.cargo_value = 72
+	state.wagon_health = 41
+	state.current_speed = 0.0
+	scene.setup(state)
+	scene._refresh_result_screen()
+
+	var result_stats: Label = scene.get_node("%ResultStats")
+	assert_string_contains(result_stats.text, "Health: 41")
+	assert_string_contains(result_stats.text, "Cargo: 72")
+	assert_string_contains(result_stats.text, "Distance traveled: 500 / 500")
+
+
+func test_recovery_panel_hides_when_run_is_over() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	state.result = RunStateType.RESULT_COLLAPSED
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+	scene._refresh_recovery_prompt()
+
+	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
+	assert_false(recovery_panel.visible)
+
+
+func test_result_panel_is_darkened_without_full_screen_backdrop() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	assert_false(scene.has_node("%ResultBackdrop"))
+
+	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
+	var panel_style := result_panel.get_theme_stylebox("panel") as StyleBoxFlat
+	assert_not_null(panel_style)
+	assert_eq(panel_style.bg_color, Color(0, 0, 0, 1))
+
+	var result_title: Label = scene.get_node("%ResultTitle")
+	var result_summary: Label = scene.get_node("%ResultSummary")
+	var result_stats: Label = scene.get_node("%ResultStats")
+	assert_eq(result_title.get_theme_color("font_color"), Color(1, 1, 1, 1))
+	assert_eq(result_summary.get_theme_color("font_color"), Color(1, 1, 1, 1))
+	assert_eq(result_stats.get_theme_color("font_color"), Color(1, 1, 1, 1))
