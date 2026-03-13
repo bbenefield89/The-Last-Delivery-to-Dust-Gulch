@@ -39,6 +39,18 @@ const HORSE_PANIC_RECOVERY_SEQUENCE: Array[StringName] = [
 	&"steer_left",
 	&"steer_right",
 ]
+const WHEEL_LOOSE_RECOVERY_DURATION := 2.75
+const HORSE_PANIC_RECOVERY_DURATION := 3.25
+const POST_FAILURE_STEER_MULTIPLIER := 0.75
+const POST_FAILURE_DRIFT_SPEED := 55.0
+const POST_FAILURE_DRIFT_FREQUENCY := 6.0
+const WHEEL_LOOSE_FAILURE_HEALTH_LOSS := 14
+const WHEEL_LOOSE_FAILURE_CARGO_LOSS := 8
+const WHEEL_LOOSE_FAILURE_SPEED_LOSS := 70.0
+const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := 2.4
+const HORSE_PANIC_FAILURE_CARGO_LOSS := 20
+const HORSE_PANIC_FAILURE_SPEED_LOSS := 85.0
+const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := 2.8
 const SCROLL_LOOP_HEIGHT := 2880.0
 const CENTER_DASH_SPACING := 240.0
 const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
@@ -110,12 +122,17 @@ func _process(delta: float) -> void:
 		&"horse_panic":
 			steer_multiplier = HORSE_PANIC_STEER_MULTIPLIER
 			lateral_drift = sin(_impact_time * HORSE_PANIC_DRIFT_FREQUENCY) * HORSE_PANIC_DRIFT_SPEED
+		_:
+			if _run_state.has_temporary_control_instability():
+				steer_multiplier = POST_FAILURE_STEER_MULTIPLIER
+				lateral_drift = sin(_impact_time * POST_FAILURE_DRIFT_FREQUENCY) * POST_FAILURE_DRIFT_SPEED
 
 	_run_state.lateral_position = clamp(
 		_run_state.lateral_position + ((steer_input * STEER_SPEED * steer_multiplier) + lateral_drift) * delta,
 		-ROAD_HALF_WIDTH,
 		ROAD_HALF_WIDTH,
 	)
+	_run_state.recover_speed(delta)
 	_run_state.distance_remaining = max(
 		0.0,
 		_run_state.distance_remaining - _run_state.current_speed * delta,
@@ -210,6 +227,7 @@ func _apply_hazard_collisions() -> void:
 	var collisions := _hazard_spawner.collect_collisions(_wagon.position, WAGON_COLLISION_SIZE)
 	for collision in collisions:
 		_run_state.wagon_health = max(0, _run_state.wagon_health - collision["damage"])
+		_run_state.cargo_value = max(0, _run_state.cargo_value - collision.get("cargo_damage", 0))
 		_run_state.last_hit_hazard = collision["type"]
 		_attempt_failure_trigger_from_collision(collision["type"])
 		_trigger_impact_feedback()
@@ -221,7 +239,12 @@ func _advance_failure_triggers(delta: float) -> void:
 		return
 
 	_run_state.tick_failure(delta)
+	_run_state.tick_temporary_control_instability(delta)
+	var had_active_recovery_sequence := _run_state.has_active_recovery_sequence()
 	_sync_recovery_sequence()
+	if had_active_recovery_sequence and _run_state.tick_recovery_sequence(delta):
+		_apply_recovery_failure_penalty()
+		return
 	if _run_state.has_active_failure():
 		return
 
@@ -291,11 +314,11 @@ func _sync_recovery_sequence() -> void:
 
 	if _run_state.active_failure == &"wheel_loose":
 		if not _run_state.has_active_recovery_sequence():
-			_run_state.start_recovery_sequence(WHEEL_LOOSE_RECOVERY_SEQUENCE)
+			_run_state.start_recovery_sequence(WHEEL_LOOSE_RECOVERY_SEQUENCE, WHEEL_LOOSE_RECOVERY_DURATION)
 		return
 	if _run_state.active_failure == &"horse_panic":
 		if not _run_state.has_active_recovery_sequence():
-			_run_state.start_recovery_sequence(HORSE_PANIC_RECOVERY_SEQUENCE)
+			_run_state.start_recovery_sequence(HORSE_PANIC_RECOVERY_SEQUENCE, HORSE_PANIC_RECOVERY_DURATION)
 		return
 
 	if _run_state.has_active_recovery_sequence():
@@ -313,7 +336,7 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if _run_state.advance_recovery_sequence(action_name):
-		_run_state.clear_failure()
+		_run_state.resolve_recovery_success()
 
 	_refresh_status()
 	_refresh_recovery_prompt()
@@ -438,6 +461,30 @@ func _get_recovery_title(failure_type: StringName) -> String:
 			return "Calm the Horses"
 		_:
 			return "Recovery"
+
+
+func _apply_recovery_failure_penalty() -> void:
+	if _run_state == null:
+		return
+
+	match _run_state.active_failure:
+		&"wheel_loose":
+			_run_state.apply_recovery_failure_penalty(
+				WHEEL_LOOSE_FAILURE_HEALTH_LOSS,
+				WHEEL_LOOSE_FAILURE_CARGO_LOSS,
+				WHEEL_LOOSE_FAILURE_SPEED_LOSS,
+				WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION
+			)
+		&"horse_panic":
+			_run_state.apply_recovery_failure_penalty(
+				0,
+				HORSE_PANIC_FAILURE_CARGO_LOSS,
+				HORSE_PANIC_FAILURE_SPEED_LOSS,
+				HORSE_PANIC_FAILURE_INSTABILITY_DURATION
+			)
+
+	_refresh_status()
+	_refresh_recovery_prompt()
 
 
 func _build_recovery_step(index: int) -> PanelContainer:

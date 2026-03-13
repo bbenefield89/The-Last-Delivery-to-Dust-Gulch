@@ -99,13 +99,66 @@ func test_tick_failure_increments_elapsed_time_for_active_failure() -> void:
 
 func test_recovery_sequence_tracks_prompt_progress_and_completion() -> void:
 	var state := RunStateType.new()
-	state.start_recovery_sequence([&"steer_left", &"steer_right"])
+	state.start_recovery_sequence([&"steer_left", &"steer_right"], 2.5)
 
 	assert_true(state.has_active_recovery_sequence())
 	assert_eq(state.get_current_recovery_prompt(), &"steer_left")
+	assert_eq(state.recovery_time_remaining, 2.5)
 	assert_false(state.advance_recovery_sequence(&"steer_right"))
 	assert_eq(state.get_current_recovery_prompt(), &"steer_left")
 	assert_false(state.advance_recovery_sequence(&"steer_left"))
 	assert_eq(state.get_current_recovery_prompt(), &"steer_right")
 	assert_true(state.advance_recovery_sequence(&"steer_right"))
 	assert_false(state.has_active_recovery_sequence())
+
+
+func test_recovery_sequence_timeout_counts_down_and_triggers_expiry() -> void:
+	var state := RunStateType.new()
+	state.start_recovery_sequence([&"steer_left"], 1.0)
+
+	assert_false(state.tick_recovery_sequence(0.4))
+	assert_eq(state.recovery_time_remaining, 0.6)
+	assert_true(state.tick_recovery_sequence(0.7))
+	assert_eq(state.recovery_time_remaining, 0.0)
+
+
+func test_recovery_failure_penalty_applies_resource_losses_and_instability() -> void:
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	state.start_recovery_sequence([&"steer_left"], 1.0)
+
+	state.apply_recovery_failure_penalty(12, 18, 90.0, 2.5)
+
+	assert_eq(state.wagon_health, 88)
+	assert_eq(state.cargo_value, 82)
+	assert_eq(state.current_speed, 190.0)
+	assert_eq(state.last_recovery_outcome, &"failure")
+	assert_true(state.has_temporary_control_instability())
+	assert_eq(state.temporary_control_instability_remaining, 2.5)
+	assert_eq(state.active_failure, &"")
+
+
+func test_recovery_success_clears_failure_without_penalty() -> void:
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	state.start_recovery_sequence([&"steer_left"], 1.0)
+
+	state.resolve_recovery_success()
+
+	assert_eq(state.last_recovery_outcome, &"success")
+	assert_eq(state.wagon_health, RunStateType.DEFAULT_WAGON_HEALTH)
+	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE)
+	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
+	assert_false(state.has_active_failure())
+	assert_false(state.has_active_recovery_sequence())
+
+
+func test_recover_speed_restores_forward_speed_over_time() -> void:
+	var state := RunStateType.new()
+	state.current_speed = 140.0
+
+	state.recover_speed(1.0)
+
+	assert_eq(state.current_speed, 180.0)
+	state.recover_speed(10.0)
+	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)

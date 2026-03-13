@@ -13,21 +13,29 @@ const DEFAULT_WAGON_HEALTH := 100
 const DEFAULT_CARGO_VALUE := 100
 const DEFAULT_LATERAL_POSITION := 0.0
 const DEFAULT_FORWARD_SPEED := 280.0
+const DEFAULT_SPEED_RECOVERY_RATE := 40.0
 const DEFAULT_ACTIVE_FAILURE := &""
 const DEFAULT_LAST_HIT_HAZARD := &""
 const DEFAULT_RESULT := RESULT_IN_PROGRESS
 const DEFAULT_RECOVERY_SEQUENCE: Array[StringName] = []
 const DEFAULT_RECOVERY_PROMPT_INDEX := -1
+const DEFAULT_RECOVERY_TIME_REMAINING := 0.0
+const DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING := 0.0
+const DEFAULT_LAST_RECOVERY_OUTCOME := &""
 
 var route_distance: float = DEFAULT_ROUTE_DISTANCE
 var distance_remaining: float = DEFAULT_DISTANCE_REMAINING
 var wagon_health: int = DEFAULT_WAGON_HEALTH
 var cargo_value: int = DEFAULT_CARGO_VALUE
 var current_speed: float = DEFAULT_FORWARD_SPEED
+var speed_recovery_rate: float = DEFAULT_SPEED_RECOVERY_RATE
 var active_failure: StringName = DEFAULT_ACTIVE_FAILURE
 var current_failure: FailureStateType
 var recovery_sequence: Array[StringName] = DEFAULT_RECOVERY_SEQUENCE.duplicate()
 var recovery_prompt_index: int = DEFAULT_RECOVERY_PROMPT_INDEX
+var recovery_time_remaining: float = DEFAULT_RECOVERY_TIME_REMAINING
+var temporary_control_instability_remaining: float = DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING
+var last_recovery_outcome: StringName = DEFAULT_LAST_RECOVERY_OUTCOME
 var result: StringName = DEFAULT_RESULT
 var lateral_position: float = DEFAULT_LATERAL_POSITION
 var last_hit_hazard: StringName = DEFAULT_LAST_HIT_HAZARD
@@ -38,10 +46,14 @@ func reset_for_new_run() -> void:
 	wagon_health = DEFAULT_WAGON_HEALTH
 	cargo_value = DEFAULT_CARGO_VALUE
 	current_speed = DEFAULT_FORWARD_SPEED
+	speed_recovery_rate = DEFAULT_SPEED_RECOVERY_RATE
 	active_failure = DEFAULT_ACTIVE_FAILURE
 	current_failure = null
 	recovery_sequence = DEFAULT_RECOVERY_SEQUENCE.duplicate()
 	recovery_prompt_index = DEFAULT_RECOVERY_PROMPT_INDEX
+	recovery_time_remaining = DEFAULT_RECOVERY_TIME_REMAINING
+	temporary_control_instability_remaining = DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING
+	last_recovery_outcome = DEFAULT_LAST_RECOVERY_OUTCOME
 	result = DEFAULT_RESULT
 	lateral_position = DEFAULT_LATERAL_POSITION
 	last_hit_hazard = DEFAULT_LAST_HIT_HAZARD
@@ -100,9 +112,10 @@ func clear_failure() -> void:
 	clear_recovery_sequence()
 
 
-func start_recovery_sequence(sequence: Array[StringName]) -> void:
+func start_recovery_sequence(sequence: Array[StringName], duration: float = 0.0) -> void:
 	recovery_sequence = sequence.duplicate()
 	recovery_prompt_index = 0 if not recovery_sequence.is_empty() else DEFAULT_RECOVERY_PROMPT_INDEX
+	recovery_time_remaining = max(0.0, duration)
 
 
 func has_active_recovery_sequence() -> bool:
@@ -130,6 +143,57 @@ func advance_recovery_sequence(input_action: StringName) -> bool:
 	return false
 
 
+func tick_recovery_sequence(delta: float) -> bool:
+	if not has_active_recovery_sequence():
+		return false
+	if recovery_time_remaining <= 0.0:
+		return false
+
+	recovery_time_remaining = max(0.0, recovery_time_remaining - delta)
+	return recovery_time_remaining == 0.0
+
+
+func tick_temporary_control_instability(delta: float) -> void:
+	temporary_control_instability_remaining = max(
+		0.0,
+		temporary_control_instability_remaining - delta
+	)
+
+
+func recover_speed(delta: float) -> void:
+	if current_speed >= DEFAULT_FORWARD_SPEED:
+		return
+
+	current_speed = min(DEFAULT_FORWARD_SPEED, current_speed + (speed_recovery_rate * max(0.0, delta)))
+
+
+func has_temporary_control_instability() -> bool:
+	return temporary_control_instability_remaining > 0.0
+
+
+func resolve_recovery_success() -> void:
+	last_recovery_outcome = &"success"
+	clear_failure()
+
+
+func apply_recovery_failure_penalty(
+	health_loss: int,
+	cargo_loss: int,
+	speed_loss: float,
+	instability_duration: float
+) -> void:
+	wagon_health = max(0, wagon_health - max(0, health_loss))
+	cargo_value = max(0, cargo_value - max(0, cargo_loss))
+	current_speed = max(0.0, current_speed - max(0.0, speed_loss))
+	temporary_control_instability_remaining = max(
+		temporary_control_instability_remaining,
+		max(0.0, instability_duration)
+	)
+	last_recovery_outcome = &"failure"
+	clear_failure()
+
+
 func clear_recovery_sequence() -> void:
 	recovery_sequence = DEFAULT_RECOVERY_SEQUENCE.duplicate()
 	recovery_prompt_index = DEFAULT_RECOVERY_PROMPT_INDEX
+	recovery_time_remaining = DEFAULT_RECOVERY_TIME_REMAINING

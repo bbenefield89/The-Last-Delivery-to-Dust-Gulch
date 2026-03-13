@@ -91,6 +91,7 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	await wait_process_frames(1)
 
 	assert_eq(state.wagon_health, 90)
+	assert_eq(state.cargo_value, 96)
 	assert_eq(state.last_hit_hazard, &"pothole")
 
 
@@ -570,3 +571,98 @@ func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
 
 	assert_eq(state.active_failure, &"")
 	assert_false(state.has_active_recovery_sequence())
+
+
+func test_wheel_loose_recovery_timeout_applies_health_and_speed_penalty() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+
+	scene._advance_failure_triggers(0.0)
+	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+
+	assert_eq(state.active_failure, &"")
+	assert_eq(state.last_recovery_outcome, &"failure")
+	assert_eq(state.wagon_health, RunStateType.DEFAULT_WAGON_HEALTH - scene.WHEEL_LOOSE_FAILURE_HEALTH_LOSS)
+	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE - scene.WHEEL_LOOSE_FAILURE_CARGO_LOSS)
+	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED - scene.WHEEL_LOOSE_FAILURE_SPEED_LOSS)
+	assert_true(state.has_temporary_control_instability())
+
+
+func test_horse_panic_recovery_timeout_applies_cargo_and_speed_penalty() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	scene.setup(state)
+
+	scene._advance_failure_triggers(0.0)
+	scene._advance_failure_triggers(scene.HORSE_PANIC_RECOVERY_DURATION)
+
+	assert_eq(state.active_failure, &"")
+	assert_eq(state.last_recovery_outcome, &"failure")
+	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE - scene.HORSE_PANIC_FAILURE_CARGO_LOSS)
+	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED - scene.HORSE_PANIC_FAILURE_SPEED_LOSS)
+	assert_true(state.has_temporary_control_instability())
+
+
+func test_successful_recovery_sets_success_outcome_without_resource_penalty() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+
+	for action_name in scene.WHEEL_LOOSE_RECOVERY_SEQUENCE:
+		var event := InputEventAction.new()
+		event.action = action_name
+		event.pressed = true
+		scene._input(event)
+
+	assert_eq(state.last_recovery_outcome, &"success")
+	assert_eq(state.wagon_health, RunStateType.DEFAULT_WAGON_HEALTH)
+	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
+	assert_false(state.has_temporary_control_instability())
+
+
+func test_failed_recovery_causes_temporary_control_instability_after_failure_clears() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+
+	scene._advance_failure_triggers(0.0)
+	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+	scene._process(0.2)
+	scene._process(0.2)
+
+	assert_ne(state.lateral_position, 0.0)
+
+
+func test_speed_penalty_recovers_toward_default_speed_over_time() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = 10000.0
+	state.current_speed = 150.0
+	scene.setup(state)
+
+	scene._process(1.0)
+
+	assert_eq(state.current_speed, 190.0)
+	scene._process(3.0)
+	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)

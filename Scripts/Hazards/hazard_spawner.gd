@@ -11,6 +11,11 @@ const HAZARD_DAMAGE := {
 	&"rock": 15,
 	&"tumbleweed": 6,
 }
+const HAZARD_CARGO_DAMAGE := {
+	&"pothole": 4,
+	&"rock": 7,
+	&"tumbleweed": 3,
+}
 const PATTERN := [
 	{"type": &"pothole", "lane_index": 1, "spacing": 480.0},
 	{"type": &"rock", "lane_index": 0, "spacing": 420.0},
@@ -179,6 +184,7 @@ func collect_collisions(wagon_position: Vector2, wagon_size: Vector2) -> Array[D
 			collisions.append({
 				"type": polygon.get_meta("hazard_type", &""),
 				"damage": HAZARD_DAMAGE.get(polygon.get_meta("hazard_type", &""), 0),
+				"cargo_damage": HAZARD_CARGO_DAMAGE.get(polygon.get_meta("hazard_type", &""), 0),
 				"node": polygon,
 			})
 

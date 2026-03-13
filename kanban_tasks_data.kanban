@@ -146,7 +146,7 @@
 				},
 				{
 					"details": "Apply success and failure outcomes using health, speed, cargo, or temporary control instability.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Return cleanly to normal driving after each recovery.",
