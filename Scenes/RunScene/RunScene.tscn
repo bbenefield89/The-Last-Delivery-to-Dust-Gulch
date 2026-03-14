@@ -315,3 +315,18 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 autowrap_mode = 2
 text = "Stats"
+
+[node name="ResultButtons" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="ResultRestartButton" type="Button" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_name_in_owner=true]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+text = "Restart"
+
+[node name="ResultReturnButton" type="Button" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_name_in_owner=true]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+text = "Title"

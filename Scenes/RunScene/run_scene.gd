@@ -1,5 +1,8 @@
 extends Node2D
 
+signal restart_requested
+signal return_to_title_requested
+
 const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
@@ -103,6 +106,8 @@ var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 @onready var _result_title: Label = %ResultTitle
 @onready var _result_summary: Label = %ResultSummary
 @onready var _result_stats: Label = %ResultStats
+@onready var _result_restart_button: Button = $ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton
+@onready var _result_return_button: Button = $ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton
 @onready var _music_player: AudioStreamPlayer = %MusicPlayer
 @onready var _wagon_loop_player: AudioStreamPlayer = %WagonLoopPlayer
 @onready var _impact_player: AudioStreamPlayer = %ImpactPlayer
@@ -124,6 +129,8 @@ func _ready() -> void:
 	_ensure_scroll_visuals()
 	_configure_dust_trail()
 	_configure_audio_players()
+	_result_restart_button.pressed.connect(_on_result_restart_pressed)
+	_result_return_button.pressed.connect(_on_result_return_to_title_pressed)
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
@@ -252,13 +259,13 @@ func _refresh_result_screen() -> void:
 	match _run_state.result:
 		RunStateType.RESULT_SUCCESS:
 			_result_title.text = "Delivered to Dust Gulch"
-			_result_summary.text = "You made it in one piece. Press R to ride again."
+			_result_summary.text = "You made it in one piece. Restart the route or return to title."
 		RunStateType.RESULT_COLLAPSED:
 			_result_title.text = "Wagon Collapsed"
-			_result_summary.text = "The delivery failed. Press R to try the route again."
+			_result_summary.text = "The delivery failed. Restart the route or return to title."
 		_:
 			_result_title.text = "Run Complete"
-			_result_summary.text = "Press R to restart."
+			_result_summary.text = "Restart the route or return to title."
 
 	_result_stats.text = "Health: %d\nCargo: %d\nDistance traveled: %.0f / %.0f\nSpeed: %.0f" % [
 		_run_state.wagon_health,
@@ -725,3 +732,11 @@ func _format_recovery_action(action_name: StringName) -> String:
 			return "RIGHT"
 		_:
 			return String(action_name).to_upper()
+
+
+func _on_result_restart_pressed() -> void:
+	restart_requested.emit()
+
+
+func _on_result_return_to_title_pressed() -> void:
+	return_to_title_requested.emit()

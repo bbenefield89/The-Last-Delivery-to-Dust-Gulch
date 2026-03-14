@@ -66,3 +66,20 @@ func test_app_root_quit_request_is_wired_from_title_screen() -> void:
 	app_root._title_screen._on_quit_pressed()
 
 	assert_true(app_root._quit_requested)
+
+
+func test_app_root_return_to_title_rebuilds_title_after_success() -> void:
+	var app_root = APP_ROOT_SCENE.instantiate()
+	app_root.allow_quit = false
+	add_child_autofree(app_root)
+	await wait_process_frames(1)
+	app_root._title_screen._on_play_pressed()
+	await wait_process_frames(1)
+
+	app_root.run_state.result = &"success"
+	app_root._run_scene._on_result_return_to_title_pressed()
+	await wait_process_frames(1)
+
+	assert_not_null(app_root._title_screen)
+	assert_null(app_root.run_state)
+	assert_null(app_root._run_scene)

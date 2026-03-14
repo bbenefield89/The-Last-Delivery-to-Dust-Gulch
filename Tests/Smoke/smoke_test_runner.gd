@@ -24,9 +24,15 @@ func _run() -> void:
 		return
 	if not await _assert_restart_path(app_root, "success"):
 		return
+	if not await _assert_return_to_title_path(app_root, "success"):
+		return
+	if not await _start_run_from_title(app_root):
+		return
 	if not await _assert_collapse_path(app_root):
 		return
 	if not await _assert_restart_path(app_root, "collapse"):
+		return
+	if not await _assert_return_to_title_path(app_root, "collapse"):
 		return
 
 	print("Smoke test passed: title, boot, success, collapse, and restart paths are healthy.")
@@ -141,3 +147,24 @@ func _assert_restart_path(app_root: Node, label: String) -> bool:
 		return false
 
 	return _assert_bootstrap(app_root)
+
+
+func _assert_return_to_title_path(app_root: Node, label: String) -> bool:
+	var run_scene = app_root._run_scene
+	run_scene._on_result_return_to_title_pressed()
+	await process_frame
+	await process_frame
+
+	if not is_instance_valid(app_root._title_screen):
+		push_error("Smoke test failed: return to title after %s did not show the title screen." % label)
+		quit(1)
+		return false
+	if app_root.run_state != null:
+		push_error("Smoke test failed: return to title after %s left run state alive." % label)
+		quit(1)
+		return false
+	if app_root._run_scene != null:
+		push_error("Smoke test failed: return to title after %s left run scene alive." % label)
+		quit(1)
+		return false
+	return true

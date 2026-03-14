@@ -243,7 +243,7 @@
 				},
 				{
 					"details": "Ensure run start, restart, and return-to-title behavior are consistent from all end states.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add a pause menu with resume, restart, and quit-to-title actions.",

@@ -817,6 +817,24 @@ func test_result_panel_includes_small_stats_summary() -> void:
 	assert_string_contains(result_stats.text, "Cargo: 72")
 	assert_string_contains(result_stats.text, "Distance traveled: 500 / 500")
 
+	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
+	var return_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton")
+	assert_eq(restart_button.text, "Restart")
+	assert_eq(return_button.text, "Title")
+
+
+func test_result_panel_buttons_emit_restart_and_return_signals() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	watch_signals(scene)
+	scene._on_result_restart_pressed()
+	scene._on_result_return_to_title_pressed()
+
+	assert_signal_emitted(scene, "restart_requested")
+	assert_signal_emitted(scene, "return_to_title_requested")
+
 
 func test_recovery_panel_hides_when_run_is_over() -> void:
 	var scene = RUN_SCENE.instantiate()

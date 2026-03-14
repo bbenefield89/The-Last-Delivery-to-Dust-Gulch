@@ -4,6 +4,7 @@ const TITLE_SCENE := preload("res://Scenes/TitleScreen/TitleScreen.tscn")
 const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const RESTART_ACTION := "restart_run"
+const RETURN_TO_TITLE_ACTION := "return_to_title"
 
 @export var starting_distance: float = 500.0
 @export var allow_quit: bool = true
@@ -16,6 +17,7 @@ var _quit_requested := false
 
 func _ready() -> void:
 	_ensure_restart_action()
+	_ensure_return_to_title_action()
 	_show_title_screen()
 
 
@@ -26,6 +28,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed(RESTART_ACTION):
 		_start_new_run()
+	elif event.is_action_pressed(RETURN_TO_TITLE_ACTION):
+		_show_title_screen()
 
 
 func _start_new_run() -> void:
@@ -39,6 +43,10 @@ func _start_new_run() -> void:
 	run_state.configure_route_distance(starting_distance)
 	_run_scene = RUN_SCENE.instantiate()
 	add_child(_run_scene)
+	if _run_scene.has_signal("restart_requested"):
+		_run_scene.restart_requested.connect(_start_new_run)
+	if _run_scene.has_signal("return_to_title_requested"):
+		_run_scene.return_to_title_requested.connect(_show_title_screen)
 	if _run_scene.has_method("setup"):
 		_run_scene.setup(run_state)
 
@@ -69,3 +77,13 @@ func _ensure_restart_action() -> void:
 	event.physical_keycode = KEY_R
 	if not InputMap.action_has_event(RESTART_ACTION, event):
 		InputMap.action_add_event(RESTART_ACTION, event)
+
+
+func _ensure_return_to_title_action() -> void:
+	if not InputMap.has_action(RETURN_TO_TITLE_ACTION):
+		InputMap.add_action(RETURN_TO_TITLE_ACTION)
+
+	var event := InputEventKey.new()
+	event.physical_keycode = KEY_T
+	if not InputMap.action_has_event(RETURN_TO_TITLE_ACTION, event):
+		InputMap.action_add_event(RETURN_TO_TITLE_ACTION, event)
