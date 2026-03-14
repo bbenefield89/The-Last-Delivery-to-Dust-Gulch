@@ -33,6 +33,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _start_new_run() -> void:
+	get_tree().paused = false
 	if is_instance_valid(_title_screen):
 		_title_screen.queue_free()
 		_title_screen = null
@@ -52,6 +53,7 @@ func _start_new_run() -> void:
 
 
 func _show_title_screen() -> void:
+	get_tree().paused = false
 	if is_instance_valid(_run_scene):
 		_run_scene.queue_free()
 		_run_scene = null

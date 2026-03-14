@@ -11,6 +11,7 @@ const IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
 const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Neigh-261131.mp3")
 const STEER_ACTION_NEGATIVE := "steer_left"
 const STEER_ACTION_POSITIVE := "steer_right"
+const PAUSE_ACTION := "pause_run"
 const STEER_SPEED := 300.0
 const ROAD_HALF_WIDTH := 220.0
 const WAGON_BASE_Y := 0.0
@@ -85,6 +86,7 @@ var _impact_time := 0.0
 var _bad_luck_elapsed := 0.0
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
+var _pause_menu_open := false
 
 @onready var _camera: Camera2D = %Camera
 @onready var _hazard_spawner: HazardSpawnerType = %HazardSpawner
@@ -98,6 +100,11 @@ var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 @onready var _speed_label: Label = %SpeedLabel
 @onready var _progress_label: Label = %ProgressLabel
 @onready var _progress_bar: ProgressBar = %ProgressBar
+@onready var _pause_overlay: Control = %PauseOverlay
+@onready var _pause_panel: PanelContainer = %PausePanel
+@onready var _pause_resume_button: Button = %PauseResumeButton
+@onready var _pause_restart_button: Button = %PauseRestartButton
+@onready var _pause_return_button: Button = %PauseReturnButton
 @onready var _recovery_panel: PanelContainer = %RecoveryPanel
 @onready var _recovery_title: Label = %RecoveryTitle
 @onready var _recovery_hint: Label = %RecoveryHint
@@ -125,16 +132,22 @@ func setup(run_state: RunStateType) -> void:
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_ensure_input_actions()
 	_ensure_scroll_visuals()
 	_configure_dust_trail()
 	_configure_audio_players()
+	_set_process_mode_recursive(_pause_overlay, Node.PROCESS_MODE_ALWAYS)
+	_pause_resume_button.pressed.connect(_on_pause_resume_pressed)
+	_pause_restart_button.pressed.connect(_on_pause_restart_pressed)
+	_pause_return_button.pressed.connect(_on_pause_return_to_title_pressed)
 	_result_restart_button.pressed.connect(_on_result_restart_pressed)
 	_result_return_button.pressed.connect(_on_result_return_to_title_pressed)
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
+	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
 	_refresh_audio_presentation()
@@ -151,11 +164,17 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	if _run_state == null:
 		return
+	if _pause_menu_open:
+		_refresh_pause_menu()
+		_refresh_result_screen()
+		_refresh_audio_presentation()
+		return
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
 		_update_camera_framing()
 		_refresh_status()
+		_refresh_pause_menu()
 		_refresh_recovery_prompt()
 		_refresh_result_screen()
 		_refresh_audio_presentation()
@@ -197,6 +216,7 @@ func _process(delta: float) -> void:
 	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
+	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
 	_refresh_audio_presentation()
@@ -231,7 +251,11 @@ func _refresh_recovery_prompt() -> void:
 		_recovery_panel.visible = false
 		return
 
-	var has_recovery := _run_state.result == RunStateType.RESULT_IN_PROGRESS and _run_state.has_active_recovery_sequence()
+	var has_recovery := (
+		_run_state.result == RunStateType.RESULT_IN_PROGRESS
+		and not _pause_menu_open
+		and _run_state.has_active_recovery_sequence()
+	)
 	_recovery_panel.visible = has_recovery
 	if not has_recovery:
 		for child in _recovery_steps.get_children():
@@ -246,6 +270,14 @@ func _refresh_recovery_prompt() -> void:
 
 	for i in range(_run_state.recovery_sequence.size()):
 		_recovery_steps.add_child(_build_recovery_step(i))
+
+
+func _refresh_pause_menu() -> void:
+	if _pause_overlay == null or _pause_panel == null:
+		return
+	var is_visible := _run_state != null and _run_state.result == RunStateType.RESULT_IN_PROGRESS and _pause_menu_open
+	_pause_overlay.visible = is_visible
+	_pause_panel.visible = is_visible
 
 
 func _refresh_result_screen() -> void:
@@ -407,6 +439,15 @@ func _sync_recovery_sequence() -> void:
 func _input(event: InputEvent) -> void:
 	if _run_state == null:
 		return
+	if event != null and event.is_action_pressed(PAUSE_ACTION):
+		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
+			_set_pause_state(not _pause_menu_open)
+		return
+	if _pause_menu_open:
+		if _handle_pause_menu_click(event):
+			return
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			return
 	if not _run_state.has_active_recovery_sequence():
 		return
 
@@ -633,6 +674,7 @@ func _refresh_audio_presentation() -> void:
 func _ensure_input_actions() -> void:
 	_register_action(STEER_ACTION_NEGATIVE, [KEY_A, KEY_LEFT])
 	_register_action(STEER_ACTION_POSITIVE, [KEY_D, KEY_RIGHT])
+	_register_action(PAUSE_ACTION, [KEY_ESCAPE])
 
 
 func _register_action(action_name: StringName, keys: Array[int]) -> void:
@@ -646,6 +688,15 @@ func _register_action(action_name: StringName, keys: Array[int]) -> void:
 			InputMap.action_add_event(action_name, event)
 
 
+func _set_process_mode_recursive(node: Node, mode: ProcessMode) -> void:
+	if node == null:
+		return
+
+	node.process_mode = mode
+	for child in node.get_children():
+		_set_process_mode_recursive(child, mode)
+
+
 func _extract_recovery_action(event: InputEvent) -> StringName:
 	if event == null:
 		return &""
@@ -654,6 +705,26 @@ func _extract_recovery_action(event: InputEvent) -> StringName:
 	if event.is_action_pressed(STEER_ACTION_POSITIVE, false, true):
 		return STEER_ACTION_POSITIVE
 	return &""
+
+
+func _handle_pause_menu_click(event: InputEvent) -> bool:
+	var mouse_event := event as InputEventMouseButton
+	if mouse_event == null:
+		return false
+	if mouse_event.button_index != MOUSE_BUTTON_LEFT or not mouse_event.pressed:
+		return false
+
+	var click_position := mouse_event.position
+	if _pause_resume_button != null and _pause_resume_button.get_global_rect().has_point(click_position):
+		_on_pause_resume_pressed()
+		return true
+	if _pause_restart_button != null and _pause_restart_button.get_global_rect().has_point(click_position):
+		_on_pause_restart_pressed()
+		return true
+	if _pause_return_button != null and _pause_return_button.get_global_rect().has_point(click_position):
+		_on_pause_return_to_title_pressed()
+		return true
+	return false
 
 
 func _get_recovery_title(failure_type: StringName) -> String:
@@ -739,4 +810,29 @@ func _on_result_restart_pressed() -> void:
 
 
 func _on_result_return_to_title_pressed() -> void:
+	return_to_title_requested.emit()
+
+
+func _set_pause_state(paused: bool) -> void:
+	if _run_state == null:
+		return
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		paused = false
+
+	_pause_menu_open = paused
+	_refresh_pause_menu()
+	_refresh_recovery_prompt()
+
+
+func _on_pause_resume_pressed() -> void:
+	_set_pause_state(false)
+
+
+func _on_pause_restart_pressed() -> void:
+	_set_pause_state(false)
+	restart_requested.emit()
+
+
+func _on_pause_return_to_title_pressed() -> void:
+	_set_pause_state(false)
 	return_to_title_requested.emit()

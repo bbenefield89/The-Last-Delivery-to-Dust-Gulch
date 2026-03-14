@@ -262,6 +262,91 @@ layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 10
 
+[node name="PauseLayer" type="CanvasLayer" parent="."]
+
+[node name="PauseOverlay" type="Control" parent="PauseLayer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="PauseBackdrop" type="ColorRect" parent="PauseLayer/PauseOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0.12)
+
+[node name="PauseCenter" type="CenterContainer" parent="PauseLayer/PauseOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PausePanel" type="PanelContainer" parent="PauseLayer/PauseOverlay/PauseCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 240)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
+
+[node name="PausePadding" type="MarginContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 18
+
+[node name="PauseVBox" type="VBoxContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PauseTitle" type="Label" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "Paused"
+
+[node name="PauseSummary" type="Label" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+autowrap_mode = 2
+text = "Catch your breath, then resume the run, restart, or return to title."
+
+[node name="PauseButtons" type="VBoxContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PauseResumeButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+text = "Resume"
+
+[node name="PauseRestartButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+text = "Restart"
+
+[node name="PauseReturnButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+text = "Title"
+
 [node name="ResultLayer" type="CanvasLayer" parent="."]
 
 [node name="ResultMargin" type="MarginContainer" parent="ResultLayer"]
