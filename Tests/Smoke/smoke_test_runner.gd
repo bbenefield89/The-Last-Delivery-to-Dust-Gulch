@@ -4,6 +4,32 @@ const APP_ROOT_SCENE := preload("res://Scenes/AppRoot/AppRoot.tscn")
 const RUN_STATE_SCRIPT := preload("res://Scripts/RunState/run_state.gd")
 
 
+func _click_control(control: Control) -> void:
+	var center := control.get_global_rect().get_center()
+
+	var motion := InputEventMouseMotion.new()
+	motion.position = center
+	motion.global_position = center
+	Input.parse_input_event(motion)
+	await process_frame
+
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = center
+	press.global_position = center
+	Input.parse_input_event(press)
+	await process_frame
+
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.position = center
+	release.global_position = center
+	Input.parse_input_event(release)
+	await process_frame
+
+
 func _init() -> void:
 	call_deferred("_run")
 
@@ -20,6 +46,8 @@ func _run() -> void:
 		return
 	if not _assert_bootstrap(app_root):
 		return
+	if not await _assert_pause_path(app_root):
+		return
 	if not await _assert_success_path(app_root):
 		return
 	if not await _assert_restart_path(app_root, "success"):
@@ -35,7 +63,7 @@ func _run() -> void:
 	if not await _assert_return_to_title_path(app_root, "collapse"):
 		return
 
-	print("Smoke test passed: title, boot, success, collapse, and restart paths are healthy.")
+	print("Smoke test passed: title, boot, pause, success, collapse, and restart paths are healthy.")
 	quit(0)
 
 
@@ -91,6 +119,39 @@ func _assert_success_path(app_root: Node) -> bool:
 		return false
 	if recovery_panel.visible:
 		push_error("Smoke test failed: recovery panel remained visible after success.")
+		quit(1)
+		return false
+	return true
+
+
+func _assert_pause_path(app_root: Node) -> bool:
+	var run_scene = app_root._run_scene
+	run_scene._set_pause_state(true)
+	await process_frame
+
+	var pause_overlay: Control = run_scene.get_node("%PauseOverlay")
+	var pause_panel: PanelContainer = run_scene.get_node("%PausePanel")
+	var resume_button: Button = run_scene.get_node("%PauseResumeButton")
+	if not run_scene._pause_menu_open:
+		push_error("Smoke test failed: pause menu did not enter paused gameplay state.")
+		quit(1)
+		return false
+	if not pause_overlay.visible:
+		push_error("Smoke test failed: pause overlay did not appear.")
+		quit(1)
+		return false
+	if not pause_panel.visible:
+		push_error("Smoke test failed: pause panel did not appear.")
+		quit(1)
+		return false
+
+	await _click_control(resume_button)
+	if run_scene._pause_menu_open:
+		push_error("Smoke test failed: resume did not close the pause state.")
+		quit(1)
+		return false
+	if pause_panel.visible:
+		push_error("Smoke test failed: pause panel stayed visible after resume.")
 		quit(1)
 		return false
 	return true

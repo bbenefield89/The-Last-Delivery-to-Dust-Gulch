@@ -83,3 +83,20 @@ func test_app_root_return_to_title_rebuilds_title_after_success() -> void:
 	assert_not_null(app_root._title_screen)
 	assert_null(app_root.run_state)
 	assert_null(app_root._run_scene)
+
+
+func test_app_root_clears_tree_pause_when_restarting_or_returning_to_title() -> void:
+	var app_root = APP_ROOT_SCENE.instantiate()
+	app_root.allow_quit = false
+	add_child_autofree(app_root)
+	await wait_process_frames(1)
+	app_root._title_screen._on_play_pressed()
+	await wait_process_frames(1)
+
+	get_tree().paused = true
+	app_root._start_new_run()
+	assert_false(get_tree().paused)
+
+	get_tree().paused = true
+	app_root._show_title_screen()
+	assert_false(get_tree().paused)

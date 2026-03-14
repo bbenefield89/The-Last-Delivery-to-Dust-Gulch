@@ -4,6 +4,32 @@ const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 
 
+func _click_control(control: Control) -> void:
+	var center := control.get_global_rect().get_center()
+
+	var motion := InputEventMouseMotion.new()
+	motion.position = center
+	motion.global_position = center
+	Input.parse_input_event(motion)
+	await wait_process_frames(1)
+
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = center
+	press.global_position = center
+	Input.parse_input_event(press)
+	await wait_process_frames(1)
+
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.position = center
+	release.global_position = center
+	Input.parse_input_event(release)
+	await wait_process_frames(1)
+
+
 func test_setup_populates_hud_labels_with_run_state_values() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -38,6 +64,7 @@ func test_ready_registers_steering_input_actions() -> void:
 
 	assert_true(InputMap.has_action("steer_left"))
 	assert_true(InputMap.has_action("steer_right"))
+	assert_true(InputMap.has_action("pause_run"))
 
 
 func test_process_moves_right_and_reduces_distance() -> void:
@@ -834,6 +861,95 @@ func test_result_panel_buttons_emit_restart_and_return_signals() -> void:
 
 	assert_signal_emitted(scene, "restart_requested")
 	assert_signal_emitted(scene, "return_to_title_requested")
+
+
+func test_pause_menu_toggles_tree_pause_and_visibility() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	scene._set_pause_state(true)
+	await wait_process_frames(1)
+	var pause_overlay: Control = scene.get_node("%PauseOverlay")
+	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
+	var resume_button: Button = scene.get_node("%PauseResumeButton")
+	assert_true(scene._pause_menu_open)
+	assert_false(get_tree().paused)
+	assert_true(pause_overlay.visible)
+	assert_true(pause_panel.visible)
+	assert_eq(pause_overlay.mouse_filter, Control.MOUSE_FILTER_STOP)
+	assert_false(resume_button.has_focus())
+
+	scene._set_pause_state(false)
+	assert_false(scene._pause_menu_open)
+	assert_false(get_tree().paused)
+	assert_false(pause_overlay.visible)
+	assert_false(pause_panel.visible)
+	assert_eq(pause_panel.process_mode, Node.PROCESS_MODE_ALWAYS)
+
+
+func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	scene._set_pause_state(true)
+	await wait_process_frames(1)
+	watch_signals(scene)
+	var restart_button: Button = scene.get_node("%PauseRestartButton")
+	var return_button: Button = scene.get_node("%PauseReturnButton")
+
+	await _click_control(restart_button)
+	assert_false(scene._pause_menu_open)
+	assert_false(get_tree().paused)
+	assert_signal_emitted(scene, "restart_requested")
+
+	scene._set_pause_state(true)
+	await wait_process_frames(1)
+	await _click_control(return_button)
+	assert_false(scene._pause_menu_open)
+	assert_false(get_tree().paused)
+	assert_signal_emitted(scene, "return_to_title_requested")
+
+
+func test_pause_resume_button_unpauses_through_button_signal() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	scene._set_pause_state(true)
+	await wait_process_frames(1)
+
+	var resume_button: Button = scene.get_node("%PauseResumeButton")
+	await _click_control(resume_button)
+
+	assert_false(scene._pause_menu_open)
+	assert_false(get_tree().paused)
+	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
+	assert_false(pause_panel.visible)
+
+
+func test_pause_menu_does_not_show_after_run_is_over() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	scene.setup(state)
+
+	scene._set_pause_state(true)
+	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
+	assert_false(scene._pause_menu_open)
+	assert_false(get_tree().paused)
+	assert_false(pause_panel.visible)
 
 
 func test_recovery_panel_hides_when_run_is_over() -> void:
