@@ -48,6 +48,14 @@ func _run() -> void:
 		return
 	if not await _assert_pause_path(app_root):
 		return
+	if not await _assert_pause_restart_path(app_root):
+		return
+	if not await _assert_pause_return_to_title_path(app_root):
+		return
+	if not await _start_run_from_title(app_root):
+		return
+	if not _assert_bootstrap(app_root):
+		return
 	if not await _assert_success_path(app_root):
 		return
 	if not await _assert_restart_path(app_root, "success"):
@@ -152,6 +160,58 @@ func _assert_pause_path(app_root: Node) -> bool:
 		return false
 	if pause_panel.visible:
 		push_error("Smoke test failed: pause panel stayed visible after resume.")
+		quit(1)
+		return false
+	return true
+
+
+func _assert_pause_restart_path(app_root: Node) -> bool:
+	var prior_run_state = app_root.run_state
+	var prior_run_scene = app_root._run_scene
+	var run_scene = app_root._run_scene
+	run_scene._set_pause_state(true)
+	await process_frame
+
+	var restart_button: Button = run_scene.get_node("%PauseRestartButton")
+	await _click_control(restart_button)
+	await process_frame
+	await process_frame
+
+	if app_root.run_state == prior_run_state:
+		push_error("Smoke test failed: pause-menu restart did not rebuild run state.")
+		quit(1)
+		return false
+	if app_root._run_scene == prior_run_scene:
+		push_error("Smoke test failed: pause-menu restart did not rebuild run scene.")
+		quit(1)
+		return false
+	if app_root.run_state.result != RUN_STATE_SCRIPT.RESULT_IN_PROGRESS:
+		push_error("Smoke test failed: pause-menu restart did not return to in-progress state.")
+		quit(1)
+		return false
+	return _assert_bootstrap(app_root)
+
+
+func _assert_pause_return_to_title_path(app_root: Node) -> bool:
+	var run_scene = app_root._run_scene
+	run_scene._set_pause_state(true)
+	await process_frame
+
+	var return_button: Button = run_scene.get_node("%PauseReturnButton")
+	await _click_control(return_button)
+	await process_frame
+	await process_frame
+
+	if not is_instance_valid(app_root._title_screen):
+		push_error("Smoke test failed: pause-menu title return did not show the title screen.")
+		quit(1)
+		return false
+	if app_root.run_state != null:
+		push_error("Smoke test failed: pause-menu title return left run state alive.")
+		quit(1)
+		return false
+	if app_root._run_scene != null:
+		push_error("Smoke test failed: pause-menu title return left run scene alive.")
 		quit(1)
 		return false
 	return true
