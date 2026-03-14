@@ -85,7 +85,7 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	scene.setup(state)
 
 	var spawner = scene.get_node("%HazardSpawner")
-	spawner.advance(500.0)
+	spawner.advance(540.0)
 	var hazard: Polygon2D = spawner.get_child(0)
 	for i in range(1, spawner.get_child_count()):
 		spawner.get_child(i).queue_free()
@@ -108,7 +108,7 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	scene.setup(state)
 
 	var spawner = scene.get_node("%HazardSpawner")
-	spawner.advance(500.0)
+	spawner.advance(540.0)
 	var hazard: Polygon2D = spawner.get_child(0)
 	for i in range(1, spawner.get_child_count()):
 		spawner.get_child(i).queue_free()
@@ -133,7 +133,7 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 	scene.setup(state)
 
 	var spawner = scene.get_node("%HazardSpawner")
-	spawner.advance(500.0)
+	spawner.advance(540.0)
 	var hazard: Polygon2D = spawner.get_child(0)
 	for i in range(1, spawner.get_child_count()):
 		spawner.get_child(i).queue_free()
@@ -347,10 +347,25 @@ func test_bad_luck_timer_triggers_failure_when_no_active_failure_exists() -> voi
 	state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.2
 	scene.setup(state)
 
-	scene._advance_failure_triggers(6.0)
+	scene._advance_failure_triggers(13.0)
 
 	assert_eq(state.active_failure, &"horse_panic")
 	assert_eq(state.current_failure.source_hazard, &"bad_luck")
+
+
+func test_bad_luck_interval_uses_tuned_fairness_values() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var early_state := RunStateType.new()
+	scene.setup(early_state)
+	assert_eq(scene._get_bad_luck_interval(), 13.0)
+
+	var late_state := RunStateType.new()
+	late_state.distance_remaining = late_state.route_distance * 0.1
+	scene.setup(late_state)
+	assert_eq(scene._get_bad_luck_interval(), 8.5)
 
 
 func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
@@ -846,6 +861,7 @@ func test_step4_presentation_nodes_exist_for_dust_and_audio() -> void:
 
 	assert_true(scene.has_node("%DustTrail"))
 	assert_true(scene.has_node("%MusicPlayer"))
+	assert_true(scene.has_node("%WagonLoopPlayer"))
 	assert_true(scene.has_node("%ImpactPlayer"))
 	assert_true(scene.has_node("%FailurePlayer"))
 	assert_true(scene.has_node("%ResultPlayer"))
@@ -861,9 +877,13 @@ func test_ready_starts_music_and_dust_presentation() -> void:
 
 	var dust_trail: CPUParticles2D = scene.get_node("%DustTrail")
 	var music_player: AudioStreamPlayer = scene.get_node("%MusicPlayer")
+	var wagon_loop_player: AudioStreamPlayer = scene.get_node("%WagonLoopPlayer")
 	assert_true(dust_trail.emitting)
 	assert_true(music_player.playing)
 	assert_eq(music_player.stream, scene.BACKGROUND_MUSIC)
+	assert_true(wagon_loop_player.playing)
+	assert_eq(wagon_loop_player.stream, scene.WAGON_LOOP_SOUND)
+	assert_true(wagon_loop_player.get_playback_position() >= scene.WAGON_LOOP_START_SECONDS)
 
 
 func test_impact_feedback_plays_impact_audio_cue() -> void:
@@ -875,6 +895,7 @@ func test_impact_feedback_plays_impact_audio_cue() -> void:
 
 	var impact_player: AudioStreamPlayer = scene.get_node("%ImpactPlayer")
 	assert_true(impact_player.playing)
+	assert_eq(impact_player.stream, scene.IMPACT_SOUND)
 	assert_eq(impact_player.volume_db, -4.5)
 
 
@@ -890,6 +911,7 @@ func test_new_failure_plays_failure_audio_cue() -> void:
 
 	var failure_player: AudioStreamPlayer = scene.get_node("%FailurePlayer")
 	assert_true(failure_player.playing)
+	assert_eq(failure_player.stream, scene.HORSE_SPOOK_SOUND)
 
 
 func test_success_result_stops_dust_and_plays_result_cue() -> void:
@@ -906,9 +928,27 @@ func test_success_result_stops_dust_and_plays_result_cue() -> void:
 	var dust_trail: CPUParticles2D = scene.get_node("%DustTrail")
 	var result_player: AudioStreamPlayer = scene.get_node("%ResultPlayer")
 	var music_player: AudioStreamPlayer = scene.get_node("%MusicPlayer")
+	var wagon_loop_player: AudioStreamPlayer = scene.get_node("%WagonLoopPlayer")
 	assert_false(dust_trail.emitting)
 	assert_true(result_player.playing)
 	assert_false(music_player.playing)
+	assert_false(wagon_loop_player.playing)
+
+
+func test_wagon_loop_audio_wraps_back_to_five_second_mark() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var wagon_loop_player: AudioStreamPlayer = scene.get_node("%WagonLoopPlayer")
+	wagon_loop_player.seek(scene.WAGON_LOOP_END_SECONDS + 0.25)
+	scene._refresh_audio_presentation()
+
+	assert_true(wagon_loop_player.get_playback_position() >= scene.WAGON_LOOP_START_SECONDS)
+	assert_true(wagon_loop_player.get_playback_position() < scene.WAGON_LOOP_END_SECONDS)
 
 
 func test_scroll_segment_includes_roadside_dust_gulch_sign() -> void:

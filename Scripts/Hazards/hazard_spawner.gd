@@ -4,8 +4,8 @@ class_name HazardSpawner
 const LANE_X_POSITIONS := [-120.0, 0.0, 120.0]
 const DEFAULT_SPAWN_Y := -920.0
 const DEFAULT_DESPAWN_Y := 900.0
-const MAX_PROGRESS_SPAWN_MULTIPLIER := 0.55
-const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.6
+const MAX_PROGRESS_SPAWN_MULTIPLIER := 0.68
+const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const HAZARD_DAMAGE := {
 	&"pothole": 10,
 	&"rock": 15,
@@ -17,12 +17,12 @@ const HAZARD_CARGO_DAMAGE := {
 	&"tumbleweed": 3,
 }
 const PATTERN := [
-	{"type": &"pothole", "lane_index": 1, "spacing": 480.0},
-	{"type": &"rock", "lane_index": 0, "spacing": 420.0},
-	{"type": &"tumbleweed", "lane_index": 2, "spacing": 520.0},
-	{"type": &"rock", "lane_index": 1, "spacing": 440.0},
-	{"type": &"pothole", "lane_index": 0, "spacing": 500.0},
-	{"type": &"tumbleweed", "lane_index": 1, "spacing": 460.0},
+	{"type": &"pothole", "lane_index": 1, "spacing": 540.0},
+	{"type": &"rock", "lane_index": 0, "spacing": 500.0},
+	{"type": &"tumbleweed", "lane_index": 2, "spacing": 600.0},
+	{"type": &"rock", "lane_index": 1, "spacing": 520.0},
+	{"type": &"pothole", "lane_index": 0, "spacing": 620.0},
+	{"type": &"tumbleweed", "lane_index": 1, "spacing": 560.0},
 ]
 
 const HAZARD_COLORS := {

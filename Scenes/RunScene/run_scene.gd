@@ -3,6 +3,9 @@ extends Node2D
 const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
+const WAGON_LOOP_SOUND := preload("res://Assets/Sfx/Horse-and-Chariot-30-sec-73615.mp3")
+const IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
+const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Neigh-261131.mp3")
 const STEER_ACTION_NEGATIVE := "steer_left"
 const STEER_ACTION_POSITIVE := "steer_right"
 const STEER_SPEED := 300.0
@@ -27,8 +30,8 @@ const HORSE_PANIC_DRIFT_SPEED := 150.0
 const HORSE_PANIC_DRIFT_FREQUENCY := 5.0
 const HORSE_PANIC_WOBBLE_DEGREES := 8.0
 const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
-const BAD_LUCK_INTERVAL_EARLY := 9.0
-const BAD_LUCK_INTERVAL_LATE := 4.5
+const BAD_LUCK_INTERVAL_EARLY := 13.0
+const BAD_LUCK_INTERVAL_LATE := 8.0
 const WHEEL_LOOSE_RECOVERY_SEQUENCE: Array[StringName] = [
 	&"steer_left",
 	&"steer_right",
@@ -40,18 +43,18 @@ const HORSE_PANIC_RECOVERY_SEQUENCE: Array[StringName] = [
 	&"steer_left",
 	&"steer_right",
 ]
-const WHEEL_LOOSE_RECOVERY_DURATION := 2.75
-const HORSE_PANIC_RECOVERY_DURATION := 3.25
+const WHEEL_LOOSE_RECOVERY_DURATION := 3.1
+const HORSE_PANIC_RECOVERY_DURATION := 3.7
 const POST_FAILURE_STEER_MULTIPLIER := 0.75
 const POST_FAILURE_DRIFT_SPEED := 55.0
 const POST_FAILURE_DRIFT_FREQUENCY := 6.0
-const WHEEL_LOOSE_FAILURE_HEALTH_LOSS := 14
-const WHEEL_LOOSE_FAILURE_CARGO_LOSS := 8
-const WHEEL_LOOSE_FAILURE_SPEED_LOSS := 70.0
-const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := 2.4
-const HORSE_PANIC_FAILURE_CARGO_LOSS := 20
-const HORSE_PANIC_FAILURE_SPEED_LOSS := 85.0
-const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := 2.8
+const WHEEL_LOOSE_FAILURE_HEALTH_LOSS := 10
+const WHEEL_LOOSE_FAILURE_CARGO_LOSS := 6
+const WHEEL_LOOSE_FAILURE_SPEED_LOSS := 55.0
+const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := 1.9
+const HORSE_PANIC_FAILURE_CARGO_LOSS := 14
+const HORSE_PANIC_FAILURE_SPEED_LOSS := 65.0
+const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := 2.2
 const SCROLL_LOOP_HEIGHT := 2880.0
 const CENTER_DASH_SPACING := 240.0
 const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
@@ -66,8 +69,9 @@ const DASH_COLOR := Color(0.886275, 0.811765, 0.572549, 0.8)
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
-const AUDIO_MIX_RATE := 22050
 const DUST_BASE_AMOUNT_RATIO := 0.35
+const WAGON_LOOP_START_SECONDS := 5.0
+const WAGON_LOOP_END_SECONDS := 10.0
 
 var _run_state: RunStateType
 var _scroll_offset := 0.0
@@ -100,6 +104,7 @@ var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 @onready var _result_summary: Label = %ResultSummary
 @onready var _result_stats: Label = %ResultStats
 @onready var _music_player: AudioStreamPlayer = %MusicPlayer
+@onready var _wagon_loop_player: AudioStreamPlayer = %WagonLoopPlayer
 @onready var _impact_player: AudioStreamPlayer = %ImpactPlayer
 @onready var _failure_player: AudioStreamPlayer = %FailurePlayer
 @onready var _result_player: AudioStreamPlayer = %ResultPlayer
@@ -129,7 +134,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	for player in [_music_player, _impact_player, _failure_player, _result_player]:
+	for player in [_music_player, _wagon_loop_player, _impact_player, _failure_player, _result_player]:
 		if player == null:
 			continue
 		player.stop()
@@ -559,12 +564,15 @@ func _configure_audio_players() -> void:
 	if _music_player != null:
 		_music_player.stream = BACKGROUND_MUSIC
 		_music_player.volume_db = -12.0
+	if _wagon_loop_player != null:
+		_wagon_loop_player.stream = WAGON_LOOP_SOUND
+		_wagon_loop_player.volume_db = -8.5
 	if _impact_player != null:
-		_impact_player.stream = _build_tone_stream(180.0, 0.08, 0.65)
+		_impact_player.stream = IMPACT_SOUND
 		_impact_player.volume_db = -4.5
 	if _failure_player != null:
-		_failure_player.stream = _build_tone_stream(130.0, 0.18, 0.3)
-		_failure_player.volume_db = -11.5
+		_failure_player.stream = HORSE_SPOOK_SOUND
+		_failure_player.volume_db = -5.0
 	if _result_player != null:
 		_result_player.volume_db = -10.0
 
@@ -588,6 +596,15 @@ func _refresh_audio_presentation() -> void:
 		elif _music_player.playing:
 			_music_player.stop()
 
+	if _wagon_loop_player != null:
+		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
+			if not _wagon_loop_player.playing:
+				_wagon_loop_player.play(WAGON_LOOP_START_SECONDS)
+			elif _wagon_loop_player.get_playback_position() >= WAGON_LOOP_END_SECONDS:
+				_wagon_loop_player.seek(WAGON_LOOP_START_SECONDS)
+		elif _wagon_loop_player.playing:
+			_wagon_loop_player.stop()
+
 	if _run_state.active_failure != _last_announced_failure:
 		if _run_state.active_failure != &"" and _failure_player != null:
 			_failure_player.play()
@@ -597,34 +614,13 @@ func _refresh_audio_presentation() -> void:
 		match _run_state.result:
 			RunStateType.RESULT_SUCCESS:
 				if _result_player != null:
-					_result_player.stream = _build_tone_stream(320.0, 0.22, 0.28)
+					_result_player.stream = BACKGROUND_MUSIC
 					_result_player.play()
 			RunStateType.RESULT_COLLAPSED:
 				if _result_player != null:
-					_result_player.stream = _build_tone_stream(110.0, 0.28, 0.34)
+					_result_player.stream = IMPACT_SOUND
 					_result_player.play()
 		_last_announced_result = _run_state.result
-
-
-func _build_tone_stream(frequency: float, duration: float, amplitude: float) -> AudioStreamWAV:
-	var sample_count := maxi(1, int(AUDIO_MIX_RATE * duration))
-	var bytes := PackedByteArray()
-	bytes.resize(sample_count * 2)
-
-	for i in range(sample_count):
-		var t := float(i) / AUDIO_MIX_RATE
-		var envelope := 1.0 - (float(i) / sample_count)
-		var sample := sin(TAU * frequency * t) * amplitude * envelope
-		var pcm := int(clamp(sample, -1.0, 1.0) * 32767.0)
-		bytes[i * 2] = pcm & 0xFF
-		bytes[(i * 2) + 1] = (pcm >> 8) & 0xFF
-
-	var stream := AudioStreamWAV.new()
-	stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = AUDIO_MIX_RATE
-	stream.stereo = false
-	stream.data = bytes
-	return stream
 
 
 func _ensure_input_actions() -> void:
