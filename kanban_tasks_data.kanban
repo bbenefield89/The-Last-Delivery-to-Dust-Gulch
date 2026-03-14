@@ -197,7 +197,7 @@
 				},
 				{
 					"details": "Run the export build checklist and confirm the project is submission-ready.",
-					"done": false
+					"done": true
 				}
 			]
 		}
