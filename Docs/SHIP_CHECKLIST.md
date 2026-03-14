@@ -3,7 +3,11 @@
 ## Submission Build
 
 - Target export preset: `Windows Desktop`
-- Output path: `Builds/LastDeliveryToDustGulch.exe`
+- Windows export path pattern: `Builds/Win/vX.X.X/DustGulch.exe`
+- Web export path pattern: `Builds/Web/vX.X.X/index.html`
+- Replace `vX.X.X` with the actual release version before exporting
+- On this machine, use the local interactive Godot editor or your own local CLI session for the final Windows export
+- Do not treat Codex-run Windows exports as the final ship artifact on this setup
 - Verify the export includes the `Assets`, `Scenes`, `Scripts`, and `Tests/Smoke` content needed by the shipped build
 - Launch the exported build once before submission
 
