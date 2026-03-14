@@ -837,3 +837,92 @@ func test_result_panel_is_darkened_without_full_screen_backdrop() -> void:
 	assert_eq(result_title.get_theme_color("font_color"), Color(1, 1, 1, 1))
 	assert_eq(result_summary.get_theme_color("font_color"), Color(1, 1, 1, 1))
 	assert_eq(result_stats.get_theme_color("font_color"), Color(1, 1, 1, 1))
+
+
+func test_step4_presentation_nodes_exist_for_dust_and_audio() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	assert_true(scene.has_node("%DustTrail"))
+	assert_true(scene.has_node("%MusicPlayer"))
+	assert_true(scene.has_node("%ImpactPlayer"))
+	assert_true(scene.has_node("%FailurePlayer"))
+	assert_true(scene.has_node("%ResultPlayer"))
+
+
+func test_ready_starts_music_and_dust_presentation() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var dust_trail: CPUParticles2D = scene.get_node("%DustTrail")
+	var music_player: AudioStreamPlayer = scene.get_node("%MusicPlayer")
+	assert_true(dust_trail.emitting)
+	assert_true(music_player.playing)
+	assert_eq(music_player.stream, scene.BACKGROUND_MUSIC)
+
+
+func test_impact_feedback_plays_impact_audio_cue() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	scene._trigger_impact_feedback()
+
+	var impact_player: AudioStreamPlayer = scene.get_node("%ImpactPlayer")
+	assert_true(impact_player.playing)
+	assert_eq(impact_player.volume_db, -4.5)
+
+
+func test_new_failure_plays_failure_audio_cue() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	state.start_failure(&"wheel_loose", &"rock")
+	scene._refresh_audio_presentation()
+
+	var failure_player: AudioStreamPlayer = scene.get_node("%FailurePlayer")
+	assert_true(failure_player.playing)
+
+
+func test_success_result_stops_dust_and_plays_result_cue() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	state.result = RunStateType.RESULT_SUCCESS
+	state.current_speed = 0.0
+	scene._refresh_audio_presentation()
+
+	var dust_trail: CPUParticles2D = scene.get_node("%DustTrail")
+	var result_player: AudioStreamPlayer = scene.get_node("%ResultPlayer")
+	var music_player: AudioStreamPlayer = scene.get_node("%MusicPlayer")
+	assert_false(dust_trail.emitting)
+	assert_true(result_player.playing)
+	assert_false(music_player.playing)
+
+
+func test_scroll_segment_includes_roadside_dust_gulch_sign() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
+	var sign_found := false
+	for child in segment_a.get_children():
+		if child.name == "RoadsideSign":
+			var label := child.get_child(child.get_child_count() - 1) as Label
+			if label != null and label.text == "Dust Gulch":
+				sign_found = true
+				break
+
+	assert_true(sign_found)

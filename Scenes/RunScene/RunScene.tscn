@@ -48,10 +48,26 @@ unique_name_in_owner = true
 polygon = PackedVector2Array(-36, -56, 36, -56, 36, 56, -36, 56)
 color = Color(0.301961, 0.180392, 0.101961, 1)
 
+[node name="DustTrail" type="CPUParticles2D" parent="World/Wagon"]
+unique_name_in_owner = true
+position = Vector2(0, 48)
+
 [node name="Camera" type="Camera2D" parent="World"]
 unique_name_in_owner = true
 position = Vector2(0, -120)
 enabled = true
+
+[node name="MusicPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="ImpactPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="FailurePlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="ResultPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
 
 [node name="HUDLayer" type="CanvasLayer" parent="."]
 

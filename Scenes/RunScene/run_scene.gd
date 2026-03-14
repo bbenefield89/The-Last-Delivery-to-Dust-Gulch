@@ -2,6 +2,7 @@ extends Node2D
 
 const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
+const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const STEER_ACTION_NEGATIVE := "steer_left"
 const STEER_ACTION_POSITIVE := "steer_right"
 const STEER_SPEED := 300.0
@@ -61,9 +62,12 @@ const WAGON_COLLISION_SIZE := Vector2(72.0, 112.0)
 const RECOVERY_STEP_PENDING_COLOR := Color(0.25098, 0.203922, 0.145098, 0.92)
 const RECOVERY_STEP_ACTIVE_COLOR := Color(0.780392, 0.623529, 0.317647, 0.98)
 const RECOVERY_STEP_DONE_COLOR := Color(0.419608, 0.54902, 0.290196, 0.95)
-
 const DASH_COLOR := Color(0.886275, 0.811765, 0.572549, 0.8)
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
+const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
+const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
+const AUDIO_MIX_RATE := 22050
+const DUST_BASE_AMOUNT_RATIO := 0.35
 
 var _run_state: RunStateType
 var _scroll_offset := 0.0
@@ -72,6 +76,8 @@ var _impact_wobble_remaining := 0.0
 var _impact_shake_remaining := 0.0
 var _impact_time := 0.0
 var _bad_luck_elapsed := 0.0
+var _last_announced_failure: StringName = &""
+var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 
 @onready var _camera: Camera2D = %Camera
 @onready var _hazard_spawner: HazardSpawnerType = %HazardSpawner
@@ -79,6 +85,7 @@ var _bad_luck_elapsed := 0.0
 @onready var _scroll_segment_a: Node2D = %ScrollSegmentA
 @onready var _scroll_segment_b: Node2D = %ScrollSegmentB
 @onready var _wagon: Polygon2D = %Wagon
+@onready var _dust_trail: CPUParticles2D = %DustTrail
 @onready var _health_label: Label = %HealthLabel
 @onready var _cargo_label: Label = %CargoLabel
 @onready var _speed_label: Label = %SpeedLabel
@@ -92,23 +99,41 @@ var _bad_luck_elapsed := 0.0
 @onready var _result_title: Label = %ResultTitle
 @onready var _result_summary: Label = %ResultSummary
 @onready var _result_stats: Label = %ResultStats
+@onready var _music_player: AudioStreamPlayer = %MusicPlayer
+@onready var _impact_player: AudioStreamPlayer = %ImpactPlayer
+@onready var _failure_player: AudioStreamPlayer = %FailurePlayer
+@onready var _result_player: AudioStreamPlayer = %ResultPlayer
 
 
 func setup(run_state: RunStateType) -> void:
 	_run_state = run_state
+	_last_announced_failure = _run_state.active_failure
+	_last_announced_result = _run_state.result
 	_refresh_status()
 	_refresh_recovery_prompt()
+	_refresh_audio_presentation()
 
 
 func _ready() -> void:
 	_ensure_input_actions()
 	_ensure_scroll_visuals()
+	_configure_dust_trail()
+	_configure_audio_players()
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
+	_refresh_audio_presentation()
+
+
+func _exit_tree() -> void:
+	for player in [_music_player, _impact_player, _failure_player, _result_player]:
+		if player == null:
+			continue
+		player.stop()
+		player.stream = null
 
 
 func _process(delta: float) -> void:
@@ -121,6 +146,7 @@ func _process(delta: float) -> void:
 		_refresh_status()
 		_refresh_recovery_prompt()
 		_refresh_result_screen()
+		_refresh_audio_presentation()
 		return
 
 	var steer_input := Input.get_axis(STEER_ACTION_NEGATIVE, STEER_ACTION_POSITIVE)
@@ -161,6 +187,7 @@ func _process(delta: float) -> void:
 	_refresh_status()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
+	_refresh_audio_presentation()
 
 
 func _refresh_status() -> void:
@@ -408,6 +435,8 @@ func _trigger_impact_feedback() -> void:
 	_impact_wobble_remaining = IMPACT_WOBBLE_DURATION
 	_impact_shake_remaining = IMPACT_SHAKE_DURATION
 	_impact_time = 0.0
+	if _impact_player != null:
+		_impact_player.play()
 
 
 func _ensure_scroll_visuals() -> void:
@@ -452,6 +481,10 @@ func _populate_scroll_segment(segment: Node2D) -> void:
 		right_scrub.scale.x = -1.0
 		segment.add_child(right_scrub)
 
+	var sign := _make_road_sign("Dust Gulch")
+	sign.position = Vector2(-430.0, -SCROLL_LOOP_HEIGHT + 520.0)
+	segment.add_child(sign)
+
 
 func _make_scrub_cluster() -> Polygon2D:
 	var scrub := Polygon2D.new()
@@ -465,6 +498,133 @@ func _make_scrub_cluster() -> Polygon2D:
 	])
 	scrub.color = SCRUB_COLOR
 	return scrub
+
+
+func _make_road_sign(sign_text: String) -> Node2D:
+	var sign_root := Node2D.new()
+	sign_root.name = "RoadsideSign"
+
+	var post := Polygon2D.new()
+	post.polygon = PackedVector2Array([
+		Vector2(-6.0, -8.0),
+		Vector2(6.0, -8.0),
+		Vector2(6.0, 74.0),
+		Vector2(-6.0, 74.0),
+	])
+	post.color = SIGN_WOOD_COLOR
+	sign_root.add_child(post)
+
+	var board := Polygon2D.new()
+	board.position = Vector2(0.0, -18.0)
+	board.polygon = PackedVector2Array([
+		Vector2(-68.0, -24.0),
+		Vector2(68.0, -24.0),
+		Vector2(68.0, 24.0),
+		Vector2(-68.0, 24.0),
+	])
+	board.color = SIGN_WOOD_COLOR.darkened(0.08)
+	sign_root.add_child(board)
+
+	var label := Label.new()
+	label.text = sign_text
+	label.position = Vector2(-60.0, -34.0)
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", SIGN_TEXT_COLOR)
+	sign_root.add_child(label)
+	return sign_root
+
+
+func _configure_dust_trail() -> void:
+	if _dust_trail == null:
+		return
+
+	_dust_trail.emitting = true
+	_dust_trail.amount = 24
+	_dust_trail.lifetime = 0.85
+	_dust_trail.preprocess = 0.2
+	_dust_trail.local_coords = false
+	_dust_trail.direction = Vector2(0.0, 1.0)
+	_dust_trail.spread = 36.0
+	_dust_trail.initial_velocity_min = 40.0
+	_dust_trail.initial_velocity_max = 78.0
+	_dust_trail.gravity = Vector2(0.0, 120.0)
+	_dust_trail.scale_amount_min = 2.2
+	_dust_trail.scale_amount_max = 4.8
+	_dust_trail.color = Color(0.839216, 0.72549, 0.513725, 0.62)
+	_dust_trail.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_dust_trail.emission_rect_extents = Vector2(28.0, 10.0)
+
+
+func _configure_audio_players() -> void:
+	if _music_player != null:
+		_music_player.stream = BACKGROUND_MUSIC
+		_music_player.volume_db = -12.0
+	if _impact_player != null:
+		_impact_player.stream = _build_tone_stream(180.0, 0.08, 0.65)
+		_impact_player.volume_db = -4.5
+	if _failure_player != null:
+		_failure_player.stream = _build_tone_stream(130.0, 0.18, 0.3)
+		_failure_player.volume_db = -11.5
+	if _result_player != null:
+		_result_player.volume_db = -10.0
+
+
+func _refresh_audio_presentation() -> void:
+	if _run_state == null:
+		return
+
+	var should_emit_dust := _run_state.result == RunStateType.RESULT_IN_PROGRESS and _run_state.current_speed > 0.0
+	if _dust_trail != null:
+		_dust_trail.emitting = should_emit_dust
+		_dust_trail.speed_scale = max(
+			DUST_BASE_AMOUNT_RATIO,
+			_run_state.current_speed / RunStateType.DEFAULT_FORWARD_SPEED
+		)
+
+	if _music_player != null:
+		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
+			if not _music_player.playing:
+				_music_player.play()
+		elif _music_player.playing:
+			_music_player.stop()
+
+	if _run_state.active_failure != _last_announced_failure:
+		if _run_state.active_failure != &"" and _failure_player != null:
+			_failure_player.play()
+		_last_announced_failure = _run_state.active_failure
+
+	if _run_state.result != _last_announced_result:
+		match _run_state.result:
+			RunStateType.RESULT_SUCCESS:
+				if _result_player != null:
+					_result_player.stream = _build_tone_stream(320.0, 0.22, 0.28)
+					_result_player.play()
+			RunStateType.RESULT_COLLAPSED:
+				if _result_player != null:
+					_result_player.stream = _build_tone_stream(110.0, 0.28, 0.34)
+					_result_player.play()
+		_last_announced_result = _run_state.result
+
+
+func _build_tone_stream(frequency: float, duration: float, amplitude: float) -> AudioStreamWAV:
+	var sample_count := maxi(1, int(AUDIO_MIX_RATE * duration))
+	var bytes := PackedByteArray()
+	bytes.resize(sample_count * 2)
+
+	for i in range(sample_count):
+		var t := float(i) / AUDIO_MIX_RATE
+		var envelope := 1.0 - (float(i) / sample_count)
+		var sample := sin(TAU * frequency * t) * amplitude * envelope
+		var pcm := int(clamp(sample, -1.0, 1.0) * 32767.0)
+		bytes[i * 2] = pcm & 0xFF
+		bytes[(i * 2) + 1] = (pcm >> 8) & 0xFF
+
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = AUDIO_MIX_RATE
+	stream.stereo = false
+	stream.data = bytes
+	return stream
 
 
 func _ensure_input_actions() -> void:
