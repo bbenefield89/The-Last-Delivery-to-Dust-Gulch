@@ -10,12 +10,19 @@
 		{
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
-			"tasks": []
+			"tasks": [
+				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
+				"8f0f1b93-0c64-4299-9f64-cafd9f764de1",
+				"35ee46bc-0b91-4e29-85b7-acb2a4270f34",
+				"8bfb1b88-1068-4af6-be5f-645a0b5f852d"
+			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"82e0cb8f-f2b8-4030-a441-52eabb24aee7"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -197,6 +204,126 @@
 				{
 					"details": "Run the export build checklist and confirm the project is submission-ready.",
 					"done": true
+				}
+			]
+		},
+		{
+			"uuid": "eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
+			"title": "DG-8",
+			"description": "Task: Replace core placeholder visuals.\nGoal: Swap the most important prototype shapes with shippable MVP art so the game reads like a finished western delivery game.\nEnd state: Wagon, horses, hazards, road dressing, and key UI panels use intentional art assets rather than placeholder geometry.\nOut of scope for this ticket: adding new mechanics or increasing game scope.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Replace wagon and horse placeholder shapes with production-ready MVP visuals.",
+					"done": false
+				},
+				{
+					"details": "Replace pothole, rock, and tumbleweed placeholder visuals with readable final hazard art.",
+					"done": false
+				},
+				{
+					"details": "Upgrade the road, scrub, sign, and environmental dressing so the route feels cohesive.",
+					"done": false
+				},
+				{
+					"details": "Restyle HUD, recovery prompts, and result panels to match the final visual language.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "82e0cb8f-f2b8-4030-a441-52eabb24aee7",
+			"title": "DG-9",
+			"description": "Task: Frontend flow and shell polish.\nGoal: Add the missing menu-level structure needed for a complete MVP build.\nEnd state: The project has a title screen, a clean start flow into gameplay, and an in-run pause menu that supports resume and restart behavior.\nOut of scope for this ticket: settings menus beyond what is required for MVP usability.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add a title screen with play and quit actions wired into the current app flow.",
+					"done": true
+				},
+				{
+					"details": "Ensure run start, restart, and return-to-title behavior are consistent from all end states.",
+					"done": false
+				},
+				{
+					"details": "Add a pause menu with resume, restart, and quit-to-title actions.",
+					"done": false
+				},
+				{
+					"details": "Cover the full menu-to-gameplay flow with automated smoke checks.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "8f0f1b93-0c64-4299-9f64-cafd9f764de1",
+			"title": "DG-10",
+			"description": "Task: Onboarding and moment-to-moment readability.\nGoal: Make the core loop understandable without relying on prior project knowledge.\nEnd state: New players can understand steering, hazards, failures, and recovery sequences through concise onboarding and clearer live feedback.\nOut of scope for this ticket: adding extra failure types or deeper narrative systems.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add lightweight onboarding for steering, hazards, and delivery goals at run start.",
+					"done": false
+				},
+				{
+					"details": "Improve active hazard and failure readability during hectic moments without cluttering the HUD.",
+					"done": false
+				},
+				{
+					"details": "Improve recovery prompt clarity so the full input order and timing remain readable under pressure.",
+					"done": false
+				},
+				{
+					"details": "Refine success and collapse messaging so the result summary is easy to read and useful.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "35ee46bc-0b91-4e29-85b7-acb2a4270f34",
+			"title": "DG-11",
+			"description": "Task: Route variety and world feel.\nGoal: Reduce repetition so the delivery run feels like a place rather than a single repeating strip.\nEnd state: The route contains enough environmental variation and presentation pacing to stay interesting across the full MVP run length.\nOut of scope for this ticket: branching levels or new gameplay modes.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add visual variation passes to roadside props, background dressing, and route signage.",
+					"done": false
+				},
+				{
+					"details": "Introduce simple presentation beats so the route does not feel visually flat from start to finish.",
+					"done": false
+				},
+				{
+					"details": "Tune the cadence of environmental changes so the run stays readable while feeling less repetitive.",
+					"done": false
+				},
+				{
+					"details": "Add tests or smoke assertions for any new scene wiring introduced by the variation system.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "8bfb1b88-1068-4af6-be5f-645a0b5f852d",
+			"title": "DG-12",
+			"description": "Task: Audio finish and release hardening.\nGoal: Replace remaining placeholder audio behavior and close the build-quality gaps that still block a confident final ship.\nEnd state: MVP audio is cohesive, the export workflow is reliable, and verification passes without known release-blocking issues.\nOut of scope for this ticket: post-jam platform support beyond the current Windows and Web targets.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Replace any remaining placeholder or generated sounds with curated MVP audio assets and rebalance the mix.",
+					"done": false
+				},
+				{
+					"details": "Fix the remaining Godot shutdown or resource leak warnings that appear during verification runs.",
+					"done": false
+				},
+				{
+					"details": "Harden the Windows and Web export workflow so output artifacts are reproducible and trustworthy.",
+					"done": false
+				},
+				{
+					"details": "Verify final exported builds directly and update ship documentation with the proven release steps.",
+					"done": false
 				}
 			]
 		}

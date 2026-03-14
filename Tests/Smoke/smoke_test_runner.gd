@@ -10,9 +10,14 @@ func _init() -> void:
 
 func _run() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()
+	app_root.allow_quit = false
 	get_root().add_child(app_root)
 	await process_frame
 
+	if not _assert_title_screen(app_root):
+		return
+	if not await _start_run_from_title(app_root):
+		return
 	if not _assert_bootstrap(app_root):
 		return
 	if not await _assert_success_path(app_root):
@@ -24,8 +29,27 @@ func _run() -> void:
 	if not await _assert_restart_path(app_root, "collapse"):
 		return
 
-	print("Smoke test passed: boot, success, collapse, and restart paths are healthy.")
+	print("Smoke test passed: title, boot, success, collapse, and restart paths are healthy.")
 	quit(0)
+
+
+func _assert_title_screen(app_root: Node) -> bool:
+	if not is_instance_valid(app_root._title_screen):
+		push_error("Smoke test failed: AppRoot did not start on the title screen.")
+		quit(1)
+		return false
+	if app_root.run_state != null:
+		push_error("Smoke test failed: run state existed before starting from title.")
+		quit(1)
+		return false
+	return true
+
+
+func _start_run_from_title(app_root: Node) -> bool:
+	app_root._title_screen._on_play_pressed()
+	await process_frame
+	await process_frame
+	return true
 
 
 func _assert_bootstrap(app_root: Node) -> bool:

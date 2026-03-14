@@ -1,18 +1,22 @@
 extends Node
 
+const TITLE_SCENE := preload("res://Scenes/TitleScreen/TitleScreen.tscn")
 const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const RESTART_ACTION := "restart_run"
 
 @export var starting_distance: float = 500.0
+@export var allow_quit: bool = true
 
 var run_state: RunStateType
+var _title_screen: Control
 var _run_scene: Node
+var _quit_requested := false
 
 
 func _ready() -> void:
 	_ensure_restart_action()
-	_start_new_run()
+	_show_title_screen()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -25,6 +29,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _start_new_run() -> void:
+	if is_instance_valid(_title_screen):
+		_title_screen.queue_free()
+		_title_screen = null
 	if is_instance_valid(_run_scene):
 		_run_scene.queue_free()
 
@@ -34,6 +41,24 @@ func _start_new_run() -> void:
 	add_child(_run_scene)
 	if _run_scene.has_method("setup"):
 		_run_scene.setup(run_state)
+
+
+func _show_title_screen() -> void:
+	if is_instance_valid(_run_scene):
+		_run_scene.queue_free()
+		_run_scene = null
+
+	run_state = null
+	_title_screen = TITLE_SCENE.instantiate()
+	add_child(_title_screen)
+	_title_screen.play_requested.connect(_start_new_run)
+	_title_screen.quit_requested.connect(_request_quit)
+
+
+func _request_quit() -> void:
+	_quit_requested = true
+	if allow_quit:
+		get_tree().quit()
 
 
 func _ensure_restart_action() -> void:
