@@ -247,7 +247,7 @@
 				},
 				{
 					"details": "Add a pause menu with resume, restart, and quit-to-title actions.\n\nDone when: Pressing the pause input during an active run shows a pause overlay with resume, restart, and title buttons, each wired to the correct behavior, and the overlay does not appear after the run has ended.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Cover the full menu-to-gameplay flow with automated smoke checks.\n\nDone when: Smoke tests verify the title → run → pause → resume path and the restart and return-to-title paths from the pause menu, all passing without error.",
