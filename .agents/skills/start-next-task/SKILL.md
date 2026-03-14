@@ -29,11 +29,9 @@ Follow this workflow for this repository when invoked as `$start-next-task <tick
    - If the selected `Todo` ticket has no `steps` entries, stop and report that open work tickets must have steps before they can be started. Instruct the user to backfill the ticket with the `write-ticket` skill.
 4. Move the selected `Todo` ticket into `Doing`.
 5. Create and switch to a git branch named exactly after the ticket title.
-6. Review the ticket, the relevant parts of `Docs/GDD.md`, and the current implementation.
-7. Output a brief plan before making code changes.
-   - If the ticket has steps, output the plan for the first unfinished step only.
-   - If the ticket has no steps, output the plan for the ticket as a whole.
-8. After completing the current ticket or step implementation, include a focused `Manual Verification` section in the report for the human reviewer.
+6. Review the ticket, the relevant parts of `Docs/GDD.md`, and the current implementation internally. Do not output a plan or analysis before starting — begin implementing immediately.
+7. Implement the first unfinished step. Do not stop until actual code or file changes have been made.
+8. After completing the step implementation, report what was changed and include a focused `Manual Verification` section in the report for the human reviewer.
    - List only the manual checks needed to validate the changes made in that implementation pass.
    - Write the checks as ordered steps the human can perform in game or in editor.
    - Keep the instructions specific enough to verify the changed behavior or presentation directly.
@@ -48,8 +46,9 @@ Follow this workflow for this repository when invoked as `$start-next-task <tick
 - Step order is always the literal order in the ticket's `steps` array.
 - For stepped tickets, only one step may be worked at a time.
 - Open work tickets without steps are invalid input for this workflow and must be backfilled before they can be started or resumed.
-- Do not mark a step done immediately after implementation; wait until a later `$start-next-task` invocation confirms review approval and advances the ticket.
-- After a reviewed step is approved, commit the current ticket work before starting the next unfinished step.
+- Do not output a plan or analysis before implementing. Begin making changes immediately.
+- After implementing a step, stop and report. Do not mark the step done yet — the next `$start-next-task` invocation signals review approval.
+- After a reviewed step is approved (next invocation), mark it `done: true`, commit the work, then implement the next step.
 - The implementation report should always tell the human verifier exactly how to manually validate only the new changes from that run.
 
 ## Required Outcome
@@ -60,7 +59,7 @@ Follow this workflow for this repository when invoked as `$start-next-task <tick
 - An approved stepped-ticket increment is committed before the next step begins.
 - A new `Todo` ticket is only started when `Doing` is empty.
 - The current branch matches the active ticket title exactly.
-- The ticket, GDD context, and current implementation are reviewed.
-- A brief plan is reported before implementation begins.
+- The ticket, GDD context, and current implementation are reviewed internally before implementation begins — no plan output before starting.
+- Implementation begins immediately and produces actual code or file changes before stopping.
 - The implementation report includes a `Manual Verification` section with ordered human test steps for only the changes made in that run.
-- After a stepped-ticket implementation, the report stops after the current step summary and waits for review/confirmation.
+- After a stepped-ticket implementation, the report stops and waits for the next `$start-next-task` invocation as review approval.
