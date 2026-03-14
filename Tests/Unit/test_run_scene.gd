@@ -844,7 +844,8 @@ func test_result_panel_is_darkened_without_full_screen_backdrop() -> void:
 	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
 	var panel_style := result_panel.get_theme_stylebox("panel") as StyleBoxFlat
 	assert_not_null(panel_style)
-	assert_eq(panel_style.bg_color, Color(0, 0, 0, 1))
+	assert_eq(panel_style.bg_color, Color(0.156863, 0.101961, 0.0666667, 0.94))
+	assert_eq(panel_style.border_color, Color(0.745098, 0.592157, 0.305882, 0.95))
 
 	var result_title: Label = scene.get_node("%ResultTitle")
 	var result_summary: Label = scene.get_node("%ResultSummary")
@@ -966,3 +967,30 @@ func test_scroll_segment_includes_roadside_dust_gulch_sign() -> void:
 				break
 
 	assert_true(sign_found)
+
+
+func test_step3_cohesion_nodes_exist_on_wagon() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	assert_true(scene.has_node("World/Wagon/Shadow"))
+	assert_true(scene.has_node("World/Wagon/Canopy"))
+	assert_true(scene.has_node("World/Wagon/HorseTeam/HorseLeft"))
+	assert_true(scene.has_node("World/Wagon/HorseTeam/HorseRight"))
+
+
+func test_step3_panel_styles_use_western_palette() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var hud_panel: PanelContainer = scene.get_node("HUDLayer/HUDPanel")
+	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
+	var hud_style := hud_panel.get_theme_stylebox("panel") as StyleBoxFlat
+	var recovery_style := recovery_panel.get_theme_stylebox("panel") as StyleBoxFlat
+
+	assert_not_null(hud_style)
+	assert_not_null(recovery_style)
+	assert_true(hud_style.bg_color.r < 0.3)
+	assert_true(recovery_style.border_color.g > 0.5)

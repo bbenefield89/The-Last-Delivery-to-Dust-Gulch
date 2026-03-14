@@ -193,7 +193,7 @@
 				},
 				{
 					"details": "Replace the worst placeholder presentation gaps that harm cohesion.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Run the export build checklist and confirm the project is submission-ready.",
