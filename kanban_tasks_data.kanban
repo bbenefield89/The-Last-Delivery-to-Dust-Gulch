@@ -189,7 +189,7 @@
 				},
 				{
 					"details": "Verify readable success and failure paths through repeated smoke playtests.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Replace the worst placeholder presentation gaps that harm cohesion.",
