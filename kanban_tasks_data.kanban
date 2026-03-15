@@ -267,7 +267,7 @@
 				},
 				{
 					"details": "Replace the spelled-out text direction labels in the recovery prompt (e.g. LEFT, RIGHT) with directional arrow icons so the required input is readable at a glance under pressure.\n\nDone when: Every directional input in every recovery sequence is represented by an arrow icon rather than a text label.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Remove the Speed stat from the result panel. It reads as zero at run end and adds no meaningful information.\n\nDone when: The Speed stat no longer appears on either the success or collapse result panel.",

@@ -856,7 +856,7 @@ func _apply_recovery_failure_penalty() -> void:
 
 func _build_recovery_step(index: int) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(90.0, 52.0)
+	panel.custom_minimum_size = Vector2(96.0, 64.0)
 	panel.modulate = _get_recovery_step_color(index)
 
 	var label := Label.new()
@@ -865,7 +865,7 @@ func _build_recovery_step(index: int) -> PanelContainer:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_font_size_override("font_size", 34)
 	panel.add_child(label)
 	return panel
 
@@ -881,9 +881,9 @@ func _get_recovery_step_color(index: int) -> Color:
 func _format_recovery_action(action_name: StringName) -> String:
 	match action_name:
 		&"steer_left":
-			return "LEFT"
+			return "←"
 		&"steer_right":
-			return "RIGHT"
+			return "→"
 		_:
 			return String(action_name).to_upper()
 

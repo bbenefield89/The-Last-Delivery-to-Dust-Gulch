@@ -594,9 +594,9 @@ func test_wheel_loose_starts_recovery_sequence_prompt() -> void:
 
 	assert_true(recovery_panel.visible)
 	assert_eq(recovery_steps.get_child_count(), 3)
-	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, "LEFT")
-	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, "RIGHT")
-	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, "LEFT")
+	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, "←")
+	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, "→")
+	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, "←")
 
 
 func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
@@ -664,10 +664,10 @@ func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
 
 	assert_eq(recovery_title.text, "Horse Panic: Calm the Team")
 	assert_eq(recovery_steps.get_child_count(), 4)
-	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, "LEFT")
-	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, "RIGHT")
-	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, "LEFT")
-	assert_eq((recovery_steps.get_child(3).get_child(0) as Label).text, "RIGHT")
+	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, "←")
+	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, "→")
+	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, "←")
+	assert_eq((recovery_steps.get_child(3).get_child(0) as Label).text, "→")
 
 
 func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
