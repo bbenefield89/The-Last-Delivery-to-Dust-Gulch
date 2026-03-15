@@ -12,14 +12,15 @@
 			"title": "Todo",
 			"tasks": [
 				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
-				"35ee46bc-0b91-4e29-85b7-acb2a4270f34",
-				"d16a0000-0000-0000-0000-000000000016"
+				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"d16a0000-0000-0000-0000-000000000016"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -82,7 +83,7 @@
 			"steps": [
 				{
 					"details": "In project.godot, set the display window size to 1152x648, stretch mode to canvas_items, stretch aspect to keep, and orientation to landscape. These settings ensure the game scales correctly to any screen size without distorting the viewport.\n\nDone when: project.godot contains explicit display/window size, stretch mode, stretch aspect, and orientation settings; the game renders correctly at non-native resolutions in the editor.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "In RunScene.tscn, add a new CanvasLayer node named TouchLayer as a sibling of HUDLayer. Inside it, add three Button nodes: TouchLeft (anchored bottom-left), TouchRight (anchored bottom-right), TouchPause (anchored top-right). Size them at minimum 80x80 px. Style them as flat/transparent with simple arrow and pause glyphs so they don't obscure gameplay.\n\nDone when: All three buttons appear in the running scene at their correct corners and do not obscure the road or HUD.",
