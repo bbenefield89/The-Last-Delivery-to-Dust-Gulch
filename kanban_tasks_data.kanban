@@ -19,9 +19,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"8f0f1b93-0c64-4299-9f64-cafd9f764de1"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -34,7 +32,8 @@
 				"04c54de6-3fba-46d4-b14a-d22490d434f2",
 				"23aa4f3e-0446-4cca-a319-08e3bca9dc98",
 				"8f4c0591-041e-4d12-a0f7-879d6d0f7bcd",
-				"82e0cb8f-f2b8-4030-a441-52eabb24aee7"
+				"82e0cb8f-f2b8-4030-a441-52eabb24aee7",
+				"8f0f1b93-0c64-4299-9f64-cafd9f764de1"
 			]
 		}
 	],
@@ -271,7 +270,7 @@
 				},
 				{
 					"details": "Remove the Speed stat from the result panel. It reads as zero at run end and adds no meaningful information.\n\nDone when: The Speed stat no longer appears on either the success or collapse result panel.",
-					"done": false
+					"done": true
 				}
 			]
 		},

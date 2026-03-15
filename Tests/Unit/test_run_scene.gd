@@ -911,6 +911,7 @@ func test_result_panel_includes_small_stats_summary() -> void:
 	assert_string_contains(result_stats.text, "Health: 41")
 	assert_string_contains(result_stats.text, "Cargo: 72")
 	assert_string_contains(result_stats.text, "Distance traveled: 500 / 500")
+	assert_false(result_stats.text.contains("Speed:"))
 
 	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
 	var return_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton")

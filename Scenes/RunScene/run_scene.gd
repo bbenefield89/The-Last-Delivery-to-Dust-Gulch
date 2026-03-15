@@ -359,12 +359,11 @@ func _refresh_result_screen() -> void:
 			_result_title.text = "Run Complete"
 			_result_summary.text = "Restart the route or return to title."
 
-	_result_stats.text = "Health: %d\nCargo: %d\nDistance traveled: %.0f / %.0f\nSpeed: %.0f" % [
+	_result_stats.text = "Health: %d\nCargo: %d\nDistance traveled: %.0f / %.0f" % [
 		_run_state.wagon_health,
 		_run_state.cargo_value,
 		_run_state.get_distance_traveled(),
 		_run_state.route_distance,
-		_run_state.current_speed,
 	]
 
 
