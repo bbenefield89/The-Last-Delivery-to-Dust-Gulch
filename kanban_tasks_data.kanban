@@ -257,23 +257,19 @@
 		{
 			"uuid": "8f0f1b93-0c64-4299-9f64-cafd9f764de1",
 			"title": "DG-10",
-			"description": "Task: Onboarding and moment-to-moment readability.\nGoal: Make the core loop understandable without relying on prior project knowledge.\nEnd state: New players can understand steering, hazards, failures, and recovery sequences through concise onboarding and clearer live feedback.\nOut of scope for this ticket: adding extra failure types or deeper narrative systems.\n\nDone when: A new player can start a run and understand how to steer, what hazards look like, what a failure means, and what to do during a recovery sequence without reading external documentation.",
+			"description": "Task: Onboarding and result screen polish.\nGoal: Make the core loop understandable for a first-time player and clean up the result panel.\nEnd state: A new player sees an onboarding card before the first hazard appears, recovery prompts use directional arrow icons instead of spelled-out text labels, and the result screen shows only meaningful end-of-run stats.\nOut of scope for this ticket: adding extra failure types, deeper narrative systems, or hazard readability changes.\n\nDone when: The onboarding card appears and holds hazards and distance until dismissed, recovery prompts show arrow icons instead of text labels, and the Speed stat is removed from the result panel.",
 			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
 			"steps": [
 				{
-					"details": "Add lightweight onboarding for steering, hazards, and delivery goals at run start.\n\nDone when: A short contextual hint appears at run start covering steering controls and the delivery goal, and dismisses cleanly before the first hazard appears.",
+					"details": "Add an onboarding card at run start covering steering controls and the delivery goal. The road may continue scrolling visually but hazard spawning and distance progress must be frozen until the player dismisses the card.\n\nDone when: The onboarding card appears at the start of every run, no hazards spawn and distance does not decrease while it is visible, and the card dismisses cleanly on player input before normal gameplay begins.",
 					"done": false
 				},
 				{
-					"details": "Improve active hazard and failure readability during hectic moments without cluttering the HUD.\n\nDone when: Hazard types are visually distinct enough to identify at speed and active failure state is communicated without adding UI noise that obscures driving.",
+					"details": "Replace the spelled-out text direction labels in the recovery prompt (e.g. LEFT, RIGHT) with directional arrow icons so the required input is readable at a glance under pressure.\n\nDone when: Every directional input in every recovery sequence is represented by an arrow icon rather than a text label.",
 					"done": false
 				},
 				{
-					"details": "Improve recovery prompt clarity so the full input order and timing remain readable under pressure.\n\nDone when: The recovery prompt displays all required inputs in order with enough contrast and size that a first-time player can act on it while the screen is busy.",
-					"done": false
-				},
-				{
-					"details": "Refine success and collapse messaging so the result summary is easy to read and useful.\n\nDone when: The result screen clearly labels the outcome and shows key stats (health, cargo, distance) in a format readable at a glance.",
+					"details": "Remove the Speed stat from the result panel. It reads as zero at run end and adds no meaningful information.\n\nDone when: The Speed stat no longer appears on either the success or collapse result panel.",
 					"done": false
 				}
 			]
