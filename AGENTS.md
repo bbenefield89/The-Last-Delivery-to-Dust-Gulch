@@ -181,6 +181,8 @@ When unit tests are available, run verification in this order when feasible:
 2. `godot --headless --path . --script res://Tests/Smoke/smoke_test_runner.gd`
 3. `godot --headless --path . -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json`
 
+Always use the single GUT command above to run all unit tests at once. Do not run individual test files one by one.
+
 ## Agent Verification Standard
 
 Treat automated verification as the primary safety mechanism for agent-written code, with human review acting as a secondary check for design, readability, and test quality.

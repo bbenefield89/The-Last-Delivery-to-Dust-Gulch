@@ -20,9 +20,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"82e0cb8f-f2b8-4030-a441-52eabb24aee7"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -34,7 +32,8 @@
 				"8c192fbd-e827-401c-845f-dcfbd80bf296",
 				"04c54de6-3fba-46d4-b14a-d22490d434f2",
 				"23aa4f3e-0446-4cca-a319-08e3bca9dc98",
-				"8f4c0591-041e-4d12-a0f7-879d6d0f7bcd"
+				"8f4c0591-041e-4d12-a0f7-879d6d0f7bcd",
+				"82e0cb8f-f2b8-4030-a441-52eabb24aee7"
 			]
 		}
 	],
@@ -251,7 +250,7 @@
 				},
 				{
 					"details": "Cover the full menu-to-gameplay flow with automated smoke checks.\n\nDone when: Smoke tests verify the title → run → pause → resume path and the restart and return-to-title paths from the pause menu, all passing without error.",
-					"done": false
+					"done": true
 				}
 			]
 		},
