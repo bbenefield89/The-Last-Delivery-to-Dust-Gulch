@@ -159,6 +159,15 @@ unique_name_in_owner = true
 [node name="HorsePanicAmbientPlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 
+[node name="RecoveryStepPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="RecoverySuccessPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="RecoveryFailPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
 [node name="FailurePlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 

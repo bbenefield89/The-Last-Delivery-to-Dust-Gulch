@@ -13,6 +13,9 @@ const ROCK_IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
 const TUMBLEWEED_IMPACT_SOUND := preload("res://Assets/Sfx/Tumbleweed-98357.mp3")
 const WHEEL_LOOSE_AMBIENT_SOUND := preload("res://Assets/Sfx/Loose-Wheel-411689.mp3")
 const HORSE_PANIC_AMBIENT_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
+const RECOVERY_STEP_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
+const RECOVERY_SUCCESS_SOUND := preload("res://Assets/Sfx/Recovery-Step-Success-374193.mp3")
+const RECOVERY_FAIL_SOUND := preload("res://Assets/Sfx/Recovery-Step-Failure-437420.mp3")
 const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
 const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const STEER_ACTION_NEGATIVE := "steer_left"
@@ -142,6 +145,9 @@ var _onboarding_active := false
 @onready var _tumbleweed_impact_player: AudioStreamPlayer = %TumbleweedImpactPlayer
 @onready var _wheel_loose_ambient_player: AudioStreamPlayer = %WheelLooseAmbientPlayer
 @onready var _horse_panic_ambient_player: AudioStreamPlayer = %HorsePanicAmbientPlayer
+@onready var _recovery_step_player: AudioStreamPlayer = %RecoveryStepPlayer
+@onready var _recovery_success_player: AudioStreamPlayer = %RecoverySuccessPlayer
+@onready var _recovery_fail_player: AudioStreamPlayer = %RecoveryFailPlayer
 @onready var _failure_player: AudioStreamPlayer = %FailurePlayer
 @onready var _result_player: AudioStreamPlayer = %ResultPlayer
 @onready var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
@@ -197,6 +203,9 @@ func _exit_tree() -> void:
 		_tumbleweed_impact_player,
 		_wheel_loose_ambient_player,
 		_horse_panic_ambient_player,
+		_recovery_step_player,
+		_recovery_success_player,
+		_recovery_fail_player,
 		_failure_player,
 		_result_player,
 		_ui_click_player
@@ -547,8 +556,16 @@ func _input(event: InputEvent) -> void:
 	if action_name == &"":
 		return
 
+	var expected_action := _run_state.get_current_recovery_prompt()
 	if _run_state.advance_recovery_sequence(action_name):
+		if _recovery_step_player != null:
+			_recovery_step_player.play()
 		_run_state.resolve_recovery_success()
+		if _recovery_success_player != null:
+			_recovery_success_player.play()
+	elif action_name == expected_action:
+		if _recovery_step_player != null:
+			_recovery_step_player.play()
 
 	_refresh_status()
 	_refresh_recovery_prompt()
@@ -763,6 +780,15 @@ func _configure_audio_players() -> void:
 	if _horse_panic_ambient_player != null:
 		_horse_panic_ambient_player.stream = HORSE_PANIC_AMBIENT_SOUND
 		_horse_panic_ambient_player.volume_db = -10.0
+	if _recovery_step_player != null:
+		_recovery_step_player.stream = RECOVERY_STEP_SOUND
+		_recovery_step_player.volume_db = -1.5
+	if _recovery_success_player != null:
+		_recovery_success_player.stream = RECOVERY_SUCCESS_SOUND
+		_recovery_success_player.volume_db = -1.0
+	if _recovery_fail_player != null:
+		_recovery_fail_player.stream = RECOVERY_FAIL_SOUND
+		_recovery_fail_player.volume_db = -1.0
 	if _failure_player != null:
 		_failure_player.stream = HORSE_SPOOK_SOUND
 		_failure_player.volume_db = -5.0
@@ -946,6 +972,9 @@ func _get_recovery_hint(failure_type: StringName) -> String:
 func _apply_recovery_failure_penalty() -> void:
 	if _run_state == null:
 		return
+
+	if _recovery_fail_player != null:
+		_recovery_fail_player.play()
 
 	match _run_state.active_failure:
 		&"wheel_loose":

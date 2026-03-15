@@ -614,6 +614,9 @@ func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
 	_setup_active_run(scene, state)
 	scene._advance_failure_triggers(0.0)
 
+	var recovery_step_player: AudioStreamPlayer = scene.get_node("%RecoveryStepPlayer")
+	var recovery_success_player: AudioStreamPlayer = scene.get_node("%RecoverySuccessPlayer")
+
 	for action_name in [&"steer_left", &"steer_right", &"steer_left"]:
 		var event := InputEventAction.new()
 		event.action = action_name
@@ -622,6 +625,10 @@ func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
 
 	assert_eq(state.active_failure, &"")
 	assert_false(state.has_active_recovery_sequence())
+	assert_true(recovery_step_player.playing)
+	assert_eq(recovery_step_player.stream, scene.RECOVERY_STEP_SOUND)
+	assert_true(recovery_success_player.playing)
+	assert_eq(recovery_success_player.stream, scene.RECOVERY_SUCCESS_SOUND)
 
 
 func test_recovery_prompt_advances_highlight_with_direct_input_actions() -> void:
@@ -646,6 +653,29 @@ func test_recovery_prompt_advances_highlight_with_direct_input_actions() -> void
 	var second_step: PanelContainer = recovery_steps.get_child(1)
 	assert_eq(first_step.modulate, scene.RECOVERY_STEP_DONE_COLOR)
 	assert_eq(second_step.modulate, scene.RECOVERY_STEP_ACTIVE_COLOR)
+
+
+func test_recovery_step_audio_plays_on_non_final_correct_input() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	_setup_active_run(scene, state)
+	scene._advance_failure_triggers(0.0)
+
+	var recovery_step_player: AudioStreamPlayer = scene.get_node("%RecoveryStepPlayer")
+	var recovery_success_player: AudioStreamPlayer = scene.get_node("%RecoverySuccessPlayer")
+	var left_event := InputEventAction.new()
+	left_event.action = &"steer_left"
+	left_event.pressed = true
+
+	scene._input(left_event)
+
+	assert_true(recovery_step_player.playing)
+	assert_eq(recovery_step_player.stream, scene.RECOVERY_STEP_SOUND)
+	assert_false(recovery_success_player.playing)
 
 
 func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
@@ -703,6 +733,7 @@ func test_wheel_loose_recovery_timeout_applies_health_and_speed_penalty() -> voi
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	scene.setup(state)
+	var recovery_fail_player: AudioStreamPlayer = scene.get_node("%RecoveryFailPlayer")
 
 	scene._advance_failure_triggers(0.0)
 	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
@@ -713,6 +744,8 @@ func test_wheel_loose_recovery_timeout_applies_health_and_speed_penalty() -> voi
 	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE - scene.WHEEL_LOOSE_FAILURE_CARGO_LOSS)
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED - scene.WHEEL_LOOSE_FAILURE_SPEED_LOSS)
 	assert_true(state.has_temporary_control_instability())
+	assert_true(recovery_fail_player.playing)
+	assert_eq(recovery_fail_player.stream, scene.RECOVERY_FAIL_SOUND)
 
 
 func test_horse_panic_recovery_timeout_applies_cargo_and_speed_penalty() -> void:
@@ -1115,6 +1148,9 @@ func test_step4_presentation_nodes_exist_for_dust_and_audio() -> void:
 	assert_true(scene.has_node("%TumbleweedImpactPlayer"))
 	assert_true(scene.has_node("%WheelLooseAmbientPlayer"))
 	assert_true(scene.has_node("%HorsePanicAmbientPlayer"))
+	assert_true(scene.has_node("%RecoveryStepPlayer"))
+	assert_true(scene.has_node("%RecoverySuccessPlayer"))
+	assert_true(scene.has_node("%RecoveryFailPlayer"))
 	assert_true(scene.has_node("%FailurePlayer"))
 	assert_true(scene.has_node("%ResultPlayer"))
 	assert_true(scene.has_node("%UIClickPlayer"))

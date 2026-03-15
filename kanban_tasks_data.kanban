@@ -236,7 +236,7 @@
 				},
 				{
 					"details": "Upgrade the road, scrub, sign, and environmental dressing so the route feels cohesive.\n\nDone when: Road surface, roadside scrub, and at least one sign or landmark element use consistent final art that reads as a unified western desert route.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Restyle HUD, recovery prompts, and result panels to match the final visual language.\n\nDone when: HUD elements, the recovery prompt panel, and both result panels share a consistent visual style aligned with the final art direction.",
