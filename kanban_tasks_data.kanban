@@ -11,9 +11,9 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
+				"8bfb1b88-1068-4af6-be5f-645a0b5f852d",
 				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
-				"35ee46bc-0b91-4e29-85b7-acb2a4270f34",
-				"8bfb1b88-1068-4af6-be5f-645a0b5f852d"
+				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
 			]
 		},
 		{
@@ -314,23 +314,31 @@
 		{
 			"uuid": "8bfb1b88-1068-4af6-be5f-645a0b5f852d",
 			"title": "DG-12",
-			"description": "Task: Audio finish and release hardening.\nGoal: Replace remaining placeholder audio behavior and close the build-quality gaps that still block a confident final ship.\nEnd state: MVP audio is cohesive, the export workflow is reliable, and verification passes without known release-blocking issues.\nOut of scope for this ticket: post-jam platform support beyond the current Windows and Web targets.\n\nDone when: All placeholder audio is replaced with curated assets, the export workflow produces clean Windows and Web builds, and no known release-blocking issues remain in verification.",
+			"description": "Task: Audio polish pass.\nGoal: Add missing targeted sounds for key interactions — per-hazard impact variation, ongoing failure ambients, recovery sequence feedback, pause menu open/close, dedicated win/collapse stingers, and button click sounds wired across all interactive buttons.\n\nAll audio assets must be placed in Assets/Sfx/ or Assets/Audio/ before Codex begins Step 1. Specific filenames are listed in each step's details.\n\nAffected files:\n- Scenes/RunScene/run_scene.gd\n- Scenes/TitleScreen/title_screen.gd\n- Scenes/RunScene/RunScene.tscn (new AudioStreamPlayer nodes)\n- Scenes/TitleScreen/TitleScreen.tscn (new AudioStreamPlayer node)\n\nDone when: Every button press across all menus triggers a click sound, each of the three hazard types plays a distinct impact sound on collision, failure ambients loop throughout the duration of active failure states and stop on resolution, recovery sequences play a tick on each correct input and a success or fail sound on outcome, the pause menu plays a toggle sound on open and close, and win/collapse result states each play a dedicated stinger instead of repurposed sounds.",
 			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
 			"steps": [
 				{
-					"details": "Replace any remaining placeholder or generated sounds with curated MVP audio assets and rebalance the mix.\n\nDone when: No generated or obviously temporary sound effects remain in the shipped build and the audio mix is balanced across driving, impact, failure, and recovery states.",
+					"details": "Add a single UIClickPlayer AudioStreamPlayer node to both TitleScreen.tscn and RunScene.tscn. In title_screen.gd, wire UIClickPlayer.play() to the pressed signal of the Play and Quit buttons. In run_scene.gd, wire UIClickPlayer.play() to the pressed signal of all pause menu buttons (Resume, Restart, Title) and both result panel buttons (Restart, Return).\n\nAsset path: Assets/Sfx/Button-Click.{ext}\n\nDone when: Every button press across all menus — title, pause, and result — triggers the click sound.",
 					"done": false
 				},
 				{
-					"details": "Fix the remaining Godot shutdown or resource leak warnings that appear during verification runs.\n\nDone when: A verification run completes without any shutdown errors or resource leak warnings in the Godot output log.",
+					"details": "Add three AudioStreamPlayer nodes to RunScene.tscn: PotholeImpactPlayer, RockImpactPlayer, TumbleweedImpactPlayer. In run_scene.gd _apply_hazard_collisions() (around line 392), replace the single _impact_player call with a dispatch on collision[\"type\"]: pothole → PotholeImpactPlayer, rock → RockImpactPlayer, tumbleweed → TumbleweedImpactPlayer. Keep _impact_player as a fallback for unknown types.\n\nAsset paths: Assets/Sfx/hazard-pothole.{ext}, Assets/Sfx/hazard-rock.{ext}, Assets/Sfx/hazard-tumbleweed.{ext}\n\nDone when: Each of the three hazard types plays its own distinct sound on collision.",
 					"done": false
 				},
 				{
-					"details": "Harden the Windows and Web export workflow so output artifacts are reproducible and trustworthy.\n\nDone when: Windows and Web builds can be exported following the documented steps and produce working artifacts that launch without errors.",
+					"details": "Add two looping AudioStreamPlayer nodes to RunScene.tscn: WheelLooseAmbientPlayer and HorsePanicAmbientPlayer. In run_scene.gd _refresh_audio_presentation() (around line 693), add logic to start WheelLooseAmbientPlayer when active_failure == \"wheel_loose\" and stop it when cleared; start HorsePanicAmbientPlayer when active_failure == \"horse_panic\" and stop it when cleared. Both players must also stop immediately when the run ends.\n\nAsset paths: Assets/Sfx/failure-wheel-loose-ambient.{ext}, Assets/Sfx/failure-horse-panic-ambient.{ext}\n\nDone when: A continuous ambient sound plays throughout the duration of each failure type and stops when the failure resolves or the run ends.",
 					"done": false
 				},
 				{
-					"details": "Verify final exported builds directly and update ship documentation with the proven release steps.\n\nDone when: Both the Windows .exe and Web index.html have been launched and played through to a result screen, and the ship checklist reflects the verified steps.",
+					"details": "Add three AudioStreamPlayer nodes to RunScene.tscn: RecoveryStepPlayer, RecoverySuccessPlayer, RecoveryFailPlayer. In run_scene.gd _input() (around line 499): call RecoveryStepPlayer.play() when advance_recovery_sequence() returns true (correct step); call RecoverySuccessPlayer.play() at the point where resolve_recovery_success() is called. In _apply_recovery_failure_penalty() (around line 832), call RecoveryFailPlayer.play().\n\nAsset paths: Assets/Sfx/recovery-step.{ext}, Assets/Sfx/recovery-success.{ext}, Assets/Sfx/recovery-fail.{ext}\n\nDone when: A tick plays on each correct recovery input, a resolution sound plays on success, and a penalty sound plays on timeout or failure.",
+					"done": false
+				},
+				{
+					"details": "Add a PauseTogglePlayer AudioStreamPlayer node to RunScene.tscn. In run_scene.gd _set_pause_state() (around line 898), call PauseTogglePlayer.play() whenever the pause state changes. A single shared sound for both open and close is acceptable; use two assets only if both are sourced.\n\nAsset path: Assets/Sfx/pause-toggle.{ext}\n\nDone when: A sound plays when the pause menu opens and when it closes.",
+					"done": false
+				},
+				{
+					"details": "In run_scene.gd _refresh_audio_presentation() (around line 726), replace the current result-state audio logic. Add two preload constants at the top of the file: WIN_STINGER pointing to Assets/Audio/win-stinger.{ext} and COLLAPSE_STINGER pointing to Assets/Audio/collapse-stinger.{ext}. Replace the repurposed sounds: when result state is RESULT_SUCCESS, play WIN_STINGER via _result_player; when result state is RESULT_COLLAPSED, play COLLAPSE_STINGER via _result_player.\n\nAsset paths: Assets/Audio/win-stinger.{ext}, Assets/Audio/collapse-stinger.{ext}\n\nDone when: A distinct win fanfare plays on delivery success and a distinct crash/collapse sting plays on wagon collapse, with no repurposed background music or impact sounds used for result states.",
 					"done": false
 				}
 			]
