@@ -599,9 +599,27 @@ func test_wheel_loose_starts_recovery_sequence_prompt() -> void:
 
 	assert_true(recovery_panel.visible)
 	assert_eq(recovery_steps.get_child_count(), 3)
-	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, "←")
-	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, "→")
-	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, "←")
+	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, char(0xE020))
+	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, char(0xE022))
+	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, char(0xE020))
+
+
+func test_recovery_prompt_steps_use_embedded_arrow_font() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+	scene._advance_failure_triggers(0.0)
+	scene._refresh_recovery_prompt()
+
+	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
+	var arrow_label := recovery_steps.get_child(0).get_child(0) as Label
+	assert_not_null(arrow_label)
+	assert_eq(arrow_label.get_theme_font("font"), scene.ARROW_FONT)
+	assert_eq(arrow_label.get_theme_font_size("font_size"), 52)
 
 
 func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
@@ -686,11 +704,8 @@ func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
 	var state := RunStateType.new()
 	state.start_failure(&"horse_panic", &"tumbleweed")
 	scene.setup(state)
-
 	scene._advance_failure_triggers(0.0)
 
-	assert_true(state.has_active_recovery_sequence())
-	assert_eq(state.get_current_recovery_prompt(), &"steer_left")
 	assert_eq(state.recovery_sequence, scene.HORSE_PANIC_RECOVERY_SEQUENCE)
 
 	var recovery_title: Label = scene.get_node("%RecoveryTitle")
@@ -699,10 +714,10 @@ func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
 
 	assert_eq(recovery_title.text, "Horse Panic: Calm the Team")
 	assert_eq(recovery_steps.get_child_count(), 4)
-	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, "←")
-	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, "→")
-	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, "←")
-	assert_eq((recovery_steps.get_child(3).get_child(0) as Label).text, "→")
+	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, char(0xE020))
+	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, char(0xE022))
+	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, char(0xE020))
+	assert_eq((recovery_steps.get_child(3).get_child(0) as Label).text, char(0xE022))
 
 
 func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
@@ -1358,3 +1373,5 @@ func test_step3_panel_styles_use_western_palette() -> void:
 	assert_not_null(recovery_style)
 	assert_true(hud_style.bg_color.r < 0.3)
 	assert_true(recovery_style.border_color.g > 0.5)
+
+

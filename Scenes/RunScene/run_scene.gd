@@ -16,6 +16,7 @@ const HORSE_PANIC_AMBIENT_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.
 const RECOVERY_STEP_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const RECOVERY_SUCCESS_SOUND := preload("res://Assets/Sfx/Recovery-Step-Success-374193.mp3")
 const RECOVERY_FAIL_SOUND := preload("res://Assets/Sfx/Recovery-Step-Failure-437420.mp3")
+const ARROW_FONT = preload("res://Assets/Fonts/kenney_input_keyboard_mouse.ttf")
 const PAUSE_TOGGLE_SOUND := preload("res://Assets/Sfx/Pause-Open-Close-333828.mp3")
 const WIN_STINGER := preload("res://Assets/Sfx/Win-Fanfare-368589.mp3")
 const COLLAPSE_STINGER := preload("res://Assets/Sfx/Wagon-Collapse-379298.mp3")
@@ -1006,7 +1007,7 @@ func _apply_recovery_failure_penalty() -> void:
 
 func _build_recovery_step(index: int) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(96.0, 64.0)
+	panel.custom_minimum_size = Vector2(120.0, 88.0)
 	panel.modulate = _get_recovery_step_color(index)
 
 	var label := Label.new()
@@ -1015,7 +1016,8 @@ func _build_recovery_step(index: int) -> PanelContainer:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	label.add_theme_font_size_override("font_size", 34)
+	label.add_theme_font_size_override("font_size", 52)
+	label.add_theme_font_override("font", ARROW_FONT)
 	panel.add_child(label)
 	return panel
 
@@ -1031,9 +1033,9 @@ func _get_recovery_step_color(index: int) -> Color:
 func _format_recovery_action(action_name: StringName) -> String:
 	match action_name:
 		&"steer_left":
-			return "←"
+			return char(0xE020)
 		&"steer_right":
-			return "→"
+			return char(0xE022)
 		_:
 			return String(action_name).to_upper()
 
@@ -1113,3 +1115,4 @@ func _on_pause_return_to_title_pressed() -> void:
 	_navigation_click_in_progress = false
 	_set_pause_state(false)
 	return_to_title_requested.emit()
+

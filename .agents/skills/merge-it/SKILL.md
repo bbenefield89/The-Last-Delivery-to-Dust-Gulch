@@ -30,7 +30,8 @@ Follow this workflow for this repository when the user says `merge it`.
    - Do not leave a separate history entry whose only meaningful purpose is moving the kanban card.
 8. Switch to `main`.
 9. Fast-forward `main` when possible from the ticket branch.
-10. Report the resulting branch and commit state.
+10. Run a `git push` to sync remote and local `main`.
+11. Report the resulting branch and commit state.
 
 ## Repo Notes
 

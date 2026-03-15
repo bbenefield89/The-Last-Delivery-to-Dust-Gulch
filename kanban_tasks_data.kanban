@@ -24,6 +24,7 @@
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"d14b0000-0000-0000-0000-000000000014",
 				"13ab05ce-ed2d-4c70-8495-5f9512eb1e4c",
 				"9c7c3e07-eb5f-464e-9f38-76f4c415fb2c",
 				"a8d0280b-6c4c-403c-bbcc-6ae7b5653015",
@@ -39,6 +40,22 @@
 		}
 	],
 	"tasks": [
+		{
+			"uuid": "d14b0000-0000-0000-0000-000000000014",
+			"title": "DG-14",
+			"description": "Bug: QTE recovery prompts display ← and → as Unicode arrow characters in Label nodes. These render in the desktop export and local browser testing, but fail on Itch.io — the sandboxed iframe has no accessible system font fallback, so missing glyphs don't render. A prior attempt using Noto Sans Regular also failed: that font simply does not contain those arrow characters (they show as empty boxes in Godot's own glyph map).\n\nThe fix is to use Kenney's input prompts icon font, which is already in the repo at Assets/Art/kenney_input-prompts_1.4.1/Keyboard & Mouse/Fonts/kenney_input_keyboard_&_mouse.ttf. This font uses the Unicode Private Use Area and includes keyboard arrow key glyphs that are guaranteed to be present:\n- keyboard_arrow_left_outline: U+E020\n- keyboard_arrow_right_outline: U+E022\n\nThe outline variants look like physical keyboard key caps, which reads naturally as a QTE prompt. The fix requires placing the font in the project, configuring Godot's import to preload those two PUA glyphs, and updating run_scene.gd to use the font and the correct characters.\n\nDone when: Recovery sequence prompts display keyboard arrow key cap icons in both the web export on Itch.io and the desktop export, with no blank boxes or missing glyphs.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Copy Assets/Art/kenney_input-prompts_1.4.1/Keyboard & Mouse/Fonts/kenney_input_keyboard_&_mouse.ttf to Assets/Fonts/kenney_input_keyboard_mouse.ttf. Open Godot's Advanced Import Settings for the file (Import tab → Advanced), go to Pre-render Configurations → Glyphs from the Text tab, and paste the two PUA characters (U+E020 and U+E022) into the text field to preload them. Click Reimport.\n\nDone when: Assets/Fonts/kenney_input_keyboard_mouse.ttf exists with a .import sidecar, and the Advanced Import Settings show at least 2 preloaded glyphs with no import errors in the Output log.",
+					"done": true
+				},
+				{
+					"details": "In Scenes/RunScene/run_scene.gd, add a preload constant near the top of the file: const ARROW_FONT = preload(\"res://Assets/Fonts/kenney_input_keyboard_mouse.ttf\"). Update _format_recovery_action() to return char(0xE020) for steer_left and char(0xE022) for steer_right. In _build_recovery_step(), add label.add_theme_font_override(\"font\", ARROW_FONT) immediately after the existing add_theme_font_size_override call.\n\nDone when: The script parses without errors, _format_recovery_action() returns the correct PUA characters, and _build_recovery_step() applies the Kenney font to the arrow Label node.",
+					"done": true
+				}
+			]
+		},
 		{
 			"uuid": "23aa4f3e-0446-4cca-a319-08e3bca9dc98",
 			"title": "DG-1",
