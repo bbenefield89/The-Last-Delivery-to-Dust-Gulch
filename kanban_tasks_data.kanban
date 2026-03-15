@@ -18,9 +18,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"8bfb1b88-1068-4af6-be5f-645a0b5f852d"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -35,7 +33,8 @@
 				"8f4c0591-041e-4d12-a0f7-879d6d0f7bcd",
 				"82e0cb8f-f2b8-4030-a441-52eabb24aee7",
 				"8f0f1b93-0c64-4299-9f64-cafd9f764de1",
-				"b3e7a12f-4c91-4d5e-9f83-1d2e3f4a5b6c"
+				"b3e7a12f-4c91-4d5e-9f83-1d2e3f4a5b6c",
+				"8bfb1b88-1068-4af6-be5f-645a0b5f852d"
 			]
 		}
 	],
@@ -305,10 +304,6 @@
 				{
 					"details": "Tune the cadence of environmental changes so the run stays readable while feeling less repetitive.\n\nDone when: Environmental changes occur at intervals that feel natural during a full run playtest without distracting from hazard avoidance.",
 					"done": false
-				},
-				{
-					"details": "Add tests or smoke assertions for any new scene wiring introduced by the variation system.\n\nDone when: Any new nodes or scene connections introduced for the variation system are covered by at least one automated check confirming they wire up correctly.",
-					"done": false
 				}
 			]
 		},
@@ -336,11 +331,11 @@
 				},
 				{
 					"details": "Add a PauseTogglePlayer AudioStreamPlayer node to RunScene.tscn. In run_scene.gd _set_pause_state() (around line 898), call PauseTogglePlayer.play() whenever the pause state changes. A single shared sound for both open and close is acceptable; use two assets only if both are sourced.\n\nAsset path: Assets/Sfx/pause-toggle.{ext}\n\nDone when: A sound plays when the pause menu opens and when it closes.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "In run_scene.gd _refresh_audio_presentation() (around line 726), replace the current result-state audio logic. Add two preload constants at the top of the file: WIN_STINGER pointing to Assets/Audio/win-stinger.{ext} and COLLAPSE_STINGER pointing to Assets/Audio/collapse-stinger.{ext}. Replace the repurposed sounds: when result state is RESULT_SUCCESS, play WIN_STINGER via _result_player; when result state is RESULT_COLLAPSED, play COLLAPSE_STINGER via _result_player.\n\nAsset paths: Assets/Audio/win-stinger.{ext}, Assets/Audio/collapse-stinger.{ext}\n\nDone when: A distinct win fanfare plays on delivery success and a distinct crash/collapse sting plays on wagon collapse, with no repurposed background music or impact sounds used for result states.",
-					"done": false
+					"done": true
 				}
 			]
 		}

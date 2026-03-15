@@ -17,6 +17,8 @@ const RECOVERY_STEP_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const RECOVERY_SUCCESS_SOUND := preload("res://Assets/Sfx/Recovery-Step-Success-374193.mp3")
 const RECOVERY_FAIL_SOUND := preload("res://Assets/Sfx/Recovery-Step-Failure-437420.mp3")
 const PAUSE_TOGGLE_SOUND := preload("res://Assets/Sfx/Pause-Open-Close-333828.mp3")
+const WIN_STINGER := preload("res://Assets/Sfx/Win-Fanfare-368589.mp3")
+const COLLAPSE_STINGER := preload("res://Assets/Sfx/Wagon-Collapse-379298.mp3")
 const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
 const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const STEER_ACTION_NEGATIVE := "steer_left"
@@ -799,7 +801,7 @@ func _configure_audio_players() -> void:
 		_failure_player.stream = HORSE_SPOOK_SOUND
 		_failure_player.volume_db = -5.0
 	if _result_player != null:
-		_result_player.volume_db = -10.0
+		_result_player.volume_db = -6.0
 	if _ui_click_player != null:
 		_ui_click_player.stream = UI_CLICK_SOUND
 		_ui_click_player.volume_db = -9.0
@@ -844,11 +846,11 @@ func _refresh_audio_presentation() -> void:
 		match _run_state.result:
 			RunStateType.RESULT_SUCCESS:
 				if _result_player != null:
-					_result_player.stream = BACKGROUND_MUSIC
+					_result_player.stream = WIN_STINGER
 					_result_player.play()
 			RunStateType.RESULT_COLLAPSED:
 				if _result_player != null:
-					_result_player.stream = IMPACT_SOUND
+					_result_player.stream = COLLAPSE_STINGER
 					_result_player.play()
 		_last_announced_result = _run_state.result
 

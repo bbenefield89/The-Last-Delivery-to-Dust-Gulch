@@ -1279,8 +1279,25 @@ func test_success_result_stops_dust_and_plays_result_cue() -> void:
 	var wagon_loop_player: AudioStreamPlayer = scene.get_node("%WagonLoopPlayer")
 	assert_false(dust_trail.emitting)
 	assert_true(result_player.playing)
+	assert_eq(result_player.stream, scene.WIN_STINGER)
 	assert_false(music_player.playing)
 	assert_false(wagon_loop_player.playing)
+
+
+func test_collapse_result_plays_collapse_stinger() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	state.result = RunStateType.RESULT_COLLAPSED
+	state.current_speed = 0.0
+	scene._refresh_audio_presentation()
+
+	var result_player: AudioStreamPlayer = scene.get_node("%ResultPlayer")
+	assert_true(result_player.playing)
+	assert_eq(result_player.stream, scene.COLLAPSE_STINGER)
 
 
 func test_wagon_loop_audio_wraps_back_to_five_second_mark() -> void:
