@@ -34,6 +34,19 @@ func test_title_screen_uses_western_panel_style() -> void:
 	assert_eq(stylebox.bg_color, Color(0.156863, 0.101961, 0.0666667, 0.94))
 
 
+func test_title_screen_background_uses_cover_stretch_mode() -> void:
+	var title_screen = TITLE_SCREEN_SCENE.instantiate()
+	add_child_autofree(title_screen)
+
+	var background: TextureRect = title_screen.get_node("%Background")
+
+	assert_not_null(background.texture)
+	assert_eq(background.expand_mode, TextureRect.EXPAND_IGNORE_SIZE)
+	assert_eq(background.stretch_mode, TextureRect.STRETCH_KEEP_ASPECT_COVERED)
+	assert_eq(background.anchor_right, 1.0)
+	assert_eq(background.anchor_bottom, 1.0)
+
+
 func test_title_screen_starts_menu_music() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
 	add_child_autofree(title_screen)

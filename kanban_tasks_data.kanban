@@ -33,7 +33,8 @@
 				"23aa4f3e-0446-4cca-a319-08e3bca9dc98",
 				"8f4c0591-041e-4d12-a0f7-879d6d0f7bcd",
 				"82e0cb8f-f2b8-4030-a441-52eabb24aee7",
-				"8f0f1b93-0c64-4299-9f64-cafd9f764de1"
+				"8f0f1b93-0c64-4299-9f64-cafd9f764de1",
+				"b3e7a12f-4c91-4d5e-9f83-1d2e3f4a5b6c"
 			]
 		}
 	],
@@ -202,6 +203,18 @@
 				},
 				{
 					"details": "Run the export build checklist and confirm the project is submission-ready.",
+					"done": true
+				}
+			]
+		},
+		{
+			"uuid": "b3e7a12f-4c91-4d5e-9f83-1d2e3f4a5b6c",
+			"title": "DG-13",
+			"description": "The title screen background image (Assets/Art/DustGulch-Title-Screen-1536x1024.png) is 1536x1024 (3:2 aspect ratio), which does not match the game's 16:9 viewport (1152x648). Displaying it without adjustment produces pillarboxing — thin black bars on the left and right. The image should fill the entire viewport by scaling to cover the full width and center-cropping the excess height equally from top and bottom. The desert landscape composition tolerates this crop cleanly: the sky and wagon remain visible and centered.\n\nDone when: The title screen background fills the full 1152x648 viewport with no black bars on any edge, the image is center-cropped vertically, and no layout regressions are introduced to the title screen UI nodes layered above the background.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Set the title screen background node to display Assets/Art/DustGulch-Title-Screen-1536x1024.png using Godot's STRETCH_KEEP_ASPECT_COVERED stretch mode with the node anchored to fill the full viewport rect, so the image scales to cover 1152x648 and the excess height is cropped equally from top and bottom.\n\nDone when: The title screen background covers the full viewport with no letterboxing or pillarboxing, the image is visually centered, and the UI nodes layered above it (title text, buttons) remain correctly positioned.",
 					"done": true
 				}
 			]

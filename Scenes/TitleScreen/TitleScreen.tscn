@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://Scenes/TitleScreen/title_screen.gd" id="1_vn10v"]
+[ext_resource type="Texture2D" path="res://Assets/Art/DustGulch-Title-Screen-1536x1024.png" id="2_4m2v8"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_title_panel"]
 bg_color = Color(0.156863, 0.101961, 0.0666667, 0.94)
@@ -25,14 +26,17 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_vn10v")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="TextureRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.839216, 0.72549, 0.513725, 1)
+texture = ExtResource("2_4m2v8")
+expand_mode = 1
+stretch_mode = 6
 
 [node name="Panel" type="PanelContainer" parent="."]
 layout_mode = 1
