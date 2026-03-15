@@ -193,6 +193,11 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	assert_eq(state.cargo_value, 96)
 	assert_eq(state.last_hit_hazard, &"pothole")
 
+	var pothole_impact_player: AudioStreamPlayer = scene.get_node("%PotholeImpactPlayer")
+	var fallback_impact_player: AudioStreamPlayer = scene.get_node("%ImpactPlayer")
+	assert_true(pothole_impact_player.playing)
+	assert_false(fallback_impact_player.playing)
+
 
 func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1105,6 +1110,9 @@ func test_step4_presentation_nodes_exist_for_dust_and_audio() -> void:
 	assert_true(scene.has_node("%MusicPlayer"))
 	assert_true(scene.has_node("%WagonLoopPlayer"))
 	assert_true(scene.has_node("%ImpactPlayer"))
+	assert_true(scene.has_node("%PotholeImpactPlayer"))
+	assert_true(scene.has_node("%RockImpactPlayer"))
+	assert_true(scene.has_node("%TumbleweedImpactPlayer"))
 	assert_true(scene.has_node("%FailurePlayer"))
 	assert_true(scene.has_node("%ResultPlayer"))
 	assert_true(scene.has_node("%UIClickPlayer"))
@@ -1129,14 +1137,35 @@ func test_ready_starts_music_and_dust_presentation() -> void:
 	assert_true(wagon_loop_player.get_playback_position() >= scene.WAGON_LOOP_START_SECONDS)
 
 
-func test_impact_feedback_plays_impact_audio_cue() -> void:
+func test_hazard_impact_audio_dispatches_to_specific_players_and_fallback() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	scene._trigger_impact_feedback()
-
+	var pothole_impact_player: AudioStreamPlayer = scene.get_node("%PotholeImpactPlayer")
+	var rock_impact_player: AudioStreamPlayer = scene.get_node("%RockImpactPlayer")
+	var tumbleweed_impact_player: AudioStreamPlayer = scene.get_node("%TumbleweedImpactPlayer")
 	var impact_player: AudioStreamPlayer = scene.get_node("%ImpactPlayer")
+
+	scene._play_hazard_impact(&"pothole")
+	assert_true(pothole_impact_player.playing)
+	assert_eq(pothole_impact_player.stream, scene.POTHOLE_IMPACT_SOUND)
+
+	pothole_impact_player.stop()
+	scene._play_hazard_impact(&"rock")
+	assert_true(rock_impact_player.playing)
+	assert_eq(rock_impact_player.stream, scene.ROCK_IMPACT_SOUND)
+	assert_eq(rock_impact_player.stream, scene.POTHOLE_IMPACT_SOUND)
+
+	rock_impact_player.stop()
+	scene._play_hazard_impact(&"tumbleweed")
+	assert_true(tumbleweed_impact_player.playing)
+	assert_eq(tumbleweed_impact_player.stream, scene.TUMBLEWEED_IMPACT_SOUND)
+	await get_tree().create_timer(scene.IMPACT_SOUND.get_length() + 0.05, false).timeout
+	assert_false(tumbleweed_impact_player.playing)
+
+	tumbleweed_impact_player.stop()
+	scene._play_hazard_impact(&"unknown")
 	assert_true(impact_player.playing)
 	assert_eq(impact_player.stream, scene.IMPACT_SOUND)
 	assert_eq(impact_player.volume_db, -4.5)

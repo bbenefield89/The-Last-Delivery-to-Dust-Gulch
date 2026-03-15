@@ -144,6 +144,15 @@ unique_name_in_owner = true
 [node name="ImpactPlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 
+[node name="PotholeImpactPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="RockImpactPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="TumbleweedImpactPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
 [node name="FailurePlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 

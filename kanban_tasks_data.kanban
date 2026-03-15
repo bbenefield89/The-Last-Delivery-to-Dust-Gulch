@@ -228,7 +228,7 @@
 			"steps": [
 				{
 					"details": "Replace wagon and horse placeholder shapes with production-ready MVP visuals.\n\nDone when: The wagon and horse nodes render with final MVP sprites and no colored placeholder rectangles remain for either entity in the run scene.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Replace pothole, rock, and tumbleweed placeholder visuals with readable final hazard art.\n\nDone when: All three hazard types render with final art that is readable at a glance during gameplay.",

@@ -8,6 +8,9 @@ const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const WAGON_LOOP_SOUND := preload("res://Assets/Sfx/Horse-and-Chariot-30-sec-73615.mp3")
 const IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
+const POTHOLE_IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
+const ROCK_IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
+const TUMBLEWEED_IMPACT_SOUND := preload("res://Assets/Sfx/Tumbleweed-98357.mp3")
 const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
 const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const STEER_ACTION_NEGATIVE := "steer_left"
@@ -94,6 +97,7 @@ var _bad_luck_elapsed := 0.0
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var _navigation_click_in_progress := false
+var _tumbleweed_impact_serial := 0
 var _pause_menu_open := false
 var _onboarding_active := false
 
@@ -131,6 +135,9 @@ var _onboarding_active := false
 @onready var _music_player: AudioStreamPlayer = %MusicPlayer
 @onready var _wagon_loop_player: AudioStreamPlayer = %WagonLoopPlayer
 @onready var _impact_player: AudioStreamPlayer = %ImpactPlayer
+@onready var _pothole_impact_player: AudioStreamPlayer = %PotholeImpactPlayer
+@onready var _rock_impact_player: AudioStreamPlayer = %RockImpactPlayer
+@onready var _tumbleweed_impact_player: AudioStreamPlayer = %TumbleweedImpactPlayer
 @onready var _failure_player: AudioStreamPlayer = %FailurePlayer
 @onready var _result_player: AudioStreamPlayer = %ResultPlayer
 @onready var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
@@ -177,7 +184,17 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	for player in [_music_player, _wagon_loop_player, _impact_player, _failure_player, _result_player, _ui_click_player]:
+	for player in [
+		_music_player,
+		_wagon_loop_player,
+		_impact_player,
+		_pothole_impact_player,
+		_rock_impact_player,
+		_tumbleweed_impact_player,
+		_failure_player,
+		_result_player,
+		_ui_click_player
+	]:
 		if player == null:
 			continue
 		player.stop()
@@ -403,6 +420,7 @@ func _apply_hazard_collisions() -> void:
 		_run_state.last_hit_hazard = collision["type"]
 		_attempt_failure_trigger_from_collision(collision["type"])
 		_trigger_impact_feedback()
+		_play_hazard_impact(collision["type"])
 		(collision["node"] as Node).queue_free()
 
 
@@ -556,8 +574,46 @@ func _trigger_impact_feedback() -> void:
 	_impact_wobble_remaining = IMPACT_WOBBLE_DURATION
 	_impact_shake_remaining = IMPACT_SHAKE_DURATION
 	_impact_time = 0.0
+
+
+## Routes a hazard collision to its dedicated impact player and falls back to the generic impact cue.
+func _play_hazard_impact(hazard_type: StringName) -> void:
+	match hazard_type:
+		&"pothole":
+			if _pothole_impact_player != null:
+				_pothole_impact_player.play()
+				return
+		&"rock":
+			if _rock_impact_player != null:
+				_rock_impact_player.play()
+				return
+		&"tumbleweed":
+			if _tumbleweed_impact_player != null:
+				_tumbleweed_impact_serial += 1
+				_tumbleweed_impact_player.play()
+				_schedule_tumbleweed_impact_stop(_tumbleweed_impact_serial)
+				return
+
 	if _impact_player != null:
 		_impact_player.play()
+
+
+## Stops the tumbleweed cue after the same playback window used by the crash impact cue.
+func _schedule_tumbleweed_impact_stop(serial: int) -> void:
+	var stop_after_seconds := IMPACT_SOUND.get_length()
+	if stop_after_seconds <= 0.0:
+		return
+	var timer := get_tree().create_timer(stop_after_seconds, false)
+	timer.timeout.connect(_on_tumbleweed_impact_timeout.bind(serial), CONNECT_ONE_SHOT)
+
+
+## Stops the active tumbleweed cue only if a newer tumbleweed playback has not replaced it.
+func _on_tumbleweed_impact_timeout(serial: int) -> void:
+	if _tumbleweed_impact_player == null:
+		return
+	if serial != _tumbleweed_impact_serial:
+		return
+	_tumbleweed_impact_player.stop()
 
 
 func _ensure_scroll_visuals() -> void:
@@ -686,6 +742,15 @@ func _configure_audio_players() -> void:
 	if _impact_player != null:
 		_impact_player.stream = IMPACT_SOUND
 		_impact_player.volume_db = -4.5
+	if _pothole_impact_player != null:
+		_pothole_impact_player.stream = POTHOLE_IMPACT_SOUND
+		_pothole_impact_player.volume_db = -5.0
+	if _rock_impact_player != null:
+		_rock_impact_player.stream = ROCK_IMPACT_SOUND
+		_rock_impact_player.volume_db = -4.5
+	if _tumbleweed_impact_player != null:
+		_tumbleweed_impact_player.stream = TUMBLEWEED_IMPACT_SOUND
+		_tumbleweed_impact_player.volume_db = -7.0
 	if _failure_player != null:
 		_failure_player.stream = HORSE_SPOOK_SOUND
 		_failure_player.volume_db = -5.0
