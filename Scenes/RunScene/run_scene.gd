@@ -74,6 +74,12 @@ const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
 const DUST_BASE_AMOUNT_RATIO := 0.35
+const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
+const ONBOARDING_BODY := (
+	"Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, "
+	+ "and hold the wagon together until you reach Dust Gulch."
+)
+const ONBOARDING_HINT := "Press Left, Right, Enter, or click to begin the run."
 const WAGON_LOOP_START_SECONDS := 5.0
 const WAGON_LOOP_END_SECONDS := 10.0
 
@@ -87,6 +93,7 @@ var _bad_luck_elapsed := 0.0
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var _pause_menu_open := false
+var _onboarding_active := false
 
 @onready var _camera: Camera2D = %Camera
 @onready var _hazard_spawner: HazardSpawnerType = %HazardSpawner
@@ -100,6 +107,10 @@ var _pause_menu_open := false
 @onready var _speed_label: Label = %SpeedLabel
 @onready var _progress_label: Label = %ProgressLabel
 @onready var _progress_bar: ProgressBar = %ProgressBar
+@onready var _onboarding_panel: PanelContainer = %OnboardingPanel
+@onready var _onboarding_title: Label = %OnboardingTitle
+@onready var _onboarding_body: Label = %OnboardingBody
+@onready var _onboarding_hint: Label = %OnboardingHint
 @onready var _pause_overlay: Control = %PauseOverlay
 @onready var _pause_panel: PanelContainer = %PausePanel
 @onready var _pause_resume_button: Button = %PauseResumeButton
@@ -122,15 +133,23 @@ var _pause_menu_open := false
 @onready var _result_player: AudioStreamPlayer = %ResultPlayer
 
 
+## Binds a fresh run state and resets transient scene-only UI flow.
 func setup(run_state: RunStateType) -> void:
 	_run_state = run_state
+	_onboarding_active = true
+	_pause_menu_open = false
+	_bad_luck_elapsed = 0.0
 	_last_announced_failure = _run_state.active_failure
 	_last_announced_result = _run_state.result
 	_refresh_status()
+	_refresh_onboarding_prompt()
 	_refresh_recovery_prompt()
+	_refresh_pause_menu()
+	_refresh_result_screen()
 	_refresh_audio_presentation()
 
 
+## Wires scene-local input, UI, visuals, and audio dependencies.
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_ensure_input_actions()
@@ -147,6 +166,7 @@ func _ready() -> void:
 	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
+	_refresh_onboarding_prompt()
 	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
@@ -161,10 +181,12 @@ func _exit_tree() -> void:
 		player.stream = null
 
 
+## Advances runtime presentation and gameplay according to the current run phase.
 func _process(delta: float) -> void:
 	if _run_state == null:
 		return
 	if _pause_menu_open:
+		_refresh_onboarding_prompt()
 		_refresh_pause_menu()
 		_refresh_result_screen()
 		_refresh_audio_presentation()
@@ -174,6 +196,20 @@ func _process(delta: float) -> void:
 		_update_wagon_visual()
 		_update_camera_framing()
 		_refresh_status()
+		_refresh_onboarding_prompt()
+		_refresh_pause_menu()
+		_refresh_recovery_prompt()
+		_refresh_result_screen()
+		_refresh_audio_presentation()
+		return
+	if _onboarding_active:
+		_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
+		_update_impact_feedback(delta)
+		_update_wagon_visual()
+		_update_scroll_visuals()
+		_update_camera_framing()
+		_refresh_status()
+		_refresh_onboarding_prompt()
 		_refresh_pause_menu()
 		_refresh_recovery_prompt()
 		_refresh_result_screen()
@@ -216,6 +252,7 @@ func _process(delta: float) -> void:
 	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
+	_refresh_onboarding_prompt()
 	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
@@ -244,6 +281,7 @@ func _refresh_status() -> void:
 	_progress_bar.value = _run_state.get_delivery_progress_ratio() * 100.0
 
 
+## Shows only the active recovery sequence prompt when gameplay allows it.
 func _refresh_recovery_prompt() -> void:
 	if _recovery_panel == null or _recovery_steps == null or _recovery_title == null or _recovery_hint == null:
 		return
@@ -272,6 +310,27 @@ func _refresh_recovery_prompt() -> void:
 		_recovery_steps.add_child(_build_recovery_step(i))
 
 
+## Refreshes pause-menu visibility for the active run.
+func _refresh_onboarding_prompt() -> void:
+	if _onboarding_panel == null or _onboarding_title == null or _onboarding_body == null or _onboarding_hint == null:
+		return
+
+	var is_visible := (
+		_run_state != null
+		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
+		and _onboarding_active
+		and not _pause_menu_open
+	)
+	_onboarding_panel.visible = is_visible
+	if not is_visible:
+		return
+
+	_onboarding_title.text = ONBOARDING_TITLE
+	_onboarding_body.text = ONBOARDING_BODY
+	_onboarding_hint.text = ONBOARDING_HINT
+
+
+## Refreshes pause-menu visibility for the active run.
 func _refresh_pause_menu() -> void:
 	if _pause_overlay == null or _pause_panel == null:
 		return
@@ -280,6 +339,7 @@ func _refresh_pause_menu() -> void:
 	_pause_panel.visible = is_visible
 
 
+## Refreshes the end-of-run result panel contents and visibility.
 func _refresh_result_screen() -> void:
 	if _result_panel == null or _result_title == null or _result_summary == null or _result_stats == null:
 		return
@@ -436,6 +496,7 @@ func _sync_recovery_sequence() -> void:
 		_run_state.clear_recovery_sequence()
 
 
+## Routes pause, onboarding, and recovery input for the run scene.
 func _input(event: InputEvent) -> void:
 	if _run_state == null:
 		return
@@ -448,6 +509,11 @@ func _input(event: InputEvent) -> void:
 			return
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 			return
+	if _onboarding_active:
+		if _should_dismiss_onboarding(event):
+			_onboarding_active = false
+			_refresh_onboarding_prompt()
+		return
 	if not _run_state.has_active_recovery_sequence():
 		return
 
@@ -697,6 +763,7 @@ func _set_process_mode_recursive(node: Node, mode: ProcessMode) -> void:
 		_set_process_mode_recursive(child, mode)
 
 
+## Converts the latest input event into the expected recovery action name.
 func _extract_recovery_action(event: InputEvent) -> StringName:
 	if event == null:
 		return &""
@@ -707,6 +774,22 @@ func _extract_recovery_action(event: InputEvent) -> StringName:
 	return &""
 
 
+## Checks whether the current input event should dismiss the onboarding card.
+func _should_dismiss_onboarding(event: InputEvent) -> bool:
+	if event == null:
+		return false
+	if event.is_action_pressed(STEER_ACTION_NEGATIVE, false, true):
+		return true
+	if event.is_action_pressed(STEER_ACTION_POSITIVE, false, true):
+		return true
+	if event.is_action_pressed("ui_accept", false, true):
+		return true
+
+	var mouse_event := event as InputEventMouseButton
+	return mouse_event != null and mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed
+
+
+## Handles direct pause-menu mouse clicks when the modal is open.
 func _handle_pause_menu_click(event: InputEvent) -> bool:
 	var mouse_event := event as InputEventMouseButton
 	if mouse_event == null:

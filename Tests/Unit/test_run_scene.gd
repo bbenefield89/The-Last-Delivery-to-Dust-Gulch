@@ -4,6 +4,18 @@ const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 
 
+func _dismiss_onboarding(scene: Node) -> void:
+	var dismiss_event := InputEventAction.new()
+	dismiss_event.action = &"steer_left"
+	dismiss_event.pressed = true
+	scene._input(dismiss_event)
+
+
+func _setup_active_run(scene: Node, state: RunStateType) -> void:
+	scene.setup(state)
+	_dismiss_onboarding(scene)
+
+
 func _click_control(control: Control) -> void:
 	var center := control.get_global_rect().get_center()
 
@@ -57,6 +69,62 @@ func test_setup_populates_hud_labels_with_run_state_values() -> void:
 	assert_false(scene.has_node("%OutcomeLabel"))
 
 
+func test_setup_shows_onboarding_panel_at_run_start() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var onboarding_panel: PanelContainer = scene.get_node("%OnboardingPanel")
+	var onboarding_title: Label = scene.get_node("%OnboardingTitle")
+	assert_true(scene._onboarding_active)
+	assert_true(onboarding_panel.visible)
+	assert_eq(onboarding_title.text, scene.ONBOARDING_TITLE)
+
+
+func test_onboarding_freezes_distance_and_hazard_spawning_while_road_scrolls() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	var starting_distance := state.distance_remaining
+	var starting_scroll: float = scene._scroll_offset
+
+	scene._process(0.5)
+
+	var spawner = scene.get_node("%HazardSpawner")
+	assert_eq(state.distance_remaining, starting_distance)
+	assert_eq(spawner.get_child_count(), 0)
+	assert_true(scene._scroll_offset > starting_scroll)
+
+
+func test_dismissing_onboarding_with_steer_input_starts_normal_gameplay() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	var dismiss_event := InputEventAction.new()
+	dismiss_event.action = &"steer_left"
+	dismiss_event.pressed = true
+	scene._input(dismiss_event)
+
+	var distance_before_process := state.distance_remaining
+	scene._process(2.0)
+
+	var onboarding_panel: PanelContainer = scene.get_node("%OnboardingPanel")
+	var spawner = scene.get_node("%HazardSpawner")
+	assert_false(scene._onboarding_active)
+	assert_false(onboarding_panel.visible)
+	assert_true(state.distance_remaining < distance_before_process)
+	assert_true(spawner.get_child_count() > 0)
+
+
 func test_ready_registers_steering_input_actions() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -73,7 +141,7 @@ func test_process_moves_right_and_reduces_distance() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	Input.action_press("steer_right")
 	scene._process(0.5)
@@ -94,7 +162,7 @@ func test_process_clamps_lateral_position_to_road_bounds() -> void:
 
 	var state := RunStateType.new()
 	state.lateral_position = 210.0
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	Input.action_press("steer_right")
 	scene._process(1.0)
@@ -109,7 +177,7 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	var spawner = scene.get_node("%HazardSpawner")
 	spawner.advance(540.0)
@@ -132,7 +200,7 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	var spawner = scene.get_node("%HazardSpawner")
 	spawner.advance(540.0)
@@ -267,7 +335,7 @@ func test_late_route_progress_spawns_more_hazard_pressure() -> void:
 
 	var state := RunStateType.new()
 	state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.2
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	var spawner = scene.get_node("%HazardSpawner")
 	scene._process(2.0)
@@ -283,7 +351,7 @@ func test_reaching_dust_gulch_triggers_success_and_stops_forward_motion() -> voi
 	var state := RunStateType.new()
 	state.distance_remaining = 20.0
 	state.current_speed = 280.0
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	scene._process(0.1)
 
@@ -324,7 +392,7 @@ func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
 	var state := RunStateType.new()
 	state.wagon_health = 0
 	state.current_speed = 280.0
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	scene._process(0.1)
 
@@ -402,7 +470,7 @@ func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
 
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	scene._advance_failure_triggers(10.0)
 
@@ -417,7 +485,7 @@ func test_wheel_loose_reduces_steering_authority_without_one_side_lock() -> void
 
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	Input.action_press("steer_left")
 	scene._process(1.0)
@@ -433,7 +501,7 @@ func test_wheel_loose_drift_oscillates_instead_of_always_pulling_right() -> void
 
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	scene._process(0.25)
 	var first_position := state.lateral_position
@@ -451,7 +519,7 @@ func test_wheel_loose_adds_persistent_wobble_to_wagon_visual() -> void:
 
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	scene._process(0.2)
 
@@ -466,7 +534,7 @@ func test_horse_panic_adds_stronger_side_to_side_instability() -> void:
 
 	var state := RunStateType.new()
 	state.start_failure(&"horse_panic", &"tumbleweed")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	scene._process(0.2)
 	var first_position := state.lateral_position
@@ -538,7 +606,7 @@ func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
 
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 	scene._advance_failure_triggers(0.0)
 
 	for action_name in [&"steer_left", &"steer_right", &"steer_left"]:
@@ -558,7 +626,7 @@ func test_recovery_prompt_advances_highlight_with_direct_input_actions() -> void
 
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 	scene._advance_failure_triggers(0.0)
 
 	var left_event := InputEventAction.new()
@@ -609,7 +677,7 @@ func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
 
 	var state := RunStateType.new()
 	state.start_failure(&"horse_panic", &"tumbleweed")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 	scene._advance_failure_triggers(0.0)
 
 	for action_name in scene.HORSE_PANIC_RECOVERY_SEQUENCE:
@@ -668,7 +736,7 @@ func test_successful_recovery_sets_success_outcome_without_resource_penalty() ->
 
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 	scene._advance_failure_triggers(0.0)
 
 	for action_name in scene.WHEEL_LOOSE_RECOVERY_SEQUENCE:
@@ -690,12 +758,12 @@ func test_failed_recovery_causes_temporary_control_instability_after_failure_cle
 
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	scene._advance_failure_triggers(0.0)
 	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
-	scene._process(0.2)
-	scene._process(0.2)
+	scene._process(0.17)
+	scene._process(0.19)
 
 	assert_ne(state.lateral_position, 0.0)
 
@@ -708,7 +776,7 @@ func test_speed_penalty_recovers_toward_default_speed_over_time() -> void:
 	var state := RunStateType.new()
 	state.distance_remaining = 10000.0
 	state.current_speed = 150.0
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
 	scene._process(1.0)
 
@@ -724,7 +792,7 @@ func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window(
 
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 	scene._advance_failure_triggers(0.0)
 	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
 
@@ -756,7 +824,7 @@ func test_temporary_instability_resolves_back_to_normal_driving() -> void:
 	var state := RunStateType.new()
 	state.distance_remaining = 10000.0
 	state.start_failure(&"wheel_loose", &"rock")
-	scene.setup(state)
+	_setup_active_run(scene, state)
 	scene._advance_failure_triggers(0.0)
 	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
 	scene._process(0.2)

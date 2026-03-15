@@ -44,7 +44,7 @@ func _run() -> void:
 		return
 	if not await _start_run_from_title(app_root):
 		return
-	if not _assert_bootstrap(app_root):
+	if not await _assert_bootstrap(app_root):
 		return
 	if not await _assert_pause_path(app_root):
 		return
@@ -54,7 +54,7 @@ func _run() -> void:
 		return
 	if not await _start_run_from_title(app_root):
 		return
-	if not _assert_bootstrap(app_root):
+	if not await _assert_bootstrap(app_root):
 		return
 	if not await _assert_success_path(app_root):
 		return
@@ -91,6 +91,7 @@ func _start_run_from_title(app_root: Node) -> bool:
 	app_root._title_screen._on_play_pressed()
 	await process_frame
 	await process_frame
+	await _dismiss_onboarding(app_root._run_scene)
 	return true
 
 
@@ -104,8 +105,20 @@ func _assert_bootstrap(app_root: Node) -> bool:
 		push_error("Smoke test failed: AppRoot did not add the run scene.")
 		quit(1)
 		return false
-
+		
+	await _dismiss_onboarding(app_root._run_scene)
 	return true
+
+
+func _dismiss_onboarding(run_scene: Node) -> void:
+	if run_scene == null or not run_scene.has_method("_input") or not run_scene._onboarding_active:
+		return
+
+	var event := InputEventAction.new()
+	event.action = &"steer_left"
+	event.pressed = true
+	run_scene._input(event)
+	await process_frame
 
 
 func _assert_success_path(app_root: Node) -> bool:
@@ -189,7 +202,7 @@ func _assert_pause_restart_path(app_root: Node) -> bool:
 		push_error("Smoke test failed: pause-menu restart did not return to in-progress state.")
 		quit(1)
 		return false
-	return _assert_bootstrap(app_root)
+	return await _assert_bootstrap(app_root)
 
 
 func _assert_pause_return_to_title_path(app_root: Node) -> bool:
@@ -267,7 +280,7 @@ func _assert_restart_path(app_root: Node, label: String) -> bool:
 		quit(1)
 		return false
 
-	return _assert_bootstrap(app_root)
+	return await _assert_bootstrap(app_root)
 
 
 func _assert_return_to_title_path(app_root: Node, label: String) -> bool:

@@ -12,7 +12,6 @@
 			"title": "Todo",
 			"tasks": [
 				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
-				"8f0f1b93-0c64-4299-9f64-cafd9f764de1",
 				"35ee46bc-0b91-4e29-85b7-acb2a4270f34",
 				"8bfb1b88-1068-4af6-be5f-645a0b5f852d"
 			]
@@ -20,7 +19,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"8f0f1b93-0c64-4299-9f64-cafd9f764de1"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -262,7 +263,7 @@
 			"steps": [
 				{
 					"details": "Add an onboarding card at run start covering steering controls and the delivery goal. The road may continue scrolling visually but hazard spawning and distance progress must be frozen until the player dismisses the card.\n\nDone when: The onboarding card appears at the start of every run, no hazards spawn and distance does not decrease while it is visible, and the card dismisses cleanly on player input before normal gameplay begins.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Replace the spelled-out text direction labels in the recovery prompt (e.g. LEFT, RIGHT) with directional arrow icons so the required input is readable at a glance under pressure.\n\nDone when: Every directional input in every recovery sequence is represented by an arrow icon rather than a text label.",

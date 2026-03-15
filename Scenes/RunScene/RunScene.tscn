@@ -213,6 +213,60 @@ max_value = 100.0
 value = 0.0
 show_percentage = false
 
+[node name="OnboardingLayer" type="CanvasLayer" parent="."]
+
+[node name="OnboardingMargin" type="MarginContainer" parent="OnboardingLayer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -150.0
+offset_right = 250.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="OnboardingPanel" type="PanelContainer" parent="OnboardingLayer/OnboardingMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
+
+[node name="OnboardingPadding" type="MarginContainer" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
+
+[node name="OnboardingVBox" type="VBoxContainer" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="OnboardingTitle" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 24
+text = "Last Delivery to Dust Gulch"
+
+[node name="OnboardingBody" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+autowrap_mode = 2
+text = "Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, and hold the wagon together until you reach Dust Gulch."
+
+[node name="OnboardingHint" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.933333, 0.85098, 0.662745, 1)
+autowrap_mode = 2
+text = "Press Left, Right, Enter, or click to begin the run."
+
 [node name="RecoveryLayer" type="CanvasLayer" parent="."]
 
 [node name="RecoveryMargin" type="MarginContainer" parent="RecoveryLayer"]
