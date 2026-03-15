@@ -12,13 +12,16 @@
 			"title": "Todo",
 			"tasks": [
 				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
-				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
+				"35ee46bc-0b91-4e29-85b7-acb2a4270f34",
+				"d16a0000-0000-0000-0000-000000000016"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"d15a0000-0000-0000-0000-000000000015"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -53,6 +56,42 @@
 				{
 					"details": "In Scenes/RunScene/run_scene.gd, add a preload constant near the top of the file: const ARROW_FONT = preload(\"res://Assets/Fonts/kenney_input_keyboard_mouse.ttf\"). Update _format_recovery_action() to return char(0xE020) for steer_left and char(0xE022) for steer_right. In _build_recovery_step(), add label.add_theme_font_override(\"font\", ARROW_FONT) immediately after the existing add_theme_font_size_override call.\n\nDone when: The script parses without errors, _format_recovery_action() returns the correct PUA characters, and _build_recovery_step() applies the Kenney font to the arrow Label node.",
 					"done": true
+				}
+			]
+		},
+		{
+			"uuid": "d15a0000-0000-0000-0000-000000000015",
+			"title": "DG-15",
+			"description": "Bug: The player can steer the wagon entirely off the visible road surface into the open desert and bypass all hazards. The lateral clamping system already exists — lateral_position is clamped to ±ROAD_HALF_WIDTH in _process() (line 275 of Scenes/RunScene/run_scene.gd). The problem is that ROAD_HALF_WIDTH is 220.0 (line 29), which is wider than the actual visible road edge. Roadside scrub decorations are placed at ±300, so the wagon can park comfortably in the open desert between the visual road edge and the scrub with no hazard exposure.\n\nThe fix is a one-line constant change. Find the actual road half-width in world units from RunScene.tscn, then tighten ROAD_HALF_WIDTH to match so the clamp aligns with the visible road boundary.\n\nStep 1 note: The visible road polygon in Scenes/RunScene/RunScene.tscn spans x = -180 to x = 180, so the actual road half-width is 180 world units.\n\nDone when: Steering fully left or fully right brings the wagon to the road's visible edge and no further; the open desert is unreachable.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Open RunScene.tscn in Godot and locate the road background node. Check its width to determine the road's actual half-width in world units. If the road is a ColorRect or Polygon2D, read its size or polygon extents directly.\n\nDone when: The road's actual half-width in world units is known and documented in the commit message or step notes.",
+					"done": true
+				},
+				{
+					"details": "In Scenes/RunScene/run_scene.gd line 29, update ROAD_HALF_WIDTH from 220.0 to the value found in Step 1 (or the closest value confirmed by in-editor playtesting). Steer fully left and right in-editor to confirm the wagon reaches the road edge without entering the desert.\n\nDone when: Fully left or right steering brings the wagon to the visual road edge; the desert area cannot be reached during normal gameplay.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "d16a0000-0000-0000-0000-000000000016",
+			"title": "DG-16",
+			"description": "Task: The game is keyboard-only and unplayable on mobile browsers. Since Godot maps screen taps to mouse events in web exports, the menu buttons and onboarding dismissal already work on mobile. What's missing is in-game steering and a pause trigger.\n\nThe fix is three clickable buttons added to a dedicated CanvasLayer:\n- Left arrow — anchored bottom-left. Wires button_down → Input.action_press(\"steer_left\") and button_up → Input.action_release(\"steer_left\") so the wagon steers continuously while held, matching keyboard hold behavior.\n- Right arrow — mirror of the left button, bottom-right, wires steer_right.\n- Pause — anchored top-right corner, calls _set_pause_state(true) directly (Escape key doesn't exist on mobile).\n\nThe steering buttons must use button_down/button_up (not pressed) because Input.get_axis() in _process() requires the action to be held, not just pulsed. The existing _set_pause_state() function in run_scene.gd handles the pause toggle cleanly.\n\nProject display settings also need to be configured — currently project.godot has no viewport size, stretch mode, or orientation set.\n\nAffected files:\n- project.godot\n- Scenes/RunScene/RunScene.tscn\n- Scenes/RunScene/run_scene.gd\n\nDone when: On a mobile browser in landscape orientation, the player can steer left and right using the on-screen buttons, pause via the top-right button, and all existing menu/result/onboarding interactions continue to work via tap.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "In project.godot, set the display window size to 1152x648, stretch mode to canvas_items, stretch aspect to keep, and orientation to landscape. These settings ensure the game scales correctly to any screen size without distorting the viewport.\n\nDone when: project.godot contains explicit display/window size, stretch mode, stretch aspect, and orientation settings; the game renders correctly at non-native resolutions in the editor.",
+					"done": false
+				},
+				{
+					"details": "In RunScene.tscn, add a new CanvasLayer node named TouchLayer as a sibling of HUDLayer. Inside it, add three Button nodes: TouchLeft (anchored bottom-left), TouchRight (anchored bottom-right), TouchPause (anchored top-right). Size them at minimum 80x80 px. Style them as flat/transparent with simple arrow and pause glyphs so they don't obscure gameplay.\n\nDone when: All three buttons appear in the running scene at their correct corners and do not obscure the road or HUD.",
+					"done": false
+				},
+				{
+					"details": "In run_scene.gd, add @onready references for TouchLeft, TouchRight, and TouchPause. Wire TouchLeft and TouchRight using Input.parse_input_event() with a synthetic InputEventAction rather than Input.action_press() directly — this injects a real event into the pipeline so both _process() (steering via get_axis) and _input() (QTE recovery via is_action_pressed) pick it up. On button_down, parse a pressed=true InputEventAction for the relevant action; on button_up, parse a pressed=false event. Wire TouchPause pressed → _set_pause_state(true). Ensure both steer actions are released in _exit_tree() so held state doesn't leak across scenes. No separate QTE button handling is needed — tapping TouchLeft/TouchRight during a recovery sequence naturally satisfies the QTE prompt.\n\nDone when: Clicking and holding TouchLeft/TouchRight steers the wagon continuously; releasing stops steering. Tapping either button during a recovery sequence counts as QTE input. Clicking TouchPause opens the pause menu. Keyboard controls are unaffected.",
+					"done": false
 				}
 			]
 		},
