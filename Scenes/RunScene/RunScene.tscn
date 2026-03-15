@@ -181,6 +181,7 @@ unique_name_in_owner = true
 unique_name_in_owner = true
 
 [node name="HUDLayer" type="CanvasLayer" parent="."]
+layer = 0
 
 [node name="HUDPanel" type="PanelContainer" parent="HUDLayer"]
 offset_left = 24.0
@@ -243,7 +244,52 @@ max_value = 100.0
 value = 0.0
 show_percentage = false
 
+[node name="TouchLayer" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
+layer = 1
+
+[node name="TouchLeft" type="Button" parent="TouchLayer"]
+unique_name_in_owner = true
+offset_left = 24.0
+offset_top = 488.0
+offset_right = 176.0
+offset_bottom = 624.0
+grow_vertical = 0
+custom_minimum_size = Vector2(152, 136)
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
+theme_override_font_sizes/font_size = 68
+flat = false
+text = "←"
+
+[node name="TouchRight" type="Button" parent="TouchLayer"]
+unique_name_in_owner = true
+offset_left = 976.0
+offset_top = 488.0
+offset_right = 1128.0
+offset_bottom = 624.0
+grow_horizontal = 2
+grow_vertical = 0
+custom_minimum_size = Vector2(152, 136)
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
+theme_override_font_sizes/font_size = 68
+flat = false
+text = "→"
+
+[node name="TouchPause" type="Button" parent="TouchLayer"]
+unique_name_in_owner = true
+offset_left = 1040.0
+offset_top = 24.0
+offset_right = 1128.0
+offset_bottom = 112.0
+grow_horizontal = 2
+custom_minimum_size = Vector2(88, 88)
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
+theme_override_font_sizes/font_size = 34
+flat = false
+text = "II"
+
 [node name="OnboardingLayer" type="CanvasLayer" parent="."]
+layer = 2
 
 [node name="OnboardingMargin" type="MarginContainer" parent="OnboardingLayer"]
 anchors_preset = 8
@@ -298,6 +344,7 @@ autowrap_mode = 2
 text = "Press Left, Right, Enter, or click to begin the run."
 
 [node name="RecoveryLayer" type="CanvasLayer" parent="."]
+layer = 3
 
 [node name="RecoveryMargin" type="MarginContainer" parent="RecoveryLayer"]
 anchors_preset = 10
@@ -347,6 +394,7 @@ alignment = 1
 theme_override_constants/separation = 10
 
 [node name="PauseLayer" type="CanvasLayer" parent="."]
+layer = 4
 
 [node name="PauseOverlay" type="Control" parent="PauseLayer"]
 unique_name_in_owner = true
@@ -432,6 +480,7 @@ theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Title"
 
 [node name="ResultLayer" type="CanvasLayer" parent="."]
+layer = 5
 
 [node name="ResultMargin" type="MarginContainer" parent="ResultLayer"]
 anchors_preset = 8

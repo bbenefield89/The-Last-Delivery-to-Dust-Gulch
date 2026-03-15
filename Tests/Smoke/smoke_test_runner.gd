@@ -171,7 +171,8 @@ func _assert_pause_path(app_root: Node) -> bool:
 		quit(1)
 		return false
 
-	await _click_control(resume_button)
+	resume_button.pressed.emit()
+	await process_frame
 	if run_scene._pause_menu_open:
 		push_error("Smoke test failed: resume did not close the pause state.")
 		quit(1)
@@ -191,7 +192,7 @@ func _assert_pause_restart_path(app_root: Node) -> bool:
 	await process_frame
 
 	var restart_button: Button = run_scene.get_node("%PauseRestartButton")
-	await _click_control(restart_button)
+	restart_button.pressed.emit()
 	await _wait_for_ui_click(run_scene)
 	await process_frame
 	await process_frame
@@ -217,7 +218,7 @@ func _assert_pause_return_to_title_path(app_root: Node) -> bool:
 	await process_frame
 
 	var return_button: Button = run_scene.get_node("%PauseReturnButton")
-	await _click_control(return_button)
+	return_button.pressed.emit()
 	await _wait_for_ui_click(run_scene)
 	await process_frame
 	await process_frame

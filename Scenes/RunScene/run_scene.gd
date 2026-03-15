@@ -122,6 +122,10 @@ var _onboarding_active := false
 @onready var _speed_label: Label = %SpeedLabel
 @onready var _progress_label: Label = %ProgressLabel
 @onready var _progress_bar: ProgressBar = %ProgressBar
+@onready var _touch_layer: CanvasLayer = %TouchLayer
+@onready var _touch_left_button: Button = %TouchLeft
+@onready var _touch_right_button: Button = %TouchRight
+@onready var _touch_pause_button: Button = %TouchPause
 @onready var _onboarding_panel: PanelContainer = %OnboardingPanel
 @onready var _onboarding_title: Label = %OnboardingTitle
 @onready var _onboarding_body: Label = %OnboardingBody
@@ -171,6 +175,7 @@ func setup(run_state: RunStateType) -> void:
 	_refresh_recovery_prompt()
 	_refresh_pause_menu()
 	_refresh_result_screen()
+	_refresh_touch_controls()
 	_refresh_audio_presentation()
 
 
@@ -179,9 +184,15 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_ensure_input_actions()
 	_ensure_scroll_visuals()
+	_configure_touch_buttons()
 	_configure_dust_trail()
 	_configure_audio_players()
 	_set_process_mode_recursive(_pause_overlay, Node.PROCESS_MODE_ALWAYS)
+	_touch_left_button.button_down.connect(_on_touch_left_button_down)
+	_touch_left_button.button_up.connect(_on_touch_left_button_up)
+	_touch_right_button.button_down.connect(_on_touch_right_button_down)
+	_touch_right_button.button_up.connect(_on_touch_right_button_up)
+	_touch_pause_button.pressed.connect(_on_touch_pause_button_pressed)
 	_pause_resume_button.pressed.connect(_on_pause_resume_pressed)
 	_pause_restart_button.pressed.connect(_on_pause_restart_pressed)
 	_pause_return_button.pressed.connect(_on_pause_return_to_title_pressed)
@@ -195,10 +206,53 @@ func _ready() -> void:
 	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
+	_refresh_touch_controls()
 	_refresh_audio_presentation()
 
 
+## Applies the shared input-prompt font styling to the mobile touch buttons.
+func _configure_touch_buttons() -> void:
+	if _touch_left_button != null:
+		_touch_left_button.add_theme_font_override("font", ARROW_FONT)
+		_touch_left_button.add_theme_stylebox_override("normal", _make_touch_button_stylebox())
+		_touch_left_button.add_theme_stylebox_override("hover", _make_touch_button_stylebox(RECOVERY_STEP_ACTIVE_COLOR))
+		_touch_left_button.add_theme_stylebox_override("pressed", _make_touch_button_stylebox(RECOVERY_STEP_DONE_COLOR))
+		_touch_left_button.text = char(0xE020)
+	if _touch_right_button != null:
+		_touch_right_button.add_theme_font_override("font", ARROW_FONT)
+		_touch_right_button.add_theme_stylebox_override("normal", _make_touch_button_stylebox())
+		_touch_right_button.add_theme_stylebox_override("hover", _make_touch_button_stylebox(RECOVERY_STEP_ACTIVE_COLOR))
+		_touch_right_button.add_theme_stylebox_override("pressed", _make_touch_button_stylebox(RECOVERY_STEP_DONE_COLOR))
+		_touch_right_button.text = char(0xE022)
+	if _touch_pause_button != null:
+		_touch_pause_button.text = char(0xE061)
+		_touch_pause_button.add_theme_font_override("font", ARROW_FONT)
+		_touch_pause_button.add_theme_font_size_override("font_size", 52)
+		_touch_pause_button.add_theme_stylebox_override("normal", _make_touch_button_stylebox())
+		_touch_pause_button.add_theme_stylebox_override("hover", _make_touch_button_stylebox(RECOVERY_STEP_ACTIVE_COLOR))
+		_touch_pause_button.add_theme_stylebox_override("pressed", _make_touch_button_stylebox(RECOVERY_STEP_DONE_COLOR))
+		_touch_pause_button.rotation = PI / 2
+
+
+## Builds a touch-button stylebox that matches the recovery-step chips.
+func _make_touch_button_stylebox(background_color: Color = RECOVERY_STEP_PENDING_COLOR) -> StyleBoxFlat:
+	var stylebox := StyleBoxFlat.new()
+	stylebox.bg_color = background_color
+	stylebox.border_width_left = 2
+	stylebox.border_width_top = 2
+	stylebox.border_width_right = 2
+	stylebox.border_width_bottom = 2
+	stylebox.border_color = Color(0.745098, 0.592157, 0.305882, 0.95)
+	stylebox.corner_radius_top_left = 8
+	stylebox.corner_radius_top_right = 8
+	stylebox.corner_radius_bottom_right = 8
+	stylebox.corner_radius_bottom_left = 8
+	return stylebox
+
+
+## Stops transient input/audio state when the run scene leaves the tree.
 func _exit_tree() -> void:
+	_release_touch_steer_actions()
 	for player in [
 		_music_player,
 		_wagon_loop_player,
@@ -230,6 +284,7 @@ func _process(delta: float) -> void:
 		_refresh_onboarding_prompt()
 		_refresh_pause_menu()
 		_refresh_result_screen()
+		_refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
@@ -241,6 +296,7 @@ func _process(delta: float) -> void:
 		_refresh_pause_menu()
 		_refresh_recovery_prompt()
 		_refresh_result_screen()
+		_refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
 	if _onboarding_active:
@@ -254,6 +310,7 @@ func _process(delta: float) -> void:
 		_refresh_pause_menu()
 		_refresh_recovery_prompt()
 		_refresh_result_screen()
+		_refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
 
@@ -297,6 +354,7 @@ func _process(delta: float) -> void:
 	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
+	_refresh_touch_controls()
 	_refresh_audio_presentation()
 
 
@@ -406,6 +464,19 @@ func _refresh_result_screen() -> void:
 		_run_state.get_distance_traveled(),
 		_run_state.route_distance,
 	]
+
+
+## Shows touch controls only while the run is actively playable.
+func _refresh_touch_controls() -> void:
+	if _touch_layer == null:
+		return
+
+	var is_visible := (
+		_run_state != null
+		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
+		and not _pause_menu_open
+	)
+	_touch_layer.visible = is_visible
 
 
 func _update_wagon_visual() -> void:
@@ -958,6 +1029,20 @@ func _handle_pause_menu_click(event: InputEvent) -> bool:
 	return false
 
 
+## Injects a synthetic steering action event so touch input shares the keyboard gameplay path.
+func _parse_touch_action_event(action_name: StringName, pressed: bool) -> void:
+	var action_event := InputEventAction.new()
+	action_event.action = action_name
+	action_event.pressed = pressed
+	Input.parse_input_event(action_event)
+
+
+## Releases both steering actions to avoid held touch state leaking across scene transitions.
+func _release_touch_steer_actions() -> void:
+	_parse_touch_action_event(STEER_ACTION_NEGATIVE, false)
+	_parse_touch_action_event(STEER_ACTION_POSITIVE, false)
+
+
 func _get_recovery_title(failure_type: StringName) -> String:
 	match failure_type:
 		&"wheel_loose":
@@ -1115,3 +1200,28 @@ func _on_pause_return_to_title_pressed() -> void:
 	_navigation_click_in_progress = false
 	_set_pause_state(false)
 	return_to_title_requested.emit()
+
+
+## Presses the left steering action while the mobile left button is held.
+func _on_touch_left_button_down() -> void:
+	_parse_touch_action_event(STEER_ACTION_NEGATIVE, true)
+
+
+## Releases the left steering action when the mobile left button is released.
+func _on_touch_left_button_up() -> void:
+	_parse_touch_action_event(STEER_ACTION_NEGATIVE, false)
+
+
+## Presses the right steering action while the mobile right button is held.
+func _on_touch_right_button_down() -> void:
+	_parse_touch_action_event(STEER_ACTION_POSITIVE, true)
+
+
+## Releases the right steering action when the mobile right button is released.
+func _on_touch_right_button_up() -> void:
+	_parse_touch_action_event(STEER_ACTION_POSITIVE, false)
+
+
+## Opens the pause menu from the mobile pause button when gameplay is active.
+func _on_touch_pause_button_pressed() -> void:
+	_set_pause_state(true)

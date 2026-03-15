@@ -869,6 +869,99 @@ func test_progress_bar_tracks_delivery_completion_ratio() -> void:
 	assert_almost_eq(progress_bar.value, 75.0, 0.01)
 
 
+func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	var touch_right: Button = scene.get_node("%TouchRight")
+	var touch_pause: Button = scene.get_node("%TouchPause")
+
+	assert_not_null(touch_layer)
+	assert_not_null(touch_left)
+	assert_not_null(touch_right)
+	assert_not_null(touch_pause)
+	assert_false(touch_left.flat)
+	assert_false(touch_right.flat)
+	assert_false(touch_pause.flat)
+	assert_true(touch_left.custom_minimum_size.x >= 140.0)
+	assert_true(touch_left.custom_minimum_size.y >= 120.0)
+	assert_true(touch_right.custom_minimum_size.x >= 140.0)
+	assert_true(touch_right.custom_minimum_size.y >= 120.0)
+	assert_true(touch_pause.custom_minimum_size.x >= 80.0)
+	assert_true(touch_pause.custom_minimum_size.y >= 80.0)
+	assert_eq(touch_left.position, Vector2(24.0, 488.0))
+	assert_eq(touch_right.position, Vector2(976.0, 488.0))
+	assert_eq(touch_pause.position, Vector2(1040.0, 24.0))
+	assert_eq(touch_left.get_theme_font("font"), scene.ARROW_FONT)
+	assert_eq(touch_right.get_theme_font("font"), scene.ARROW_FONT)
+	assert_eq(touch_pause.get_theme_font("font"), scene.ARROW_FONT)
+	assert_eq(touch_left.text, char(0xE020))
+	assert_eq(touch_right.text, char(0xE022))
+	assert_not_null(touch_left.get_theme_stylebox("normal"))
+	assert_not_null(touch_right.get_theme_stylebox("normal"))
+	assert_not_null(touch_pause.get_theme_stylebox("normal"))
+
+
+func test_touch_steering_buttons_hold_and_release_their_actions() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	touch_left.button_down.emit()
+	await wait_process_frames(1)
+	scene._process(0.5)
+	var lateral_after_hold := state.lateral_position
+	touch_left.button_up.emit()
+	await wait_process_frames(1)
+
+	assert_true(lateral_after_hold < 0.0)
+	assert_false(Input.is_action_pressed("steer_left"))
+
+
+func test_touch_steering_counts_as_recovery_input() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	_setup_active_run(scene, state)
+	scene._advance_failure_triggers(0.0)
+
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	touch_left.button_down.emit()
+	await wait_process_frames(1)
+	touch_left.button_up.emit()
+
+	assert_eq(state.recovery_prompt_index, 1)
+
+
+func test_touch_pause_button_opens_pause_and_hides_touch_controls() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_pause: Button = scene.get_node("%TouchPause")
+	assert_true(touch_layer.visible)
+
+	touch_pause.pressed.emit()
+	await wait_process_frames(1)
+
+	assert_true(scene._pause_menu_open)
+	assert_false(touch_layer.visible)
+
+
 func test_temporary_instability_resolves_back_to_normal_driving() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1044,7 +1137,7 @@ func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
 	var restart_button: Button = scene.get_node("%PauseRestartButton")
 	var return_button: Button = scene.get_node("%PauseReturnButton")
 
-	await _click_control(restart_button)
+	restart_button.pressed.emit()
 	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
 	assert_false(scene._pause_menu_open)
 	assert_false(get_tree().paused)
@@ -1052,7 +1145,7 @@ func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
 
 	scene._set_pause_state(true)
 	await wait_process_frames(1)
-	await _click_control(return_button)
+	return_button.pressed.emit()
 	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
 	assert_false(scene._pause_menu_open)
 	assert_false(get_tree().paused)
@@ -1070,7 +1163,8 @@ func test_pause_resume_button_unpauses_through_button_signal() -> void:
 	await wait_process_frames(1)
 
 	var resume_button: Button = scene.get_node("%PauseResumeButton")
-	await _click_control(resume_button)
+	resume_button.pressed.emit()
+	await wait_process_frames(1)
 
 	assert_false(scene._pause_menu_open)
 	assert_false(get_tree().paused)
@@ -1373,4 +1467,3 @@ func test_step3_panel_styles_use_western_palette() -> void:
 	assert_not_null(recovery_style)
 	assert_true(hud_style.bg_color.r < 0.3)
 	assert_true(recovery_style.border_color.g > 0.5)
-

@@ -18,14 +18,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"d16a0000-0000-0000-0000-000000000016"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"d16a0000-0000-0000-0000-000000000016",
 				"d15a0000-0000-0000-0000-000000000015",
 				"d14b0000-0000-0000-0000-000000000014",
 				"13ab05ce-ed2d-4c70-8495-5f9512eb1e4c",
@@ -87,11 +86,11 @@
 				},
 				{
 					"details": "In RunScene.tscn, add a new CanvasLayer node named TouchLayer as a sibling of HUDLayer. Inside it, add three Button nodes: TouchLeft (anchored bottom-left), TouchRight (anchored bottom-right), TouchPause (anchored top-right). Size them at minimum 80x80 px. Style them as flat/transparent with simple arrow and pause glyphs so they don't obscure gameplay.\n\nDone when: All three buttons appear in the running scene at their correct corners and do not obscure the road or HUD.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "In run_scene.gd, add @onready references for TouchLeft, TouchRight, and TouchPause. Wire TouchLeft and TouchRight using Input.parse_input_event() with a synthetic InputEventAction rather than Input.action_press() directly — this injects a real event into the pipeline so both _process() (steering via get_axis) and _input() (QTE recovery via is_action_pressed) pick it up. On button_down, parse a pressed=true InputEventAction for the relevant action; on button_up, parse a pressed=false event. Wire TouchPause pressed → _set_pause_state(true). Ensure both steer actions are released in _exit_tree() so held state doesn't leak across scenes. No separate QTE button handling is needed — tapping TouchLeft/TouchRight during a recovery sequence naturally satisfies the QTE prompt.\n\nDone when: Clicking and holding TouchLeft/TouchRight steers the wagon continuously; releasing stops steering. Tapping either button during a recovery sequence counts as QTE input. Clicking TouchPause opens the pause menu. Keyboard controls are unaffected.",
-					"done": false
+					"done": true
 				}
 			]
 		},
