@@ -153,6 +153,12 @@ unique_name_in_owner = true
 [node name="TumbleweedImpactPlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 
+[node name="WheelLooseAmbientPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
+[node name="HorsePanicAmbientPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
 [node name="FailurePlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 

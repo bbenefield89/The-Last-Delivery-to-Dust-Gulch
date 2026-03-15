@@ -232,7 +232,7 @@
 				},
 				{
 					"details": "Replace pothole, rock, and tumbleweed placeholder visuals with readable final hazard art.\n\nDone when: All three hazard types render with final art that is readable at a glance during gameplay.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Upgrade the road, scrub, sign, and environmental dressing so the route feels cohesive.\n\nDone when: Road surface, roadside scrub, and at least one sign or landmark element use consistent final art that reads as a unified western desert route.",

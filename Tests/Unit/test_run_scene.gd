@@ -1113,6 +1113,8 @@ func test_step4_presentation_nodes_exist_for_dust_and_audio() -> void:
 	assert_true(scene.has_node("%PotholeImpactPlayer"))
 	assert_true(scene.has_node("%RockImpactPlayer"))
 	assert_true(scene.has_node("%TumbleweedImpactPlayer"))
+	assert_true(scene.has_node("%WheelLooseAmbientPlayer"))
+	assert_true(scene.has_node("%HorsePanicAmbientPlayer"))
 	assert_true(scene.has_node("%FailurePlayer"))
 	assert_true(scene.has_node("%ResultPlayer"))
 	assert_true(scene.has_node("%UIClickPlayer"))
@@ -1184,6 +1186,38 @@ func test_new_failure_plays_failure_audio_cue() -> void:
 	var failure_player: AudioStreamPlayer = scene.get_node("%FailurePlayer")
 	assert_true(failure_player.playing)
 	assert_eq(failure_player.stream, scene.HORSE_SPOOK_SOUND)
+
+
+func test_failure_ambient_audio_tracks_active_failure_and_run_end() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var wheel_loose_ambient_player: AudioStreamPlayer = scene.get_node("%WheelLooseAmbientPlayer")
+	var horse_panic_ambient_player: AudioStreamPlayer = scene.get_node("%HorsePanicAmbientPlayer")
+
+	state.start_failure(&"wheel_loose", &"rock")
+	scene._refresh_audio_presentation()
+	assert_true(wheel_loose_ambient_player.playing)
+	assert_eq(wheel_loose_ambient_player.stream, scene.WHEEL_LOOSE_AMBIENT_SOUND)
+	assert_false(horse_panic_ambient_player.playing)
+
+	state.clear_failure()
+	scene._refresh_audio_presentation()
+	assert_false(wheel_loose_ambient_player.playing)
+
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	scene._refresh_audio_presentation()
+	assert_true(horse_panic_ambient_player.playing)
+	assert_eq(horse_panic_ambient_player.stream, scene.HORSE_PANIC_AMBIENT_SOUND)
+	assert_false(wheel_loose_ambient_player.playing)
+
+	state.result = RunStateType.RESULT_COLLAPSED
+	scene._refresh_audio_presentation()
+	assert_false(horse_panic_ambient_player.playing)
 
 
 func test_success_result_stops_dust_and_plays_result_cue() -> void:

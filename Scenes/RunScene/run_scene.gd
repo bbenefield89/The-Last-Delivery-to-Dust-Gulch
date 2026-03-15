@@ -11,6 +11,8 @@ const IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
 const POTHOLE_IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
 const ROCK_IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
 const TUMBLEWEED_IMPACT_SOUND := preload("res://Assets/Sfx/Tumbleweed-98357.mp3")
+const WHEEL_LOOSE_AMBIENT_SOUND := preload("res://Assets/Sfx/Loose-Wheel-411689.mp3")
+const HORSE_PANIC_AMBIENT_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
 const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
 const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const STEER_ACTION_NEGATIVE := "steer_left"
@@ -138,6 +140,8 @@ var _onboarding_active := false
 @onready var _pothole_impact_player: AudioStreamPlayer = %PotholeImpactPlayer
 @onready var _rock_impact_player: AudioStreamPlayer = %RockImpactPlayer
 @onready var _tumbleweed_impact_player: AudioStreamPlayer = %TumbleweedImpactPlayer
+@onready var _wheel_loose_ambient_player: AudioStreamPlayer = %WheelLooseAmbientPlayer
+@onready var _horse_panic_ambient_player: AudioStreamPlayer = %HorsePanicAmbientPlayer
 @onready var _failure_player: AudioStreamPlayer = %FailurePlayer
 @onready var _result_player: AudioStreamPlayer = %ResultPlayer
 @onready var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
@@ -191,6 +195,8 @@ func _exit_tree() -> void:
 		_pothole_impact_player,
 		_rock_impact_player,
 		_tumbleweed_impact_player,
+		_wheel_loose_ambient_player,
+		_horse_panic_ambient_player,
 		_failure_player,
 		_result_player,
 		_ui_click_player
@@ -751,6 +757,12 @@ func _configure_audio_players() -> void:
 	if _tumbleweed_impact_player != null:
 		_tumbleweed_impact_player.stream = TUMBLEWEED_IMPACT_SOUND
 		_tumbleweed_impact_player.volume_db = -7.0
+	if _wheel_loose_ambient_player != null:
+		_wheel_loose_ambient_player.stream = WHEEL_LOOSE_AMBIENT_SOUND
+		_wheel_loose_ambient_player.volume_db = -9.0
+	if _horse_panic_ambient_player != null:
+		_horse_panic_ambient_player.stream = HORSE_PANIC_AMBIENT_SOUND
+		_horse_panic_ambient_player.volume_db = -10.0
 	if _failure_player != null:
 		_failure_player.stream = HORSE_SPOOK_SOUND
 		_failure_player.volume_db = -5.0
@@ -789,6 +801,8 @@ func _refresh_audio_presentation() -> void:
 		elif _wagon_loop_player.playing:
 			_wagon_loop_player.stop()
 
+	_refresh_failure_ambient_audio()
+
 	if _run_state.active_failure != _last_announced_failure:
 		if _run_state.active_failure != &"" and _failure_player != null:
 			_failure_player.play()
@@ -805,6 +819,35 @@ func _refresh_audio_presentation() -> void:
 					_result_player.stream = IMPACT_SOUND
 					_result_player.play()
 		_last_announced_result = _run_state.result
+
+
+## Starts and stops sustained failure ambients according to the active failure and run state.
+func _refresh_failure_ambient_audio() -> void:
+	if _run_state == null:
+		return
+
+	var should_play_wheel_loose := (
+		_run_state.result == RunStateType.RESULT_IN_PROGRESS
+		and _run_state.active_failure == &"wheel_loose"
+	)
+	var should_play_horse_panic := (
+		_run_state.result == RunStateType.RESULT_IN_PROGRESS
+		and _run_state.active_failure == &"horse_panic"
+	)
+
+	if _wheel_loose_ambient_player != null:
+		if should_play_wheel_loose:
+			if not _wheel_loose_ambient_player.playing:
+				_wheel_loose_ambient_player.play()
+		elif _wheel_loose_ambient_player.playing:
+			_wheel_loose_ambient_player.stop()
+
+	if _horse_panic_ambient_player != null:
+		if should_play_horse_panic:
+			if not _horse_panic_ambient_player.playing:
+				_horse_panic_ambient_player.play()
+		elif _horse_panic_ambient_player.playing:
+			_horse_panic_ambient_player.stop()
 
 
 func _ensure_input_actions() -> void:
