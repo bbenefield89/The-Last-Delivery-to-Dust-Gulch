@@ -161,14 +161,14 @@ func test_process_clamps_lateral_position_to_road_bounds() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	state.lateral_position = 210.0
+	state.lateral_position = 170.0
 	_setup_active_run(scene, state)
 
 	Input.action_press("steer_right")
 	scene._process(1.0)
 	Input.action_release("steer_right")
 
-	assert_eq(state.lateral_position, 220.0)
+	assert_eq(state.lateral_position, 180.0)
 
 
 func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
@@ -1373,5 +1373,4 @@ func test_step3_panel_styles_use_western_palette() -> void:
 	assert_not_null(recovery_style)
 	assert_true(hud_style.bg_color.r < 0.3)
 	assert_true(recovery_style.border_color.g > 0.5)
-
 

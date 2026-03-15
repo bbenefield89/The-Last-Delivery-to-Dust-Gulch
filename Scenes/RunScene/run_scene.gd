@@ -26,7 +26,7 @@ const STEER_ACTION_NEGATIVE := "steer_left"
 const STEER_ACTION_POSITIVE := "steer_right"
 const PAUSE_ACTION := "pause_run"
 const STEER_SPEED := 300.0
-const ROAD_HALF_WIDTH := 220.0
+const ROAD_HALF_WIDTH := 180.0
 const WAGON_BASE_Y := 0.0
 const WAGON_BASE_COLOR := Color(0.301961, 0.180392, 0.101961, 1.0)
 const WAGON_HIT_COLOR := Color(0.760784, 0.447059, 0.239216, 1.0)
@@ -1115,4 +1115,3 @@ func _on_pause_return_to_title_pressed() -> void:
 	_navigation_click_in_progress = false
 	_set_pause_state(false)
 	return_to_title_requested.emit()
-

@@ -19,14 +19,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"d15a0000-0000-0000-0000-000000000015"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"d15a0000-0000-0000-0000-000000000015",
 				"d14b0000-0000-0000-0000-000000000014",
 				"13ab05ce-ed2d-4c70-8495-5f9512eb1e4c",
 				"9c7c3e07-eb5f-464e-9f38-76f4c415fb2c",
@@ -71,7 +70,7 @@
 				},
 				{
 					"details": "In Scenes/RunScene/run_scene.gd line 29, update ROAD_HALF_WIDTH from 220.0 to the value found in Step 1 (or the closest value confirmed by in-editor playtesting). Steer fully left and right in-editor to confirm the wagon reaches the road edge without entering the desert.\n\nDone when: Fully left or right steering brings the wagon to the visual road edge; the desert area cannot be reached during normal gameplay.",
-					"done": false
+					"done": true
 				}
 			]
 		},
