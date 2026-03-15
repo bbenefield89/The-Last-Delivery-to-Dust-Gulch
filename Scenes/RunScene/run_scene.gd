@@ -16,6 +16,7 @@ const HORSE_PANIC_AMBIENT_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.
 const RECOVERY_STEP_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const RECOVERY_SUCCESS_SOUND := preload("res://Assets/Sfx/Recovery-Step-Success-374193.mp3")
 const RECOVERY_FAIL_SOUND := preload("res://Assets/Sfx/Recovery-Step-Failure-437420.mp3")
+const PAUSE_TOGGLE_SOUND := preload("res://Assets/Sfx/Pause-Open-Close-333828.mp3")
 const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
 const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const STEER_ACTION_NEGATIVE := "steer_left"
@@ -148,6 +149,7 @@ var _onboarding_active := false
 @onready var _recovery_step_player: AudioStreamPlayer = %RecoveryStepPlayer
 @onready var _recovery_success_player: AudioStreamPlayer = %RecoverySuccessPlayer
 @onready var _recovery_fail_player: AudioStreamPlayer = %RecoveryFailPlayer
+@onready var _pause_toggle_player: AudioStreamPlayer = %PauseTogglePlayer
 @onready var _failure_player: AudioStreamPlayer = %FailurePlayer
 @onready var _result_player: AudioStreamPlayer = %ResultPlayer
 @onready var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
@@ -206,6 +208,7 @@ func _exit_tree() -> void:
 		_recovery_step_player,
 		_recovery_success_player,
 		_recovery_fail_player,
+		_pause_toggle_player,
 		_failure_player,
 		_result_player,
 		_ui_click_player
@@ -789,6 +792,9 @@ func _configure_audio_players() -> void:
 	if _recovery_fail_player != null:
 		_recovery_fail_player.stream = RECOVERY_FAIL_SOUND
 		_recovery_fail_player.volume_db = -1.0
+	if _pause_toggle_player != null:
+		_pause_toggle_player.stream = PAUSE_TOGGLE_SOUND
+		_pause_toggle_player.volume_db = -8.0
 	if _failure_player != null:
 		_failure_player.stream = HORSE_SPOOK_SOUND
 		_failure_player.volume_db = -5.0
@@ -1068,10 +1074,13 @@ func _on_result_return_to_title_pressed() -> void:
 func _set_pause_state(paused: bool) -> void:
 	if _run_state == null:
 		return
+	var was_paused := _pause_menu_open
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		paused = false
 
 	_pause_menu_open = paused
+	if was_paused != _pause_menu_open and _pause_toggle_player != null:
+		_pause_toggle_player.play()
 	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 

@@ -228,15 +228,15 @@
 			"steps": [
 				{
 					"details": "Replace wagon and horse placeholder shapes with production-ready MVP visuals.\n\nDone when: The wagon and horse nodes render with final MVP sprites and no colored placeholder rectangles remain for either entity in the run scene.",
-					"done": true
+					"done": false
 				},
 				{
 					"details": "Replace pothole, rock, and tumbleweed placeholder visuals with readable final hazard art.\n\nDone when: All three hazard types render with final art that is readable at a glance during gameplay.",
-					"done": true
+					"done": false
 				},
 				{
 					"details": "Upgrade the road, scrub, sign, and environmental dressing so the route feels cohesive.\n\nDone when: Road surface, roadside scrub, and at least one sign or landmark element use consistent final art that reads as a unified western desert route.",
-					"done": true
+					"done": false
 				},
 				{
 					"details": "Restyle HUD, recovery prompts, and result panels to match the final visual language.\n\nDone when: HUD elements, the recovery prompt panel, and both result panels share a consistent visual style aligned with the final art direction.",
@@ -324,15 +324,15 @@
 				},
 				{
 					"details": "Add three AudioStreamPlayer nodes to RunScene.tscn: PotholeImpactPlayer, RockImpactPlayer, TumbleweedImpactPlayer. In run_scene.gd _apply_hazard_collisions() (around line 392), replace the single _impact_player call with a dispatch on collision[\"type\"]: pothole → PotholeImpactPlayer, rock → RockImpactPlayer, tumbleweed → TumbleweedImpactPlayer. Keep _impact_player as a fallback for unknown types.\n\nAsset paths: Assets/Sfx/hazard-pothole.{ext}, Assets/Sfx/hazard-rock.{ext}, Assets/Sfx/hazard-tumbleweed.{ext}\n\nDone when: Each of the three hazard types plays its own distinct sound on collision.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add two looping AudioStreamPlayer nodes to RunScene.tscn: WheelLooseAmbientPlayer and HorsePanicAmbientPlayer. In run_scene.gd _refresh_audio_presentation() (around line 693), add logic to start WheelLooseAmbientPlayer when active_failure == \"wheel_loose\" and stop it when cleared; start HorsePanicAmbientPlayer when active_failure == \"horse_panic\" and stop it when cleared. Both players must also stop immediately when the run ends.\n\nAsset paths: Assets/Sfx/failure-wheel-loose-ambient.{ext}, Assets/Sfx/failure-horse-panic-ambient.{ext}\n\nDone when: A continuous ambient sound plays throughout the duration of each failure type and stops when the failure resolves or the run ends.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add three AudioStreamPlayer nodes to RunScene.tscn: RecoveryStepPlayer, RecoverySuccessPlayer, RecoveryFailPlayer. In run_scene.gd _input() (around line 499): call RecoveryStepPlayer.play() when advance_recovery_sequence() returns true (correct step); call RecoverySuccessPlayer.play() at the point where resolve_recovery_success() is called. In _apply_recovery_failure_penalty() (around line 832), call RecoveryFailPlayer.play().\n\nAsset paths: Assets/Sfx/recovery-step.{ext}, Assets/Sfx/recovery-success.{ext}, Assets/Sfx/recovery-fail.{ext}\n\nDone when: A tick plays on each correct recovery input, a resolution sound plays on success, and a penalty sound plays on timeout or failure.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add a PauseTogglePlayer AudioStreamPlayer node to RunScene.tscn. In run_scene.gd _set_pause_state() (around line 898), call PauseTogglePlayer.play() whenever the pause state changes. A single shared sound for both open and close is acceptable; use two assets only if both are sourced.\n\nAsset path: Assets/Sfx/pause-toggle.{ext}\n\nDone when: A sound plays when the pause menu opens and when it closes.",

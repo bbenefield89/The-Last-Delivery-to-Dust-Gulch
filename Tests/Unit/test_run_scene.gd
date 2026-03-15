@@ -996,19 +996,24 @@ func test_pause_menu_toggles_tree_pause_and_visibility() -> void:
 	var pause_overlay: Control = scene.get_node("%PauseOverlay")
 	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
 	var resume_button: Button = scene.get_node("%PauseResumeButton")
+	var pause_toggle_player: AudioStreamPlayer = scene.get_node("%PauseTogglePlayer")
 	assert_true(scene._pause_menu_open)
 	assert_false(get_tree().paused)
 	assert_true(pause_overlay.visible)
 	assert_true(pause_panel.visible)
 	assert_eq(pause_overlay.mouse_filter, Control.MOUSE_FILTER_STOP)
 	assert_false(resume_button.has_focus())
+	assert_true(pause_toggle_player.playing)
+	assert_eq(pause_toggle_player.stream, scene.PAUSE_TOGGLE_SOUND)
 
+	pause_toggle_player.stop()
 	scene._set_pause_state(false)
 	assert_false(scene._pause_menu_open)
 	assert_false(get_tree().paused)
 	assert_false(pause_overlay.visible)
 	assert_false(pause_panel.visible)
 	assert_eq(pause_panel.process_mode, Node.PROCESS_MODE_ALWAYS)
+	assert_true(pause_toggle_player.playing)
 
 
 func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
@@ -1151,6 +1156,7 @@ func test_step4_presentation_nodes_exist_for_dust_and_audio() -> void:
 	assert_true(scene.has_node("%RecoveryStepPlayer"))
 	assert_true(scene.has_node("%RecoverySuccessPlayer"))
 	assert_true(scene.has_node("%RecoveryFailPlayer"))
+	assert_true(scene.has_node("%PauseTogglePlayer"))
 	assert_true(scene.has_node("%FailurePlayer"))
 	assert_true(scene.has_node("%ResultPlayer"))
 	assert_true(scene.has_node("%UIClickPlayer"))

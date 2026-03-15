@@ -168,6 +168,9 @@ unique_name_in_owner = true
 [node name="RecoveryFailPlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 
+[node name="PauseTogglePlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
 [node name="FailurePlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 
