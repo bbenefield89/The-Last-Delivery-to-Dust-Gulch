@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"8bfb1b88-1068-4af6-be5f-645a0b5f852d",
 				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
 				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
 			]
@@ -19,7 +18,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"8bfb1b88-1068-4af6-be5f-645a0b5f852d"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -319,7 +320,7 @@
 			"steps": [
 				{
 					"details": "Add a single UIClickPlayer AudioStreamPlayer node to both TitleScreen.tscn and RunScene.tscn. In title_screen.gd, wire UIClickPlayer.play() to the pressed signal of the Play and Quit buttons. In run_scene.gd, wire UIClickPlayer.play() to the pressed signal of all pause menu buttons (Resume, Restart, Title) and both result panel buttons (Restart, Return).\n\nAsset path: Assets/Sfx/Button-Click.{ext}\n\nDone when: Every button press across all menus — title, pause, and result — triggers the click sound.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add three AudioStreamPlayer nodes to RunScene.tscn: PotholeImpactPlayer, RockImpactPlayer, TumbleweedImpactPlayer. In run_scene.gd _apply_hazard_collisions() (around line 392), replace the single _impact_player call with a dispatch on collision[\"type\"]: pothole → PotholeImpactPlayer, rock → RockImpactPlayer, tumbleweed → TumbleweedImpactPlayer. Keep _impact_player as a fallback for unknown types.\n\nAsset paths: Assets/Sfx/hazard-pothole.{ext}, Assets/Sfx/hazard-rock.{ext}, Assets/Sfx/hazard-tumbleweed.{ext}\n\nDone when: Each of the three hazard types plays its own distinct sound on collision.",

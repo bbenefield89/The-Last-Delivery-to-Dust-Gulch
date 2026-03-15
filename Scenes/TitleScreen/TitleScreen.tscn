@@ -94,3 +94,5 @@ theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Quit"
 
 [node name="TitleMusicPlayer" type="AudioStreamPlayer" parent="."]
+
+[node name="UIClickPlayer" type="AudioStreamPlayer" parent="."]

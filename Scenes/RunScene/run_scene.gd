@@ -8,7 +8,8 @@ const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const WAGON_LOOP_SOUND := preload("res://Assets/Sfx/Horse-and-Chariot-30-sec-73615.mp3")
 const IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
-const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Neigh-261131.mp3")
+const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
+const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const STEER_ACTION_NEGATIVE := "steer_left"
 const STEER_ACTION_POSITIVE := "steer_right"
 const PAUSE_ACTION := "pause_run"
@@ -92,6 +93,7 @@ var _impact_time := 0.0
 var _bad_luck_elapsed := 0.0
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
+var _navigation_click_in_progress := false
 var _pause_menu_open := false
 var _onboarding_active := false
 
@@ -131,6 +133,7 @@ var _onboarding_active := false
 @onready var _impact_player: AudioStreamPlayer = %ImpactPlayer
 @onready var _failure_player: AudioStreamPlayer = %FailurePlayer
 @onready var _result_player: AudioStreamPlayer = %ResultPlayer
+@onready var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
 
 
 ## Binds a fresh run state and resets transient scene-only UI flow.
@@ -174,7 +177,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	for player in [_music_player, _wagon_loop_player, _impact_player, _failure_player, _result_player]:
+	for player in [_music_player, _wagon_loop_player, _impact_player, _failure_player, _result_player, _ui_click_player]:
 		if player == null:
 			continue
 		player.stop()
@@ -688,6 +691,9 @@ func _configure_audio_players() -> void:
 		_failure_player.volume_db = -5.0
 	if _result_player != null:
 		_result_player.volume_db = -10.0
+	if _ui_click_player != null:
+		_ui_click_player.stream = UI_CLICK_SOUND
+		_ui_click_player.volume_db = -9.0
 
 
 func _refresh_audio_presentation() -> void:
@@ -887,11 +893,38 @@ func _format_recovery_action(action_name: StringName) -> String:
 			return String(action_name).to_upper()
 
 
+## Plays the shared menu click cue for pause and result buttons.
+func _play_ui_click() -> void:
+	if _ui_click_player == null:
+		return
+	_ui_click_player.play()
+
+
+## Plays the shared menu click cue and waits long enough for scene transitions to preserve it.
+func _play_ui_click_and_wait() -> void:
+	if _ui_click_player == null or _ui_click_player.stream == null:
+		return
+	_ui_click_player.play()
+	await get_tree().create_timer(_ui_click_player.stream.get_length(), false).timeout
+
+
+## Emits restart after playing the result-screen click cue.
 func _on_result_restart_pressed() -> void:
+	if _navigation_click_in_progress:
+		return
+	_navigation_click_in_progress = true
+	await _play_ui_click_and_wait()
+	_navigation_click_in_progress = false
 	restart_requested.emit()
 
 
+## Emits return-to-title after playing the result-screen click cue.
 func _on_result_return_to_title_pressed() -> void:
+	if _navigation_click_in_progress:
+		return
+	_navigation_click_in_progress = true
+	await _play_ui_click_and_wait()
+	_navigation_click_in_progress = false
 	return_to_title_requested.emit()
 
 
@@ -906,15 +939,29 @@ func _set_pause_state(paused: bool) -> void:
 	_refresh_recovery_prompt()
 
 
+## Resumes gameplay after playing the pause-menu click cue.
 func _on_pause_resume_pressed() -> void:
+	_play_ui_click()
 	_set_pause_state(false)
 
 
+## Restarts the run after playing the pause-menu click cue.
 func _on_pause_restart_pressed() -> void:
+	if _navigation_click_in_progress:
+		return
+	_navigation_click_in_progress = true
+	await _play_ui_click_and_wait()
+	_navigation_click_in_progress = false
 	_set_pause_state(false)
 	restart_requested.emit()
 
 
+## Returns to title after playing the pause-menu click cue.
 func _on_pause_return_to_title_pressed() -> void:
+	if _navigation_click_in_progress:
+		return
+	_navigation_click_in_progress = true
+	await _play_ui_click_and_wait()
+	_navigation_click_in_progress = false
 	_set_pause_state(false)
 	return_to_title_requested.emit()

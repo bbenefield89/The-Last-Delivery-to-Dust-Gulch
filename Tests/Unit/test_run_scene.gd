@@ -925,8 +925,21 @@ func test_result_panel_buttons_emit_restart_and_return_signals() -> void:
 	await wait_process_frames(1)
 
 	watch_signals(scene)
-	scene._on_result_restart_pressed()
-	scene._on_result_return_to_title_pressed()
+	var ui_click_player: AudioStreamPlayer = scene.get_node("%UIClickPlayer")
+	var restart_button: Button = scene.get_node(
+		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+	)
+	var return_button: Button = scene.get_node(
+		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
+	)
+	restart_button.pressed.emit()
+	assert_true(ui_click_player.playing)
+	assert_eq(ui_click_player.stream, scene.UI_CLICK_SOUND)
+	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
+	return_button.pressed.emit()
+	assert_true(ui_click_player.playing)
+	assert_eq(ui_click_player.stream, scene.UI_CLICK_SOUND)
+	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
 
 	assert_signal_emitted(scene, "restart_requested")
 	assert_signal_emitted(scene, "return_to_title_requested")
@@ -974,6 +987,7 @@ func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
 	var return_button: Button = scene.get_node("%PauseReturnButton")
 
 	await _click_control(restart_button)
+	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
 	assert_false(scene._pause_menu_open)
 	assert_false(get_tree().paused)
 	assert_signal_emitted(scene, "restart_requested")
@@ -981,6 +995,7 @@ func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
 	scene._set_pause_state(true)
 	await wait_process_frames(1)
 	await _click_control(return_button)
+	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
 	assert_false(scene._pause_menu_open)
 	assert_false(get_tree().paused)
 	assert_signal_emitted(scene, "return_to_title_requested")
@@ -1003,6 +1018,29 @@ func test_pause_resume_button_unpauses_through_button_signal() -> void:
 	assert_false(get_tree().paused)
 	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
 	assert_false(pause_panel.visible)
+
+
+func test_pause_menu_and_result_buttons_share_ui_click_sound() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	var ui_click_player: AudioStreamPlayer = scene.get_node("%UIClickPlayer")
+
+	scene._on_pause_resume_pressed()
+	assert_true(ui_click_player.playing)
+	assert_eq(ui_click_player.stream, scene.UI_CLICK_SOUND)
+
+	ui_click_player.stop()
+	var restart_button: Button = scene.get_node(
+		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+	)
+	restart_button.pressed.emit()
+	assert_true(ui_click_player.playing)
+	assert_eq(ui_click_player.stream, scene.UI_CLICK_SOUND)
+	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
 
 
 func test_pause_menu_does_not_show_after_run_is_over() -> void:
@@ -1069,6 +1107,7 @@ func test_step4_presentation_nodes_exist_for_dust_and_audio() -> void:
 	assert_true(scene.has_node("%ImpactPlayer"))
 	assert_true(scene.has_node("%FailurePlayer"))
 	assert_true(scene.has_node("%ResultPlayer"))
+	assert_true(scene.has_node("%UIClickPlayer"))
 
 
 func test_ready_starts_music_and_dust_presentation() -> void:

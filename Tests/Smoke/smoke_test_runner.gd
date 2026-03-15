@@ -30,6 +30,13 @@ func _click_control(control: Control) -> void:
 	await process_frame
 
 
+func _wait_for_ui_click(control_owner: Node) -> void:
+	var ui_click_player := control_owner.get_node_or_null("%UIClickPlayer") as AudioStreamPlayer
+	if ui_click_player == null or ui_click_player.stream == null:
+		return
+	await create_timer(ui_click_player.stream.get_length()).timeout
+
+
 func _init() -> void:
 	call_deferred("_run")
 
@@ -88,9 +95,7 @@ func _assert_title_screen(app_root: Node) -> bool:
 
 
 func _start_run_from_title(app_root: Node) -> bool:
-	app_root._title_screen._on_play_pressed()
-	await process_frame
-	await process_frame
+	await app_root._title_screen._on_play_pressed()
 	await _dismiss_onboarding(app_root._run_scene)
 	return true
 
@@ -187,6 +192,7 @@ func _assert_pause_restart_path(app_root: Node) -> bool:
 
 	var restart_button: Button = run_scene.get_node("%PauseRestartButton")
 	await _click_control(restart_button)
+	await _wait_for_ui_click(run_scene)
 	await process_frame
 	await process_frame
 
@@ -212,6 +218,7 @@ func _assert_pause_return_to_title_path(app_root: Node) -> bool:
 
 	var return_button: Button = run_scene.get_node("%PauseReturnButton")
 	await _click_control(return_button)
+	await _wait_for_ui_click(run_scene)
 	await process_frame
 	await process_frame
 
@@ -285,7 +292,7 @@ func _assert_restart_path(app_root: Node, label: String) -> bool:
 
 func _assert_return_to_title_path(app_root: Node, label: String) -> bool:
 	var run_scene = app_root._run_scene
-	run_scene._on_result_return_to_title_pressed()
+	await run_scene._on_result_return_to_title_pressed()
 	await process_frame
 	await process_frame
 

@@ -20,7 +20,7 @@ func test_app_root_play_from_title_bootstraps_run_state_and_run_scene() -> void:
 	add_child_autofree(app_root)
 	await wait_process_frames(1)
 
-	app_root._title_screen._on_play_pressed()
+	await app_root._title_screen._on_play_pressed()
 	await wait_process_frames(1)
 
 	assert_not_null(app_root.run_state)
@@ -36,7 +36,7 @@ func test_app_root_restart_rebuilds_run_state_for_completed_run() -> void:
 	app_root.allow_quit = false
 	add_child_autofree(app_root)
 	await wait_process_frames(1)
-	app_root._title_screen._on_play_pressed()
+	await app_root._title_screen._on_play_pressed()
 	await wait_process_frames(1)
 
 	var original_run_state = app_root.run_state
@@ -63,7 +63,7 @@ func test_app_root_quit_request_is_wired_from_title_screen() -> void:
 	add_child_autofree(app_root)
 	await wait_process_frames(1)
 
-	app_root._title_screen._on_quit_pressed()
+	await app_root._title_screen._on_quit_pressed()
 
 	assert_true(app_root._quit_requested)
 
@@ -73,11 +73,11 @@ func test_app_root_return_to_title_rebuilds_title_after_success() -> void:
 	app_root.allow_quit = false
 	add_child_autofree(app_root)
 	await wait_process_frames(1)
-	app_root._title_screen._on_play_pressed()
+	await app_root._title_screen._on_play_pressed()
 	await wait_process_frames(1)
 
 	app_root.run_state.result = &"success"
-	app_root._run_scene._on_result_return_to_title_pressed()
+	await app_root._run_scene._on_result_return_to_title_pressed()
 	await wait_process_frames(1)
 
 	assert_not_null(app_root._title_screen)
@@ -90,7 +90,7 @@ func test_app_root_clears_tree_pause_when_restarting_or_returning_to_title() -> 
 	app_root.allow_quit = false
 	add_child_autofree(app_root)
 	await wait_process_frames(1)
-	app_root._title_screen._on_play_pressed()
+	await app_root._title_screen._on_play_pressed()
 	await wait_process_frames(1)
 
 	get_tree().paused = true

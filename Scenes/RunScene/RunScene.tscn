@@ -150,6 +150,9 @@ unique_name_in_owner = true
 [node name="ResultPlayer" type="AudioStreamPlayer" parent="."]
 unique_name_in_owner = true
 
+[node name="UIClickPlayer" type="AudioStreamPlayer" parent="."]
+unique_name_in_owner = true
+
 [node name="HUDLayer" type="CanvasLayer" parent="."]
 
 [node name="HUDPanel" type="PanelContainer" parent="HUDLayer"]

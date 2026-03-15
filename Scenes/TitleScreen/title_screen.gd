@@ -1,32 +1,72 @@
 extends Control
 
 const TITLE_MUSIC := preload("res://Assets/Audio/Confronting The Man In Black.ogg")
+const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 
 signal play_requested
 signal quit_requested
 
 
+# Private Fields
+
+var _navigation_click_in_progress: bool = false
+
+
 @onready var _play_button: Button = $Panel/Margin/Content/Buttons/PlayButton
 @onready var _quit_button: Button = $Panel/Margin/Content/Buttons/QuitButton
 @onready var _title_music_player: AudioStreamPlayer = $TitleMusicPlayer
+@onready var _ui_click_player: AudioStreamPlayer = $UIClickPlayer
 
 
+## Wires title-screen buttons and starts the menu audio presentation.
 func _ready() -> void:
 	_play_button.pressed.connect(_on_play_pressed)
 	_quit_button.pressed.connect(_on_quit_pressed)
 	_title_music_player.stream = TITLE_MUSIC
 	_title_music_player.volume_db = -12.0
 	_title_music_player.play()
+	_ui_click_player.stream = UI_CLICK_SOUND
+	_ui_click_player.volume_db = -9.0
 
 
+## Releases title-screen audio streams when the screen leaves the tree.
 func _exit_tree() -> void:
 	_title_music_player.stop()
 	_title_music_player.stream = null
+	_ui_click_player.stop()
+	_ui_click_player.stream = null
 
 
+## Emits the play request after playing the shared UI click cue.
 func _on_play_pressed() -> void:
+	if _navigation_click_in_progress:
+		return
+	_navigation_click_in_progress = true
+	await _play_ui_click_and_wait()
+	_navigation_click_in_progress = false
 	play_requested.emit()
 
 
+## Emits the quit request after playing the shared UI click cue.
 func _on_quit_pressed() -> void:
+	if _navigation_click_in_progress:
+		return
+	_navigation_click_in_progress = true
+	await _play_ui_click_and_wait()
+	_navigation_click_in_progress = false
 	quit_requested.emit()
+
+
+## Plays the shared title-screen click cue when the UI player is available.
+func _play_ui_click() -> void:
+	if _ui_click_player == null:
+		return
+	_ui_click_player.play()
+
+
+## Plays the shared title-screen click cue and waits long enough for scene transitions to preserve it.
+func _play_ui_click_and_wait() -> void:
+	if _ui_click_player == null or _ui_click_player.stream == null:
+		return
+	_ui_click_player.play()
+	await get_tree().create_timer(_ui_click_player.stream.get_length(), false).timeout
