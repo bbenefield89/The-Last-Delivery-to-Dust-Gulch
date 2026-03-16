@@ -59,7 +59,7 @@ func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
 
 	for child in spawner.get_children():
 		if child is Polygon2D:
-			child.position.y = 1200.0
+			child.position.y = HazardSpawnerType.DEFAULT_DESPAWN_Y + 40.0
 
 	spawner._cleanup_hazards()
 	await wait_process_frames(1)
@@ -74,7 +74,10 @@ func test_collect_collisions_reports_damage_for_intersecting_hazard() -> void:
 
 	spawner.advance(540.0)
 
-	var collisions := spawner.collect_collisions(Vector2(0.0, -920.0), Vector2(72.0, 112.0))
+	var collisions := spawner.collect_collisions(
+		Vector2(0.0, HazardSpawnerType.DEFAULT_SPAWN_Y),
+		Vector2(32.0, 64.0)
+	)
 	assert_eq(collisions.size(), 1)
 	assert_eq(collisions[0]["type"], &"pothole")
 	assert_eq(collisions[0]["damage"], 10)

@@ -147,7 +147,7 @@ func test_process_moves_right_and_reduces_distance() -> void:
 	scene._process(0.5)
 	Input.action_release("steer_right")
 
-	assert_almost_eq(state.lateral_position, 150.0, 0.01)
+	assert_almost_eq(state.lateral_position, 90.0, 0.01)
 	assert_almost_eq(
 		state.distance_remaining,
 		RunStateType.DEFAULT_DISTANCE_REMAINING - (RunStateType.DEFAULT_FORWARD_SPEED * 0.5),
@@ -161,14 +161,14 @@ func test_process_clamps_lateral_position_to_road_bounds() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	state.lateral_position = 170.0
+	state.lateral_position = 96.0
 	_setup_active_run(scene, state)
 
 	Input.action_press("steer_right")
 	scene._process(1.0)
 	Input.action_release("steer_right")
 
-	assert_eq(state.lateral_position, 180.0)
+	assert_eq(state.lateral_position, scene.ROAD_HALF_WIDTH)
 
 
 func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
@@ -221,7 +221,7 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 
 	assert_eq(wagon.color, scene.WAGON_HIT_COLOR)
 	assert_ne(wagon.rotation, 0.0)
-	assert_ne(camera.position, Vector2(0.0, -260.0))
+	assert_ne(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
 
 func test_impact_feedback_recovers_after_timers_expire() -> void:
@@ -248,7 +248,7 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 
 	assert_eq(wagon.color, scene.WAGON_BASE_COLOR)
 	assert_eq(wagon.rotation, 0.0)
-	assert_eq(camera.position, Vector2(0.0, -260.0))
+	assert_eq(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
 
 func test_camera_tracks_wagon_with_below_center_offset() -> void:
@@ -265,7 +265,7 @@ func test_camera_tracks_wagon_with_below_center_offset() -> void:
 	var camera: Camera2D = scene.get_node("%Camera")
 
 	assert_eq(wagon.position, Vector2(-80.0, 0.0))
-	assert_eq(camera.position, Vector2(0.0, -260.0))
+	assert_eq(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
 
 func test_forward_motion_scrolls_the_environment() -> void:
@@ -279,8 +279,8 @@ func test_forward_motion_scrolls_the_environment() -> void:
 
 	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
 	var segment_b: Node2D = scene.get_node("%ScrollSegmentB")
-	assert_almost_eq(segment_a.position.y, 140.0, 0.01)
-	assert_almost_eq(segment_b.position.y, -2740.0, 0.01)
+	assert_almost_eq(segment_a.position.y, state.current_speed * 0.5, 0.01)
+	assert_almost_eq(segment_b.position.y, (state.current_speed * 0.5) - scene.SCROLL_LOOP_HEIGHT, 0.01)
 
 
 func test_scroll_environment_wraps_for_continuous_travel() -> void:
@@ -289,14 +289,14 @@ func test_scroll_environment_wraps_for_continuous_travel() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	state.current_speed = 3000.0
+	state.current_speed = scene.SCROLL_LOOP_HEIGHT + 140.0
 	scene.setup(state)
 	scene._process(1.0)
 
 	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
 	var segment_b: Node2D = scene.get_node("%ScrollSegmentB")
-	assert_almost_eq(segment_a.position.y, 120.0, 0.01)
-	assert_almost_eq(segment_b.position.y, -2760.0, 0.01)
+	assert_almost_eq(segment_a.position.y, 140.0, 0.01)
+	assert_almost_eq(segment_b.position.y, 140.0 - scene.SCROLL_LOOP_HEIGHT, 0.01)
 
 
 func test_scroll_segment_populates_enough_roadside_scrub_to_cover_loop_end() -> void:
@@ -312,7 +312,7 @@ func test_scroll_segment_populates_enough_roadside_scrub_to_cover_loop_end() -> 
 			left_scrub_positions.append(child.position.y)
 
 	left_scrub_positions.sort()
-	assert_true(left_scrub_positions.size() >= 10)
+	assert_true(left_scrub_positions.size() >= scene.ROADSIDE_DECOR_COUNT)
 	assert_true(left_scrub_positions.back() >= 0.0)
 
 
@@ -329,7 +329,7 @@ func test_scroll_segment_populates_enough_center_dashes_to_cover_loop_end() -> v
 			dash_positions.append(child.position.y)
 
 	dash_positions.sort()
-	assert_true(dash_positions.size() >= 13)
+	assert_true(dash_positions.size() >= scene.CENTER_DASH_COUNT)
 	assert_true(dash_positions.back() >= 0.0)
 
 
@@ -496,7 +496,7 @@ func test_wheel_loose_reduces_steering_authority_without_one_side_lock() -> void
 	scene._process(1.0)
 	Input.action_release("steer_left")
 
-	assert_almost_eq(state.lateral_position, -180.0, 0.01)
+	assert_almost_eq(state.lateral_position, -scene.ROAD_HALF_WIDTH, 0.01)
 
 
 func test_wheel_loose_drift_oscillates_instead_of_always_pulling_right() -> void:
@@ -886,15 +886,15 @@ func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() ->
 	assert_false(touch_left.flat)
 	assert_false(touch_right.flat)
 	assert_false(touch_pause.flat)
-	assert_true(touch_left.custom_minimum_size.x >= 140.0)
-	assert_true(touch_left.custom_minimum_size.y >= 120.0)
-	assert_true(touch_right.custom_minimum_size.x >= 140.0)
-	assert_true(touch_right.custom_minimum_size.y >= 120.0)
-	assert_true(touch_pause.custom_minimum_size.x >= 80.0)
-	assert_true(touch_pause.custom_minimum_size.y >= 80.0)
-	assert_eq(touch_left.position, Vector2(24.0, 488.0))
-	assert_eq(touch_right.position, Vector2(976.0, 488.0))
-	assert_eq(touch_pause.position, Vector2(1040.0, 24.0))
+	assert_true(touch_left.custom_minimum_size.x >= 120.0)
+	assert_true(touch_left.custom_minimum_size.y >= 100.0)
+	assert_true(touch_right.custom_minimum_size.x >= 120.0)
+	assert_true(touch_right.custom_minimum_size.y >= 100.0)
+	assert_true(touch_pause.custom_minimum_size.x >= 72.0)
+	assert_true(touch_pause.custom_minimum_size.y >= 72.0)
+	assert_eq(touch_left.position, Vector2(16.0, 240.0))
+	assert_eq(touch_right.position, Vector2(504.0, 240.0))
+	assert_eq(touch_pause.position, Vector2(552.0, 16.0))
 	assert_eq(touch_left.get_theme_font("font"), scene.ARROW_FONT)
 	assert_eq(touch_right.get_theme_font("font"), scene.ARROW_FONT)
 	assert_eq(touch_pause.get_theme_font("font"), scene.ARROW_FONT)

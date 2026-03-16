@@ -11,14 +11,15 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
 				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -282,7 +283,7 @@
 			"steps": [
 				{
 					"details": "Change viewport to 640x360 and set world-space constants to correct values for the new coordinate space.\n\nIn project.godot: set display/window/size/viewport_width to 640 and display/window/size/viewport_height to 360. Set display/window/stretch/mode to \"viewport\", display/window/stretch/aspect to \"keep\", and rendering/textures/canvas_textures/default_texture_filter to 0 (Nearest).\n\nIn Scenes/RunScene/run_scene.gd: read the current values of all world-space constants and set them to values appropriate for a 640x360 canvas. Do not mechanically scale old values — set each constant to what makes sense for the new resolution. Key constants to update:\n- WAGON_COLLISION_SIZE: set to Vector2(32, 64) to match the Carriage sprite footprint\n- ROAD_HALF_WIDTH: set to a value that matches the visual road width on the 640x360 canvas\n- Spawn distances, despawn Y, lane positions: set so hazards spawn off-screen and despawn below the viewport\n- Scroll speed, wagon speed: set to values that feel correct at the new resolution (the old pixel-per-second values were calibrated for a 1152-wide canvas and will move too fast)\n\nDone when: The game runs at 640x360 and scales cleanly to 1280x720. The wagon, road, and hazards are all correctly sized and positioned relative to the new canvas. No constant retains an old value calibrated for 1152x648.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Replace wagon and horse placeholder shapes with production-ready MVP visuals.\n\nAssets:\n- Wagon: res://Assets/Tilesets/Carriage/Carriage-32x64.png\n- Horse: res://Assets/Tilesets/Horse/Horse-16x48.png (two instances side by side, 32x48 combined)\n\nDone when: The wagon and horse nodes render with final MVP sprites and no colored placeholder rectangles remain for either entity in the run scene.",

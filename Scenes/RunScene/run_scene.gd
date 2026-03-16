@@ -25,12 +25,12 @@ const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const STEER_ACTION_NEGATIVE := "steer_left"
 const STEER_ACTION_POSITIVE := "steer_right"
 const PAUSE_ACTION := "pause_run"
-const STEER_SPEED := 300.0
-const ROAD_HALF_WIDTH := 180.0
+const STEER_SPEED := 180.0
+const ROAD_HALF_WIDTH := 104.0
 const WAGON_BASE_Y := 0.0
 const WAGON_BASE_COLOR := Color(0.301961, 0.180392, 0.101961, 1.0)
 const WAGON_HIT_COLOR := Color(0.760784, 0.447059, 0.239216, 1.0)
-const CAMERA_VERTICAL_OFFSET := 260.0
+const CAMERA_VERTICAL_OFFSET := 120.0
 const IMPACT_FLASH_DURATION := 0.18
 const IMPACT_WOBBLE_DURATION := 0.32
 const IMPACT_SHAKE_DURATION := 0.28
@@ -72,13 +72,13 @@ const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := 1.9
 const HORSE_PANIC_FAILURE_CARGO_LOSS := 14
 const HORSE_PANIC_FAILURE_SPEED_LOSS := 65.0
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := 2.2
-const SCROLL_LOOP_HEIGHT := 2880.0
-const CENTER_DASH_SPACING := 240.0
-const CENTER_DASH_SIZE := Vector2(14.0, 140.0)
-const CENTER_DASH_COUNT := 13
-const ROADSIDE_DECOR_SPACING := 320.0
-const ROADSIDE_DECOR_COUNT := 10
-const WAGON_COLLISION_SIZE := Vector2(72.0, 112.0)
+const SCROLL_LOOP_HEIGHT := 960.0
+const CENTER_DASH_SPACING := 96.0
+const CENTER_DASH_SIZE := Vector2(8.0, 56.0)
+const CENTER_DASH_COUNT := 11
+const ROADSIDE_DECOR_SPACING := 144.0
+const ROADSIDE_DECOR_COUNT := 8
+const WAGON_COLLISION_SIZE := Vector2(32.0, 64.0)
 const RECOVERY_STEP_PENDING_COLOR := Color(0.25098, 0.203922, 0.145098, 0.92)
 const RECOVERY_STEP_ACTIVE_COLOR := Color(0.780392, 0.623529, 0.317647, 0.98)
 const RECOVERY_STEP_DONE_COLOR := Color(0.419608, 0.54902, 0.290196, 0.95)
@@ -750,28 +750,28 @@ func _populate_scroll_segment(segment: Node2D) -> void:
 
 	for i in range(ROADSIDE_DECOR_COUNT):
 		var left_scrub := _make_scrub_cluster()
-		left_scrub.position = Vector2(-300.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING))
+		left_scrub.position = Vector2(-184.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING))
 		segment.add_child(left_scrub)
 
 		var right_scrub := _make_scrub_cluster()
-		right_scrub.position = Vector2(300.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING) + 120.0)
+		right_scrub.position = Vector2(184.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING) + 56.0)
 		right_scrub.scale.x = -1.0
 		segment.add_child(right_scrub)
 
 	var sign := _make_road_sign("Dust Gulch")
-	sign.position = Vector2(-430.0, -SCROLL_LOOP_HEIGHT + 520.0)
+	sign.position = Vector2(-252.0, -SCROLL_LOOP_HEIGHT + 280.0)
 	segment.add_child(sign)
 
 
 func _make_scrub_cluster() -> Polygon2D:
 	var scrub := Polygon2D.new()
 	scrub.polygon = PackedVector2Array([
-		Vector2(-26.0, 20.0),
-		Vector2(-8.0, -12.0),
-		Vector2(0.0, 6.0),
-		Vector2(10.0, -18.0),
-		Vector2(28.0, 18.0),
-		Vector2(4.0, 28.0),
+		Vector2(-14.0, 12.0),
+		Vector2(-4.0, -8.0),
+		Vector2(0.0, 4.0),
+		Vector2(6.0, -10.0),
+		Vector2(16.0, 10.0),
+		Vector2(2.0, 16.0),
 	])
 	scrub.color = SCRUB_COLOR
 	return scrub
@@ -783,29 +783,29 @@ func _make_road_sign(sign_text: String) -> Node2D:
 
 	var post := Polygon2D.new()
 	post.polygon = PackedVector2Array([
-		Vector2(-6.0, -8.0),
-		Vector2(6.0, -8.0),
-		Vector2(6.0, 74.0),
-		Vector2(-6.0, 74.0),
+		Vector2(-4.0, -6.0),
+		Vector2(4.0, -6.0),
+		Vector2(4.0, 44.0),
+		Vector2(-4.0, 44.0),
 	])
 	post.color = SIGN_WOOD_COLOR
 	sign_root.add_child(post)
 
 	var board := Polygon2D.new()
-	board.position = Vector2(0.0, -18.0)
+	board.position = Vector2(0.0, -12.0)
 	board.polygon = PackedVector2Array([
-		Vector2(-68.0, -24.0),
-		Vector2(68.0, -24.0),
-		Vector2(68.0, 24.0),
-		Vector2(-68.0, 24.0),
+		Vector2(-42.0, -16.0),
+		Vector2(42.0, -16.0),
+		Vector2(42.0, 16.0),
+		Vector2(-42.0, 16.0),
 	])
 	board.color = SIGN_WOOD_COLOR.darkened(0.08)
 	sign_root.add_child(board)
 
 	var label := Label.new()
 	label.text = sign_text
-	label.position = Vector2(-60.0, -34.0)
-	label.add_theme_font_size_override("font_size", 18)
+	label.position = Vector2(-36.0, -22.0)
+	label.add_theme_font_size_override("font_size", 12)
 	label.add_theme_color_override("font_color", SIGN_TEXT_COLOR)
 	sign_root.add_child(label)
 	return sign_root
@@ -816,20 +816,20 @@ func _configure_dust_trail() -> void:
 		return
 
 	_dust_trail.emitting = true
-	_dust_trail.amount = 24
+	_dust_trail.amount = 16
 	_dust_trail.lifetime = 0.85
 	_dust_trail.preprocess = 0.2
 	_dust_trail.local_coords = false
 	_dust_trail.direction = Vector2(0.0, 1.0)
 	_dust_trail.spread = 36.0
-	_dust_trail.initial_velocity_min = 40.0
-	_dust_trail.initial_velocity_max = 78.0
-	_dust_trail.gravity = Vector2(0.0, 120.0)
-	_dust_trail.scale_amount_min = 2.2
-	_dust_trail.scale_amount_max = 4.8
+	_dust_trail.initial_velocity_min = 22.0
+	_dust_trail.initial_velocity_max = 42.0
+	_dust_trail.gravity = Vector2(0.0, 80.0)
+	_dust_trail.scale_amount_min = 1.4
+	_dust_trail.scale_amount_max = 3.0
 	_dust_trail.color = Color(0.839216, 0.72549, 0.513725, 0.62)
 	_dust_trail.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	_dust_trail.emission_rect_extents = Vector2(28.0, 10.0)
+	_dust_trail.emission_rect_extents = Vector2(12.0, 6.0)
 
 
 func _configure_audio_players() -> void:

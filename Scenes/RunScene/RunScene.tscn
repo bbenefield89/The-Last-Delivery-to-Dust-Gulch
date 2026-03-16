@@ -51,21 +51,21 @@ script = ExtResource("1_4n0rj")
 [node name="World" type="Node2D" parent="."]
 
 [node name="Backdrop" type="Polygon2D" parent="World"]
-polygon = PackedVector2Array(-1600, -1400, 1600, -1400, 1600, 1400, -1600, 1400)
+polygon = PackedVector2Array(-480, -720, 480, -720, 480, 720, -480, 720)
 color = Color(0.862745, 0.760784, 0.529412, 1)
 
 [node name="Road" type="Polygon2D" parent="World"]
-polygon = PackedVector2Array(-180, -1800, 180, -1800, 180, 1800, -180, 1800)
+polygon = PackedVector2Array(-112, -720, 112, -720, 112, 720, -112, 720)
 color = Color(0.552941, 0.415686, 0.27451, 1)
 
 [node name="RoadStripeLeft" type="Polygon2D" parent="World"]
-position = Vector2(-90, 0)
-polygon = PackedVector2Array(-4, -1800, 4, -1800, 4, 1800, -4, 1800)
+position = Vector2(-37, 0)
+polygon = PackedVector2Array(-2, -720, 2, -720, 2, 720, -2, 720)
 color = Color(0.74902, 0.658824, 0.427451, 0.45)
 
 [node name="RoadStripeRight" type="Polygon2D" parent="World"]
-position = Vector2(90, 0)
-polygon = PackedVector2Array(-4, -1800, 4, -1800, 4, 1800, -4, 1800)
+position = Vector2(37, 0)
+polygon = PackedVector2Array(-2, -720, 2, -720, 2, 720, -2, 720)
 color = Color(0.74902, 0.658824, 0.427451, 0.45)
 
 [node name="ScrollRoot" type="Node2D" parent="World"]
@@ -76,7 +76,7 @@ unique_name_in_owner = true
 
 [node name="ScrollSegmentB" type="Node2D" parent="World/ScrollRoot"]
 unique_name_in_owner = true
-position = Vector2(0, -2880)
+position = Vector2(0, -960)
 
 [node name="HazardSpawner" type="Node2D" parent="World"]
 unique_name_in_owner = true
@@ -84,55 +84,55 @@ script = ExtResource("2_ok7u7")
 
 [node name="Wagon" type="Polygon2D" parent="World"]
 unique_name_in_owner = true
-polygon = PackedVector2Array(-42, -50, 42, -50, 34, 56, -34, 56)
+polygon = PackedVector2Array(-16, -28, 16, -28, 14, 32, -14, 32)
 color = Color(0.301961, 0.180392, 0.101961, 1)
 
 [node name="Shadow" type="Polygon2D" parent="World/Wagon"]
-position = Vector2(0, 8)
-polygon = PackedVector2Array(-48, -42, 48, -42, 38, 62, -38, 62)
+position = Vector2(0, 5)
+polygon = PackedVector2Array(-18, -24, 18, -24, 16, 34, -16, 34)
 color = Color(0, 0, 0, 0.2)
 z_index = -2
 
 [node name="Canopy" type="Polygon2D" parent="World/Wagon"]
-position = Vector2(0, -8)
-polygon = PackedVector2Array(-34, -26, 34, -26, 24, 10, -24, 10)
+position = Vector2(0, -6)
+polygon = PackedVector2Array(-14, -14, 14, -14, 10, 6, -10, 6)
 color = Color(0.607843, 0.423529, 0.247059, 1)
 
 [node name="Bench" type="Polygon2D" parent="World/Wagon"]
-position = Vector2(0, -28)
-polygon = PackedVector2Array(-20, -8, 20, -8, 20, 8, -20, 8)
+position = Vector2(0, -18)
+polygon = PackedVector2Array(-10, -4, 10, -4, 10, 4, -10, 4)
 color = Color(0.764706, 0.65098, 0.447059, 1)
 
 [node name="HorseTeam" type="Node2D" parent="World/Wagon"]
-position = Vector2(0, -86)
+position = Vector2(0, -54)
 
 [node name="HorseLeft" type="Polygon2D" parent="World/Wagon/HorseTeam"]
-position = Vector2(-16, 0)
-polygon = PackedVector2Array(-10, -18, 10, -18, 12, 8, -12, 8)
+position = Vector2(-8, 0)
+polygon = PackedVector2Array(-5, -16, 5, -16, 6, 8, -6, 8)
 color = Color(0.180392, 0.109804, 0.0705882, 1)
 
 [node name="HorseRight" type="Polygon2D" parent="World/Wagon/HorseTeam"]
-position = Vector2(16, 0)
-polygon = PackedVector2Array(-10, -18, 10, -18, 12, 8, -12, 8)
+position = Vector2(8, 0)
+polygon = PackedVector2Array(-5, -16, 5, -16, 6, 8, -6, 8)
 color = Color(0.180392, 0.109804, 0.0705882, 1)
 
 [node name="HarnessLeft" type="Line2D" parent="World/Wagon/HorseTeam"]
-points = PackedVector2Array(0, 52, -16, 10)
-width = 3.0
+points = PackedVector2Array(0, 30, -8, 8)
+width = 2.0
 default_color = Color(0.717647, 0.611765, 0.403922, 1)
 
 [node name="HarnessRight" type="Line2D" parent="World/Wagon/HorseTeam"]
-points = PackedVector2Array(0, 52, 16, 10)
-width = 3.0
+points = PackedVector2Array(0, 30, 8, 8)
+width = 2.0
 default_color = Color(0.717647, 0.611765, 0.403922, 1)
 
 [node name="DustTrail" type="CPUParticles2D" parent="World/Wagon"]
 unique_name_in_owner = true
-position = Vector2(0, 48)
+position = Vector2(0, 28)
 
 [node name="Camera" type="Camera2D" parent="World"]
 unique_name_in_owner = true
-position = Vector2(0, -120)
+position = Vector2(0, -60)
 enabled = true
 
 [node name="MusicPlayer" type="AudioStreamPlayer" parent="."]
@@ -184,10 +184,10 @@ unique_name_in_owner = true
 layer = 0
 
 [node name="HUDPanel" type="PanelContainer" parent="HUDLayer"]
-offset_left = 24.0
-offset_top = 24.0
-offset_right = 378.0
-offset_bottom = 250.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 236.0
+offset_bottom = 170.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_hud_panel")
 
 [node name="MarginContainer" type="MarginContainer" parent="HUDLayer/HUDPanel"]
@@ -250,41 +250,41 @@ layer = 1
 
 [node name="TouchLeft" type="Button" parent="TouchLayer"]
 unique_name_in_owner = true
-offset_left = 24.0
-offset_top = 488.0
-offset_right = 176.0
-offset_bottom = 624.0
+offset_left = 16.0
+offset_top = 240.0
+offset_right = 136.0
+offset_bottom = 344.0
 grow_vertical = 0
-custom_minimum_size = Vector2(152, 136)
+custom_minimum_size = Vector2(120, 104)
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
-theme_override_font_sizes/font_size = 68
+theme_override_font_sizes/font_size = 52
 flat = false
 text = "←"
 
 [node name="TouchRight" type="Button" parent="TouchLayer"]
 unique_name_in_owner = true
-offset_left = 976.0
-offset_top = 488.0
-offset_right = 1128.0
-offset_bottom = 624.0
+offset_left = 504.0
+offset_top = 240.0
+offset_right = 624.0
+offset_bottom = 344.0
 grow_horizontal = 2
 grow_vertical = 0
-custom_minimum_size = Vector2(152, 136)
+custom_minimum_size = Vector2(120, 104)
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
-theme_override_font_sizes/font_size = 68
+theme_override_font_sizes/font_size = 52
 flat = false
 text = "→"
 
 [node name="TouchPause" type="Button" parent="TouchLayer"]
 unique_name_in_owner = true
-offset_left = 1040.0
-offset_top = 24.0
-offset_right = 1128.0
-offset_bottom = 112.0
+offset_left = 552.0
+offset_top = 16.0
+offset_right = 624.0
+offset_bottom = 88.0
 grow_horizontal = 2
-custom_minimum_size = Vector2(88, 88)
+custom_minimum_size = Vector2(72, 72)
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
-theme_override_font_sizes/font_size = 34
+theme_override_font_sizes/font_size = 52
 flat = false
 text = "II"
 
@@ -297,10 +297,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -250.0
-offset_top = -150.0
-offset_right = 250.0
-offset_bottom = 150.0
+offset_left = -180.0
+offset_top = -92.0
+offset_right = 180.0
+offset_bottom = 92.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -350,10 +350,10 @@ layer = 3
 anchors_preset = 10
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -230.0
-offset_top = 430.0
-offset_right = 230.0
-offset_bottom = 590.0
+offset_left = -180.0
+offset_top = 212.0
+offset_right = 180.0
+offset_bottom = 344.0
 grow_horizontal = 2
 
 [node name="RecoveryPanel" type="PanelContainer" parent="RecoveryLayer/RecoveryMargin"]
@@ -428,7 +428,7 @@ mouse_filter = 2
 
 [node name="PausePanel" type="PanelContainer" parent="PauseLayer/PauseOverlay/PauseCenter"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(440, 240)
+custom_minimum_size = Vector2(320, 196)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 
@@ -488,10 +488,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -220.0
-offset_top = -120.0
-offset_right = 220.0
-offset_bottom = 120.0
+offset_left = -180.0
+offset_top = -100.0
+offset_right = 180.0
+offset_bottom = 100.0
 grow_horizontal = 2
 grow_vertical = 2
 

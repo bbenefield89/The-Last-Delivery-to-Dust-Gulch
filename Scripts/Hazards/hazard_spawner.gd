@@ -1,9 +1,9 @@
 extends Node2D
 class_name HazardSpawner
 
-const LANE_X_POSITIONS := [-120.0, 0.0, 120.0]
-const DEFAULT_SPAWN_Y := -920.0
-const DEFAULT_DESPAWN_Y := 900.0
+const LANE_X_POSITIONS := [-68.0, 0.0, 68.0]
+const DEFAULT_SPAWN_Y := -320.0
+const DEFAULT_DESPAWN_Y := 260.0
 const MAX_PROGRESS_SPAWN_MULTIPLIER := 0.68
 const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const HAZARD_DAMAGE := {
@@ -93,7 +93,7 @@ func _spawn_current_entry() -> void:
 		var pressure_lane := _get_pressure_lane_index(lane_index)
 		if pressure_lane != lane_index:
 			var pressure_type: StringName = PATTERN[(_pattern_index + 1) % PATTERN.size()]["type"]
-			_spawn_hazard(pressure_type, pressure_lane, DEFAULT_SPAWN_Y - 110.0)
+			_spawn_hazard(pressure_type, pressure_lane, DEFAULT_SPAWN_Y - 56.0)
 
 
 func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DEFAULT_SPAWN_Y) -> void:
@@ -127,32 +127,32 @@ func _get_hazard_polygon(hazard_type: StringName) -> PackedVector2Array:
 	match hazard_type:
 		&"pothole":
 			return PackedVector2Array([
-				Vector2(-34.0, -6.0),
-				Vector2(-22.0, -20.0),
-				Vector2(12.0, -24.0),
-				Vector2(30.0, -10.0),
-				Vector2(26.0, 10.0),
-				Vector2(4.0, 24.0),
-				Vector2(-24.0, 18.0),
+				Vector2(-16.0, -4.0),
+				Vector2(-10.0, -12.0),
+				Vector2(6.0, -14.0),
+				Vector2(14.0, -6.0),
+				Vector2(12.0, 6.0),
+				Vector2(2.0, 14.0),
+				Vector2(-12.0, 10.0),
 			])
 		&"rock":
 			return PackedVector2Array([
-				Vector2(-26.0, 22.0),
-				Vector2(-32.0, -4.0),
-				Vector2(-10.0, -30.0),
-				Vector2(18.0, -24.0),
-				Vector2(34.0, 4.0),
-				Vector2(20.0, 26.0),
+				Vector2(-14.0, 14.0),
+				Vector2(-18.0, -4.0),
+				Vector2(-6.0, -18.0),
+				Vector2(10.0, -14.0),
+				Vector2(18.0, 4.0),
+				Vector2(10.0, 18.0),
 			])
 		&"tumbleweed":
 			return PackedVector2Array([
-				Vector2(-12.0, -30.0),
-				Vector2(8.0, -28.0),
-				Vector2(28.0, -10.0),
-				Vector2(24.0, 18.0),
-				Vector2(4.0, 32.0),
-				Vector2(-22.0, 24.0),
-				Vector2(-30.0, 0.0),
+				Vector2(-8.0, -16.0),
+				Vector2(6.0, -15.0),
+				Vector2(16.0, -6.0),
+				Vector2(14.0, 10.0),
+				Vector2(2.0, 18.0),
+				Vector2(-14.0, 14.0),
+				Vector2(-18.0, 0.0),
 			])
 		_:
 			return PackedVector2Array([
@@ -194,10 +194,10 @@ func collect_collisions(wagon_position: Vector2, wagon_size: Vector2) -> Array[D
 func _get_hazard_size(hazard_type: StringName) -> Vector2:
 	match hazard_type:
 		&"pothole":
-			return Vector2(64.0, 48.0)
+			return Vector2(32.0, 24.0)
 		&"rock":
-			return Vector2(68.0, 56.0)
+			return Vector2(36.0, 36.0)
 		&"tumbleweed":
-			return Vector2(58.0, 58.0)
+			return Vector2(32.0, 32.0)
 		_:
-			return Vector2(64.0, 64.0)
+			return Vector2(32.0, 32.0)
