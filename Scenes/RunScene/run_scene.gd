@@ -8,6 +8,15 @@ const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const CARRIAGE_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64.png")
 const HORSE_TEXTURE := preload("res://Assets/Tilesets/Horse/Horse-16x48.png")
+const DESERT_TEXTURE := preload("res://Assets/Tilesets/Desert/Desert-3-32x32.png")
+const ROAD_TEXTURE := preload("res://Assets/Tilesets/Road/Road-4-tiled-32x32.png")
+const SHRUB_TEXTURES: Array[Texture2D] = [
+	preload("res://Assets/Tilesets/Shrubs/Shrub-1-32x32.png"),
+	preload("res://Assets/Tilesets/Shrubs/Shrub-2-32x32.png"),
+	preload("res://Assets/Tilesets/Shrubs/Shrub-3-32x32.png"),
+	preload("res://Assets/Tilesets/Shrubs/Shrub-4-32x32.png"),
+]
+const SIGN_TEXTURE := preload("res://Assets/Tilesets/Sign/Sign-32x48.png")
 const WAGON_LOOP_SOUND := preload("res://Assets/Sfx/Horse-and-Chariot-30-sec-73615.mp3")
 const IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
 const POTHOLE_IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
@@ -75,16 +84,12 @@ const HORSE_PANIC_FAILURE_CARGO_LOSS := 14
 const HORSE_PANIC_FAILURE_SPEED_LOSS := 65.0
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := 2.2
 const SCROLL_LOOP_HEIGHT := 960.0
-const CENTER_DASH_SPACING := 96.0
-const CENTER_DASH_SIZE := Vector2(8.0, 56.0)
-const CENTER_DASH_COUNT := 11
 const ROADSIDE_DECOR_SPACING := 144.0
 const ROADSIDE_DECOR_COUNT := 8
 const WAGON_COLLISION_SIZE := Vector2(32.0, 64.0)
 const RECOVERY_STEP_PENDING_COLOR := Color(0.25098, 0.203922, 0.145098, 0.92)
 const RECOVERY_STEP_ACTIVE_COLOR := Color(0.780392, 0.623529, 0.317647, 0.98)
 const RECOVERY_STEP_DONE_COLOR := Color(0.419608, 0.54902, 0.290196, 0.95)
-const DASH_COLOR := Color(0.886275, 0.811765, 0.572549, 0.8)
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
@@ -112,6 +117,8 @@ var _tumbleweed_impact_serial := 0
 var _pause_menu_open := false
 var _onboarding_active := false
 
+@onready var _backdrop: Sprite2D = $World/Backdrop
+@onready var _road: Sprite2D = $World/Road
 @onready var _camera: Camera2D = %Camera
 @onready var _hazard_spawner: HazardSpawnerType = %HazardSpawner
 @onready var _scroll_root: Node2D = %ScrollRoot
@@ -189,6 +196,7 @@ func setup(run_state: RunStateType) -> void:
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_ensure_input_actions()
+	_configure_environment_art()
 	_ensure_scroll_visuals()
 	_configure_vehicle_sprites()
 	_configure_touch_buttons()
@@ -230,6 +238,27 @@ func _configure_vehicle_sprites() -> void:
 		_horse_left_sprite.texture = HORSE_TEXTURE
 	if _horse_right_sprite != null:
 		_horse_right_sprite.texture = HORSE_TEXTURE
+
+
+## Applies the tiled road and desert art to the world background nodes.
+func _configure_environment_art() -> void:
+	if _backdrop != null:
+		_backdrop.texture = DESERT_TEXTURE
+		_backdrop.centered = false
+		_backdrop.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+		_backdrop.region_enabled = true
+		_backdrop.region_rect = Rect2(0.0, 0.0, 960.0, 1440.0)
+		_backdrop.position = Vector2(-480.0, -720.0)
+
+	if _road != null:
+		_road.texture = ROAD_TEXTURE
+		_road.centered = false
+		_road.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+		_road.region_enabled = true
+		_road.region_rect = Rect2(0.0, 0.0, 224.0, 1440.0)
+		_road.position = Vector2(-112.0, -720.0)
+
+	_update_environment_scroll()
 
 
 ## Applies the shared input-prompt font styling to the mobile touch buttons.
@@ -768,27 +797,29 @@ func _update_scroll_visuals() -> void:
 
 	_scroll_segment_a.position.y = _scroll_offset
 	_scroll_segment_b.position.y = _scroll_offset - SCROLL_LOOP_HEIGHT
+	_update_environment_scroll()
+
+
+## Scrolls the tiled road and desert region windows to match the active route motion.
+func _update_environment_scroll() -> void:
+	if _backdrop != null and _backdrop.region_enabled:
+		var backdrop_rect := _backdrop.region_rect
+		backdrop_rect.position.y = -_scroll_offset
+		_backdrop.region_rect = backdrop_rect
+
+	if _road != null and _road.region_enabled:
+		var road_rect := _road.region_rect
+		road_rect.position.y = -_scroll_offset
+		_road.region_rect = road_rect
 
 
 func _populate_scroll_segment(segment: Node2D) -> void:
-	for i in range(CENTER_DASH_COUNT):
-		var dash := Polygon2D.new()
-		dash.polygon = PackedVector2Array([
-			Vector2(-CENTER_DASH_SIZE.x * 0.5, -CENTER_DASH_SIZE.y * 0.5),
-			Vector2(CENTER_DASH_SIZE.x * 0.5, -CENTER_DASH_SIZE.y * 0.5),
-			Vector2(CENTER_DASH_SIZE.x * 0.5, CENTER_DASH_SIZE.y * 0.5),
-			Vector2(-CENTER_DASH_SIZE.x * 0.5, CENTER_DASH_SIZE.y * 0.5),
-		])
-		dash.position = Vector2(0.0, -SCROLL_LOOP_HEIGHT + (i * CENTER_DASH_SPACING))
-		dash.color = DASH_COLOR
-		segment.add_child(dash)
-
 	for i in range(ROADSIDE_DECOR_COUNT):
-		var left_scrub := _make_scrub_cluster()
+		var left_scrub := _make_scrub_cluster(i)
 		left_scrub.position = Vector2(-184.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING))
 		segment.add_child(left_scrub)
 
-		var right_scrub := _make_scrub_cluster()
+		var right_scrub := _make_scrub_cluster(i + 2)
 		right_scrub.position = Vector2(184.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING) + 56.0)
 		right_scrub.scale.x = -1.0
 		segment.add_child(right_scrub)
@@ -798,52 +829,17 @@ func _populate_scroll_segment(segment: Node2D) -> void:
 	segment.add_child(sign)
 
 
-func _make_scrub_cluster() -> Polygon2D:
-	var scrub := Polygon2D.new()
-	scrub.polygon = PackedVector2Array([
-		Vector2(-14.0, 12.0),
-		Vector2(-4.0, -8.0),
-		Vector2(0.0, 4.0),
-		Vector2(6.0, -10.0),
-		Vector2(16.0, 10.0),
-		Vector2(2.0, 16.0),
-	])
-	scrub.color = SCRUB_COLOR
+func _make_scrub_cluster(variant_index: int = 0) -> Sprite2D:
+	var scrub := Sprite2D.new()
+	scrub.texture = SHRUB_TEXTURES[variant_index % SHRUB_TEXTURES.size()]
 	return scrub
 
 
-func _make_road_sign(sign_text: String) -> Node2D:
-	var sign_root := Node2D.new()
-	sign_root.name = "RoadsideSign"
-
-	var post := Polygon2D.new()
-	post.polygon = PackedVector2Array([
-		Vector2(-4.0, -6.0),
-		Vector2(4.0, -6.0),
-		Vector2(4.0, 44.0),
-		Vector2(-4.0, 44.0),
-	])
-	post.color = SIGN_WOOD_COLOR
-	sign_root.add_child(post)
-
-	var board := Polygon2D.new()
-	board.position = Vector2(0.0, -12.0)
-	board.polygon = PackedVector2Array([
-		Vector2(-42.0, -16.0),
-		Vector2(42.0, -16.0),
-		Vector2(42.0, 16.0),
-		Vector2(-42.0, 16.0),
-	])
-	board.color = SIGN_WOOD_COLOR.darkened(0.08)
-	sign_root.add_child(board)
-
-	var label := Label.new()
-	label.text = sign_text
-	label.position = Vector2(-36.0, -22.0)
-	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", SIGN_TEXT_COLOR)
-	sign_root.add_child(label)
-	return sign_root
+func _make_road_sign(_sign_text: String) -> Sprite2D:
+	var sign := Sprite2D.new()
+	sign.name = "RoadsideSign"
+	sign.texture = SIGN_TEXTURE
+	return sign
 
 
 func _configure_dust_trail() -> void:

@@ -308,29 +308,12 @@ func test_scroll_segment_populates_enough_roadside_scrub_to_cover_loop_end() -> 
 	var left_scrub_positions: Array[float] = []
 
 	for child in segment_a.get_children():
-		if child is Polygon2D and child.color == Color(0.47451, 0.443137, 0.219608, 0.95) and child.scale.x > 0.0:
+		if child is Sprite2D and scene.SHRUB_TEXTURES.has(child.texture) and child.scale.x > 0.0:
 			left_scrub_positions.append(child.position.y)
 
 	left_scrub_positions.sort()
 	assert_true(left_scrub_positions.size() >= scene.ROADSIDE_DECOR_COUNT)
 	assert_true(left_scrub_positions.back() >= 0.0)
-
-
-func test_scroll_segment_populates_enough_center_dashes_to_cover_loop_end() -> void:
-	var scene = RUN_SCENE.instantiate()
-	add_child_autofree(scene)
-	await wait_process_frames(1)
-
-	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
-	var dash_positions: Array[float] = []
-
-	for child in segment_a.get_children():
-		if child is Polygon2D and child.color == Color(0.886275, 0.811765, 0.572549, 0.8):
-			dash_positions.append(child.position.y)
-
-	dash_positions.sort()
-	assert_true(dash_positions.size() >= scene.CENTER_DASH_COUNT)
-	assert_true(dash_positions.back() >= 0.0)
 
 
 func test_late_route_progress_spawns_more_hazard_pressure() -> void:
@@ -1433,13 +1416,45 @@ func test_scroll_segment_includes_roadside_dust_gulch_sign() -> void:
 	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
 	var sign_found := false
 	for child in segment_a.get_children():
-		if child.name == "RoadsideSign":
-			var label := child.get_child(child.get_child_count() - 1) as Label
-			if label != null and label.text == "Dust Gulch":
-				sign_found = true
-				break
+		if child is Sprite2D and child.name == "RoadsideSign" and child.texture == scene.SIGN_TEXTURE:
+			sign_found = true
+			break
 
 	assert_true(sign_found)
+
+
+func test_step4_environment_art_replaces_route_placeholder_geometry() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var backdrop: Sprite2D = scene.get_node("World/Backdrop")
+	var road: Sprite2D = scene.get_node("World/Road")
+	assert_eq(backdrop.texture, scene.DESERT_TEXTURE)
+	assert_eq(road.texture, scene.ROAD_TEXTURE)
+	assert_true(backdrop.region_enabled)
+	assert_true(road.region_enabled)
+	assert_false(scene.has_node("World/RoadStripeLeft"))
+	assert_false(scene.has_node("World/RoadStripeRight"))
+
+
+func test_step4_environment_art_scrolls_with_route_motion() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	var backdrop: Sprite2D = scene.get_node("World/Backdrop")
+	var road: Sprite2D = scene.get_node("World/Road")
+	var starting_backdrop_offset := backdrop.region_rect.position.y
+	var starting_road_offset := road.region_rect.position.y
+
+	scene._process(0.5)
+
+	assert_true(backdrop.region_rect.position.y < starting_backdrop_offset)
+	assert_true(road.region_rect.position.y < starting_road_offset)
 
 
 func test_step3_cohesion_nodes_exist_on_wagon() -> void:

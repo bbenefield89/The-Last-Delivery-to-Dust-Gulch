@@ -17,14 +17,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
 				"d16a0000-0000-0000-0000-000000000016",
 				"d15a0000-0000-0000-0000-000000000015",
 				"d14b0000-0000-0000-0000-000000000014",
@@ -295,7 +294,7 @@
 				},
 				{
 					"details": "Upgrade the road, desert background, scrubs, and sign so the route feels cohesive.\n\nAssets:\n- Road tile (seamless): res://Assets/Tilesets/Road/Road-4-tiled-32x32.png\n- Desert tile (seamless): res://Assets/Tilesets/Desert/Desert-3-32x32.png\n- Shrubs: res://Assets/Tilesets/Shrubs/Shrub-1-32x32.png through Shrub-4-32x32.png\n- Sign: res://Assets/Tilesets/Sign/Sign-32x48.png\n\nDone when: Road surface, desert background, scrub sprites, and sign all render with final art. No placeholder geometry remains in the route environment.",
-					"done": false
+					"done": true
 				}
 			]
 		},
