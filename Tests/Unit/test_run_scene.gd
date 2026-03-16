@@ -181,7 +181,7 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 
 	var spawner = scene.get_node("%HazardSpawner")
 	spawner.advance(540.0)
-	var hazard: Polygon2D = spawner.get_child(0)
+	var hazard: Sprite2D = spawner.get_child(0)
 	for i in range(1, spawner.get_child_count()):
 		spawner.get_child(i).queue_free()
 	hazard.position = Vector2(0.0, 0.0)
@@ -209,7 +209,7 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 
 	var spawner = scene.get_node("%HazardSpawner")
 	spawner.advance(540.0)
-	var hazard: Polygon2D = spawner.get_child(0)
+	var hazard: Sprite2D = spawner.get_child(0)
 	for i in range(1, spawner.get_child_count()):
 		spawner.get_child(i).queue_free()
 	hazard.position = Vector2(0.0, 0.0)
@@ -234,7 +234,7 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 
 	var spawner = scene.get_node("%HazardSpawner")
 	spawner.advance(540.0)
-	var hazard: Polygon2D = spawner.get_child(0)
+	var hazard: Sprite2D = spawner.get_child(0)
 	for i in range(1, spawner.get_child_count()):
 		spawner.get_child(i).queue_free()
 	hazard.position = Vector2(0.0, 0.0)

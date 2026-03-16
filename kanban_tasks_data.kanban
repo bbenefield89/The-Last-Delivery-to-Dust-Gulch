@@ -291,7 +291,7 @@
 				},
 				{
 					"details": "Replace pothole, rock, and tumbleweed placeholder visuals with readable final hazard art.\n\nAssets:\n- Pothole: res://Assets/Tilesets/Pothole/Pothole-32x32.png\n- Rock/Boulder: res://Assets/Tilesets/Boulder/Boulder-32x32.png\n- Tumbleweed: res://Assets/Tilesets/Tumbleweed/Tumbleweed-32x32.png\n\nDone when: All three hazard types render with final art that is readable at a glance during gameplay.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Upgrade the road, desert background, scrubs, and sign so the route feels cohesive.\n\nAssets:\n- Road tile (seamless): res://Assets/Tilesets/Road/Road-4-tiled-32x32.png\n- Desert tile (seamless): res://Assets/Tilesets/Desert/Desert-3-32x32.png\n- Shrubs: res://Assets/Tilesets/Shrubs/Shrub-1-32x32.png through Shrub-4-32x32.png\n- Sign: res://Assets/Tilesets/Sign/Sign-32x48.png\n\nDone when: Road surface, desert background, scrub sprites, and sign all render with final art. No placeholder geometry remains in the route environment.",

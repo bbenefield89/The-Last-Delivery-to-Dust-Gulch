@@ -10,10 +10,11 @@ func test_advance_spawns_pattern_entries_with_lane_and_type_metadata() -> void:
 
 	spawner.advance(540.0)
 
-	var hazard: Polygon2D = spawner.get_child(0)
+	var hazard: Sprite2D = spawner.get_child(0)
 	assert_eq(hazard.get_meta("hazard_type"), &"pothole")
 	assert_eq(hazard.get_meta("lane_index"), 1)
 	assert_eq(hazard.position.x, 0.0)
+	assert_eq(hazard.texture, HazardSpawnerType.POTHOLE_TEXTURE)
 
 
 func test_advance_cycles_through_multiple_hazard_types() -> void:
@@ -25,7 +26,7 @@ func test_advance_cycles_through_multiple_hazard_types() -> void:
 
 	var spawned_types: Array[StringName] = []
 	for child in spawner.get_children():
-		if child is Polygon2D:
+		if child is Sprite2D:
 			spawned_types.append(child.get_meta("hazard_type"))
 
 	assert_true(spawned_types.has(&"pothole"))
@@ -33,7 +34,7 @@ func test_advance_cycles_through_multiple_hazard_types() -> void:
 	assert_true(spawned_types.has(&"tumbleweed"))
 
 
-func test_each_hazard_type_has_a_distinct_readable_shape() -> void:
+func test_each_hazard_type_uses_a_distinct_readable_sprite() -> void:
 	var spawner := HazardSpawnerType.new()
 	add_child_autofree(spawner)
 	await wait_process_frames(1)
@@ -45,9 +46,12 @@ func test_each_hazard_type_has_a_distinct_readable_shape() -> void:
 	autofree(rock)
 	autofree(tumbleweed)
 
-	assert_ne(pothole.polygon, rock.polygon)
-	assert_ne(rock.polygon, tumbleweed.polygon)
-	assert_ne(pothole.polygon, tumbleweed.polygon)
+	assert_eq(pothole.texture, HazardSpawnerType.POTHOLE_TEXTURE)
+	assert_eq(rock.texture, HazardSpawnerType.ROCK_TEXTURE)
+	assert_eq(tumbleweed.texture, HazardSpawnerType.TUMBLEWEED_TEXTURE)
+	assert_ne(pothole.texture, rock.texture)
+	assert_ne(rock.texture, tumbleweed.texture)
+	assert_ne(pothole.texture, tumbleweed.texture)
 
 
 func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
@@ -58,7 +62,7 @@ func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
 	spawner.advance(500.0)
 
 	for child in spawner.get_children():
-		if child is Polygon2D:
+		if child is Sprite2D:
 			child.position.y = HazardSpawnerType.DEFAULT_DESPAWN_Y + 40.0
 
 	spawner._cleanup_hazards()
@@ -111,12 +115,13 @@ func test_late_route_progress_adds_pressure_pair_hazard() -> void:
 
 	assert_eq(spawner.get_child_count(), 2)
 
-	var primary_hazard: Polygon2D = spawner.get_child(0)
-	var pressure_hazard: Polygon2D = spawner.get_child(1)
+	var primary_hazard: Sprite2D = spawner.get_child(0)
+	var pressure_hazard: Sprite2D = spawner.get_child(1)
 
 	assert_eq(primary_hazard.get_meta("lane_index"), 1)
 	assert_eq(pressure_hazard.get_meta("lane_index"), 0)
 	assert_eq(pressure_hazard.get_meta("hazard_type"), &"rock")
+	assert_eq(pressure_hazard.texture, HazardSpawnerType.ROCK_TEXTURE)
 
 
 func test_pair_pressure_does_not_start_before_tuned_threshold() -> void:

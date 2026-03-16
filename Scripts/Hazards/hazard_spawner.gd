@@ -4,6 +4,9 @@ class_name HazardSpawner
 const LANE_X_POSITIONS := [-68.0, 0.0, 68.0]
 const DEFAULT_SPAWN_Y := -320.0
 const DEFAULT_DESPAWN_Y := 260.0
+const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Pothole/Pothole-32x32.png")
+const ROCK_TEXTURE := preload("res://Assets/Tilesets/Boulder/Boulder-32x32.png")
+const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Tumbleweed/Tumbleweed-32x32.png")
 const MAX_PROGRESS_SPAWN_MULTIPLIER := 0.68
 const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const HAZARD_DAMAGE := {
@@ -24,12 +27,6 @@ const PATTERN := [
 	{"type": &"pothole", "lane_index": 0, "spacing": 620.0},
 	{"type": &"tumbleweed", "lane_index": 1, "spacing": 560.0},
 ]
-
-const HAZARD_COLORS := {
-	&"pothole": Color(0.168627, 0.117647, 0.082353, 0.95),
-	&"rock": Color(0.501961, 0.470588, 0.411765, 0.95),
-	&"tumbleweed": Color(0.690196, 0.556863, 0.294118, 0.95),
-}
 
 var _pattern_index := 0
 var _distance_until_next_spawn := 0.0
@@ -52,7 +49,7 @@ func advance(distance_delta: float, route_progress_ratio: float = 0.0) -> void:
 
 func _move_hazards(distance_delta: float) -> void:
 	for child in get_children():
-		if child is Polygon2D:
+		if child is Node2D:
 			child.position.y += distance_delta
 
 
@@ -116,56 +113,27 @@ func _get_pressure_lane_index(primary_lane_index: int) -> int:
 	return 1
 
 
-func _build_hazard_visual(hazard_type: StringName) -> Polygon2D:
-	var hazard := Polygon2D.new()
-	hazard.polygon = _get_hazard_polygon(hazard_type)
-	hazard.color = HAZARD_COLORS.get(hazard_type, Color.WHITE)
+func _build_hazard_visual(hazard_type: StringName) -> Sprite2D:
+	var hazard := Sprite2D.new()
+	hazard.texture = _get_hazard_texture(hazard_type)
 	return hazard
 
 
-func _get_hazard_polygon(hazard_type: StringName) -> PackedVector2Array:
+func _get_hazard_texture(hazard_type: StringName) -> Texture2D:
 	match hazard_type:
 		&"pothole":
-			return PackedVector2Array([
-				Vector2(-16.0, -4.0),
-				Vector2(-10.0, -12.0),
-				Vector2(6.0, -14.0),
-				Vector2(14.0, -6.0),
-				Vector2(12.0, 6.0),
-				Vector2(2.0, 14.0),
-				Vector2(-12.0, 10.0),
-			])
+			return POTHOLE_TEXTURE
 		&"rock":
-			return PackedVector2Array([
-				Vector2(-14.0, 14.0),
-				Vector2(-18.0, -4.0),
-				Vector2(-6.0, -18.0),
-				Vector2(10.0, -14.0),
-				Vector2(18.0, 4.0),
-				Vector2(10.0, 18.0),
-			])
+			return ROCK_TEXTURE
 		&"tumbleweed":
-			return PackedVector2Array([
-				Vector2(-8.0, -16.0),
-				Vector2(6.0, -15.0),
-				Vector2(16.0, -6.0),
-				Vector2(14.0, 10.0),
-				Vector2(2.0, 18.0),
-				Vector2(-14.0, 14.0),
-				Vector2(-18.0, 0.0),
-			])
+			return TUMBLEWEED_TEXTURE
 		_:
-			return PackedVector2Array([
-				Vector2(0.0, -32.0),
-				Vector2(32.0, 0.0),
-				Vector2(0.0, 32.0),
-				Vector2(-32.0, 0.0),
-			])
+			return POTHOLE_TEXTURE
 
 
 func _cleanup_hazards() -> void:
 	for child in get_children():
-		if child is Polygon2D and child.position.y > DEFAULT_DESPAWN_Y:
+		if child is Node2D and child.position.y > DEFAULT_DESPAWN_Y:
 			child.queue_free()
 
 
@@ -174,18 +142,18 @@ func collect_collisions(wagon_position: Vector2, wagon_size: Vector2) -> Array[D
 	var wagon_rect := Rect2(wagon_position - (wagon_size * 0.5), wagon_size)
 
 	for child in get_children():
-		if not child is Polygon2D:
+		if not child is Node2D:
 			continue
 
-		var polygon := child as Polygon2D
-		var hazard_size := _get_hazard_size(polygon.get_meta("hazard_type", &""))
-		var hazard_rect := Rect2(polygon.position - (hazard_size * 0.5), hazard_size)
+		var hazard := child as Node2D
+		var hazard_size := _get_hazard_size(hazard.get_meta("hazard_type", &""))
+		var hazard_rect := Rect2(hazard.position - (hazard_size * 0.5), hazard_size)
 		if wagon_rect.intersects(hazard_rect):
 			collisions.append({
-				"type": polygon.get_meta("hazard_type", &""),
-				"damage": HAZARD_DAMAGE.get(polygon.get_meta("hazard_type", &""), 0),
-				"cargo_damage": HAZARD_CARGO_DAMAGE.get(polygon.get_meta("hazard_type", &""), 0),
-				"node": polygon,
+				"type": hazard.get_meta("hazard_type", &""),
+				"damage": HAZARD_DAMAGE.get(hazard.get_meta("hazard_type", &""), 0),
+				"cargo_damage": HAZARD_CARGO_DAMAGE.get(hazard.get_meta("hazard_type", &""), 0),
+				"node": hazard,
 			})
 
 	return collisions
