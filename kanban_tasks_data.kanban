@@ -277,23 +277,23 @@
 		{
 			"uuid": "eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
 			"title": "DG-8",
-			"description": "Task: Replace core placeholder visuals.\nGoal: Swap the most important prototype shapes with shippable MVP art so the game reads like a finished western delivery game.\nEnd state: Wagon, horses, hazards, road dressing, and key UI panels use intentional art assets rather than placeholder geometry.\nOut of scope for this ticket: adding new mechanics or increasing game scope.\n\nDone when: Wagon, horses, all three core hazard types, road dressing, and key UI panels display intentional art assets with no remaining placeholder geometry in the shipped scene.",
+			"description": "Task: Replace core placeholder visuals.\nGoal: Swap the most important prototype shapes with shippable MVP art so the game reads like a finished western delivery game.\nEnd state: Wagon, horses, hazards, road surface, desert tiles, scrubs, and sign use intentional art assets rather than placeholder geometry.\nOut of scope for this ticket: HUD/UI panels (deferred to a later ticket), adding new mechanics, or increasing game scope.\n\nNote: The viewport must be changed to 640x360 and world-space constants rescaled before sprites will render at the correct size. The 32x32 pixel art assets will appear tiny on the old 1152x648 canvas — Step 1 must be completed before any sprite work begins.\n\nDone when: Wagon, horses, all three core hazard types, road surface, desert background, scrubs, and sign display intentional art assets with no remaining placeholder geometry in the run scene.",
 			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
 			"steps": [
 				{
-					"details": "Replace wagon and horse placeholder shapes with production-ready MVP visuals.\n\nDone when: The wagon and horse nodes render with final MVP sprites and no colored placeholder rectangles remain for either entity in the run scene.",
+					"details": "Change viewport to 640x360 and set world-space constants to correct values for the new coordinate space.\n\nIn project.godot: set display/window/size/viewport_width to 640 and display/window/size/viewport_height to 360. Set display/window/stretch/mode to \"viewport\", display/window/stretch/aspect to \"keep\", and rendering/textures/canvas_textures/default_texture_filter to 0 (Nearest).\n\nIn Scenes/RunScene/run_scene.gd: read the current values of all world-space constants and set them to values appropriate for a 640x360 canvas. Do not mechanically scale old values — set each constant to what makes sense for the new resolution. Key constants to update:\n- WAGON_COLLISION_SIZE: set to Vector2(32, 64) to match the Carriage sprite footprint\n- ROAD_HALF_WIDTH: set to a value that matches the visual road width on the 640x360 canvas\n- Spawn distances, despawn Y, lane positions: set so hazards spawn off-screen and despawn below the viewport\n- Scroll speed, wagon speed: set to values that feel correct at the new resolution (the old pixel-per-second values were calibrated for a 1152-wide canvas and will move too fast)\n\nDone when: The game runs at 640x360 and scales cleanly to 1280x720. The wagon, road, and hazards are all correctly sized and positioned relative to the new canvas. No constant retains an old value calibrated for 1152x648.",
 					"done": false
 				},
 				{
-					"details": "Replace pothole, rock, and tumbleweed placeholder visuals with readable final hazard art.\n\nDone when: All three hazard types render with final art that is readable at a glance during gameplay.",
+					"details": "Replace wagon and horse placeholder shapes with production-ready MVP visuals.\n\nAssets:\n- Wagon: res://Assets/Tilesets/Carriage/Carriage-32x64.png\n- Horse: res://Assets/Tilesets/Horse/Horse-16x48.png (two instances side by side, 32x48 combined)\n\nDone when: The wagon and horse nodes render with final MVP sprites and no colored placeholder rectangles remain for either entity in the run scene.",
 					"done": false
 				},
 				{
-					"details": "Upgrade the road, scrub, sign, and environmental dressing so the route feels cohesive.\n\nDone when: Road surface, roadside scrub, and at least one sign or landmark element use consistent final art that reads as a unified western desert route.",
+					"details": "Replace pothole, rock, and tumbleweed placeholder visuals with readable final hazard art.\n\nAssets:\n- Pothole: res://Assets/Tilesets/Pothole/Pothole-32x32.png\n- Rock/Boulder: res://Assets/Tilesets/Boulder/Boulder-32x32.png\n- Tumbleweed: res://Assets/Tilesets/Tumbleweed/Tumbleweed-32x32.png\n\nDone when: All three hazard types render with final art that is readable at a glance during gameplay.",
 					"done": false
 				},
 				{
-					"details": "Restyle HUD, recovery prompts, and result panels to match the final visual language.\n\nDone when: HUD elements, the recovery prompt panel, and both result panels share a consistent visual style aligned with the final art direction.",
+					"details": "Upgrade the road, desert background, scrubs, and sign so the route feels cohesive.\n\nAssets:\n- Road tile (seamless): res://Assets/Tilesets/Road/Road-4-tiled-32x32.png\n- Desert tile (seamless): res://Assets/Tilesets/Desert/Desert-3-32x32.png\n- Shrubs: res://Assets/Tilesets/Shrubs/Shrub-1-32x32.png through Shrub-4-32x32.png\n- Sign: res://Assets/Tilesets/Sign/Sign-32x48.png\n\nDone when: Road surface, desert background, scrub sprites, and sign all render with final art. No placeholder geometry remains in the route environment.",
 					"done": false
 				}
 			]

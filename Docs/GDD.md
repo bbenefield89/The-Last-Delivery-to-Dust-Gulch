@@ -336,3 +336,49 @@ If extra time remains after the MVP is stable, the best upgrade path is:
 3. add lightweight scoring and replayability
 
 Do not add combat unless the rest of the game is already finished and solid.
+
+## Post-Jam Art Direction
+
+The MVP shipped with procedurally drawn placeholder visuals (Polygon2D shapes). The post-jam goal is a full pixel art pass replacing all placeholder geometry with proper sprites.
+
+### Target Resolution
+
+**640×360** — the standard low-resolution 16:9 pixel art canvas for 32×32 tile games.
+
+- Scales 2× to 1280×720 and 3× to 1920×1080 cleanly
+- Replaces the jam viewport of 1152×648 entirely
+- Godot project settings: viewport 640×360, stretch mode `viewport`, stretch aspect `keep`, nearest-neighbor texture filtering
+
+### Tile Grid
+
+**32×32 pixels per tile.**
+
+- Game canvas: 20 tiles wide × 11 tiles tall
+- All art assets designed on the 32px grid
+- Sprites scaled up via Godot's viewport scaling — no per-sprite scale overrides needed
+
+### Approximate Tile Budgets
+
+| Element | Size in tiles | Pixels |
+|---|---|---|
+| Wagon body | 1×2 | 32×64 |
+| Horse pair | 2×3 | 32×48 (two 16×48 horses side by side) |
+| Hazard (pothole) | 1×1 | 32×32 |
+| Hazard (rock) | 1×1 | 32×32 |
+| Tumbleweed | 1×1 | 32×32 |
+| Road width (total) | ~6 tiles | ~192 px |
+| Desert each side | ~7 tiles | ~224 px |
+
+### What Needs Replacing
+
+- **Wagon + horses** — Polygon2D → Sprite2D
+- **Hazards** — Polygon2D → Sprite2D (pothole, rock, tumbleweed)
+- **Road surface** — Polygon2D → tiled texture or scrolling sprite
+- **Road edge stripes** — Polygon2D → baked into road tile or separate sprite
+- **Desert background** — Polygon2D → tiled background texture
+- **Scrub clusters** — procedural Polygon2D → sprite instances
+- **Road signs** — procedural Polygon2D + Label → sprite
+
+### Code Impact
+
+All world-space constants in `run_scene.gd` will need to be set to correct values for the new 640×360 coordinate space. Read each constant and set it to what makes sense for the new canvas — do not mechanically scale old values. `WAGON_COLLISION_SIZE` should be set to the actual sprite footprint (32×64). Speed and scroll values should be tuned for feel at the new resolution.
