@@ -219,7 +219,7 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	var wagon: Polygon2D = scene.get_node("%Wagon")
 	var camera: Camera2D = scene.get_node("%Camera")
 
-	assert_eq(wagon.color, scene.WAGON_HIT_COLOR)
+	assert_eq(wagon.modulate, scene.WAGON_HIT_COLOR)
 	assert_ne(wagon.rotation, 0.0)
 	assert_ne(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
@@ -246,7 +246,7 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 	var wagon: Polygon2D = scene.get_node("%Wagon")
 	var camera: Camera2D = scene.get_node("%Camera")
 
-	assert_eq(wagon.color, scene.WAGON_BASE_COLOR)
+	assert_eq(wagon.modulate, scene.WAGON_BASE_COLOR)
 	assert_eq(wagon.rotation, 0.0)
 	assert_eq(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
@@ -1448,9 +1448,25 @@ func test_step3_cohesion_nodes_exist_on_wagon() -> void:
 	await wait_process_frames(1)
 
 	assert_true(scene.has_node("World/Wagon/Shadow"))
-	assert_true(scene.has_node("World/Wagon/Canopy"))
+	assert_true(scene.has_node("World/Wagon/CarriageSprite"))
 	assert_true(scene.has_node("World/Wagon/HorseTeam/HorseLeft"))
 	assert_true(scene.has_node("World/Wagon/HorseTeam/HorseRight"))
+
+
+func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var carriage_sprite: Sprite2D = scene.get_node("World/Wagon/CarriageSprite")
+	var horse_left: Sprite2D = scene.get_node("World/Wagon/HorseTeam/HorseLeft")
+	var horse_right: Sprite2D = scene.get_node("World/Wagon/HorseTeam/HorseRight")
+
+	assert_eq(wagon.color.a, 0.0)
+	assert_eq(carriage_sprite.texture, scene.CARRIAGE_TEXTURE)
+	assert_eq(horse_left.texture, scene.HORSE_TEXTURE)
+	assert_eq(horse_right.texture, scene.HORSE_TEXTURE)
 
 
 func test_step3_panel_styles_use_western_palette() -> void:

@@ -1,7 +1,9 @@
-[gd_scene load_steps=6 format=3 uid="uid://v3sqh1pw8m2l"]
+[gd_scene load_steps=8 format=3 uid="uid://v3sqh1pw8m2l"]
 
 [ext_resource type="Script" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
 [ext_resource type="Script" path="res://Scripts/Hazards/hazard_spawner.gd" id="2_ok7u7"]
+[ext_resource type="Texture2D" path="res://Assets/Tilesets/Carriage/Carriage-32x64.png" id="3_qapb8"]
+[ext_resource type="Texture2D" path="res://Assets/Tilesets/Horse/Horse-16x48.png" id="4_rn5qx"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_result_panel"]
 bg_color = Color(0.156863, 0.101961, 0.0666667, 0.94)
@@ -85,36 +87,27 @@ script = ExtResource("2_ok7u7")
 [node name="Wagon" type="Polygon2D" parent="World"]
 unique_name_in_owner = true
 polygon = PackedVector2Array(-16, -28, 16, -28, 14, 32, -14, 32)
-color = Color(0.301961, 0.180392, 0.101961, 1)
+color = Color(1, 1, 1, 0)
 
-[node name="Shadow" type="Polygon2D" parent="World/Wagon"]
+[node name="Shadow" type="Sprite2D" parent="World/Wagon"]
 position = Vector2(0, 5)
-polygon = PackedVector2Array(-18, -24, 18, -24, 16, 34, -16, 34)
-color = Color(0, 0, 0, 0.2)
+texture = ExtResource("3_qapb8")
+modulate = Color(0, 0, 0, 0.2)
 z_index = -2
 
-[node name="Canopy" type="Polygon2D" parent="World/Wagon"]
-position = Vector2(0, -6)
-polygon = PackedVector2Array(-14, -14, 14, -14, 10, 6, -10, 6)
-color = Color(0.607843, 0.423529, 0.247059, 1)
-
-[node name="Bench" type="Polygon2D" parent="World/Wagon"]
-position = Vector2(0, -18)
-polygon = PackedVector2Array(-10, -4, 10, -4, 10, 4, -10, 4)
-color = Color(0.764706, 0.65098, 0.447059, 1)
+[node name="CarriageSprite" type="Sprite2D" parent="World/Wagon"]
+texture = ExtResource("3_qapb8")
 
 [node name="HorseTeam" type="Node2D" parent="World/Wagon"]
 position = Vector2(0, -54)
 
-[node name="HorseLeft" type="Polygon2D" parent="World/Wagon/HorseTeam"]
+[node name="HorseLeft" type="Sprite2D" parent="World/Wagon/HorseTeam"]
 position = Vector2(-8, 0)
-polygon = PackedVector2Array(-5, -16, 5, -16, 6, 8, -6, 8)
-color = Color(0.180392, 0.109804, 0.0705882, 1)
+texture = ExtResource("4_rn5qx")
 
-[node name="HorseRight" type="Polygon2D" parent="World/Wagon/HorseTeam"]
+[node name="HorseRight" type="Sprite2D" parent="World/Wagon/HorseTeam"]
 position = Vector2(8, 0)
-polygon = PackedVector2Array(-5, -16, 5, -16, 6, 8, -6, 8)
-color = Color(0.180392, 0.109804, 0.0705882, 1)
+texture = ExtResource("4_rn5qx")
 
 [node name="HarnessLeft" type="Line2D" parent="World/Wagon/HorseTeam"]
 points = PackedVector2Array(0, 30, -8, 8)

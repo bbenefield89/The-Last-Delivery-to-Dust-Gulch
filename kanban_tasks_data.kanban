@@ -287,7 +287,7 @@
 				},
 				{
 					"details": "Replace wagon and horse placeholder shapes with production-ready MVP visuals.\n\nAssets:\n- Wagon: res://Assets/Tilesets/Carriage/Carriage-32x64.png\n- Horse: res://Assets/Tilesets/Horse/Horse-16x48.png (two instances side by side, 32x48 combined)\n\nDone when: The wagon and horse nodes render with final MVP sprites and no colored placeholder rectangles remain for either entity in the run scene.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Replace pothole, rock, and tumbleweed placeholder visuals with readable final hazard art.\n\nAssets:\n- Pothole: res://Assets/Tilesets/Pothole/Pothole-32x32.png\n- Rock/Boulder: res://Assets/Tilesets/Boulder/Boulder-32x32.png\n- Tumbleweed: res://Assets/Tilesets/Tumbleweed/Tumbleweed-32x32.png\n\nDone when: All three hazard types render with final art that is readable at a glance during gameplay.",

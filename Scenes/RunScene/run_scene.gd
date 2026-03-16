@@ -6,6 +6,8 @@ signal return_to_title_requested
 const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
+const CARRIAGE_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64.png")
+const HORSE_TEXTURE := preload("res://Assets/Tilesets/Horse/Horse-16x48.png")
 const WAGON_LOOP_SOUND := preload("res://Assets/Sfx/Horse-and-Chariot-30-sec-73615.mp3")
 const IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
 const POTHOLE_IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
@@ -28,8 +30,8 @@ const PAUSE_ACTION := "pause_run"
 const STEER_SPEED := 180.0
 const ROAD_HALF_WIDTH := 104.0
 const WAGON_BASE_Y := 0.0
-const WAGON_BASE_COLOR := Color(0.301961, 0.180392, 0.101961, 1.0)
-const WAGON_HIT_COLOR := Color(0.760784, 0.447059, 0.239216, 1.0)
+const WAGON_BASE_COLOR := Color(1, 1, 1, 1)
+const WAGON_HIT_COLOR := Color(1, 0.72, 0.72, 1)
 const CAMERA_VERTICAL_OFFSET := 120.0
 const IMPACT_FLASH_DURATION := 0.18
 const IMPACT_WOBBLE_DURATION := 0.32
@@ -116,6 +118,10 @@ var _onboarding_active := false
 @onready var _scroll_segment_a: Node2D = %ScrollSegmentA
 @onready var _scroll_segment_b: Node2D = %ScrollSegmentB
 @onready var _wagon: Polygon2D = %Wagon
+@onready var _wagon_shadow: Sprite2D = $World/Wagon/Shadow
+@onready var _wagon_sprite: Sprite2D = $World/Wagon/CarriageSprite
+@onready var _horse_left_sprite: Sprite2D = $World/Wagon/HorseTeam/HorseLeft
+@onready var _horse_right_sprite: Sprite2D = $World/Wagon/HorseTeam/HorseRight
 @onready var _dust_trail: CPUParticles2D = %DustTrail
 @onready var _health_label: Label = %HealthLabel
 @onready var _cargo_label: Label = %CargoLabel
@@ -184,6 +190,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_ensure_input_actions()
 	_ensure_scroll_visuals()
+	_configure_vehicle_sprites()
 	_configure_touch_buttons()
 	_configure_dust_trail()
 	_configure_audio_players()
@@ -208,6 +215,21 @@ func _ready() -> void:
 	_refresh_result_screen()
 	_refresh_touch_controls()
 	_refresh_audio_presentation()
+
+
+## Applies the imported carriage and horse art to the existing wagon rig nodes.
+func _configure_vehicle_sprites() -> void:
+	if _wagon != null:
+		_wagon.color = Color(1, 1, 1, 0)
+		_wagon.modulate = WAGON_BASE_COLOR
+	if _wagon_shadow != null:
+		_wagon_shadow.texture = CARRIAGE_TEXTURE
+	if _wagon_sprite != null:
+		_wagon_sprite.texture = CARRIAGE_TEXTURE
+	if _horse_left_sprite != null:
+		_horse_left_sprite.texture = HORSE_TEXTURE
+	if _horse_right_sprite != null:
+		_horse_right_sprite.texture = HORSE_TEXTURE
 
 
 ## Applies the shared input-prompt font styling to the mobile touch buttons.
@@ -648,6 +670,7 @@ func _input(event: InputEvent) -> void:
 	_refresh_recovery_prompt()
 
 
+## Updates the wagon flash, wobble, and shake presentation for the current run state.
 func _update_impact_feedback(delta: float) -> void:
 	if _wagon == null:
 		return
@@ -657,7 +680,7 @@ func _update_impact_feedback(delta: float) -> void:
 	_impact_wobble_remaining = max(0.0, _impact_wobble_remaining - delta)
 	_impact_shake_remaining = max(0.0, _impact_shake_remaining - delta)
 
-	_wagon.color = WAGON_HIT_COLOR if _impact_flash_remaining > 0.0 else WAGON_BASE_COLOR
+	_set_vehicle_modulate(WAGON_HIT_COLOR if _impact_flash_remaining > 0.0 else WAGON_BASE_COLOR)
 	if _run_state != null and _run_state.active_failure == &"wheel_loose":
 		_wagon.rotation = sin(_impact_time * WHEEL_LOOSE_WOBBLE_FREQUENCY) * deg_to_rad(WHEEL_LOOSE_WOBBLE_DEGREES)
 	elif _run_state != null and _run_state.active_failure == &"horse_panic":
@@ -667,6 +690,18 @@ func _update_impact_feedback(delta: float) -> void:
 		_wagon.rotation = sin(_impact_time * IMPACT_WOBBLE_FREQUENCY) * deg_to_rad(IMPACT_WOBBLE_DEGREES) * wobble_strength
 	else:
 		_wagon.rotation = 0.0
+
+
+## Applies a shared modulate tint across the wagon rig sprites.
+func _set_vehicle_modulate(color: Color) -> void:
+	if _wagon != null:
+		_wagon.modulate = color
+	if _wagon_sprite != null:
+		_wagon_sprite.modulate = color
+	if _horse_left_sprite != null:
+		_horse_left_sprite.modulate = color
+	if _horse_right_sprite != null:
+		_horse_right_sprite.modulate = color
 
 
 func _trigger_impact_feedback() -> void:
