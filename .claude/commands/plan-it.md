@@ -9,13 +9,18 @@ Enter Plan Mode to draft an implementation plan for the current feature or ticke
 2. Read the relevant sections of the design document for the feature area.
 3. Read the current code in the affected vertical slice(s) to understand existing patterns.
 4. Enter Plan Mode.
-5. Draft an ordered implementation plan:
+5. **Talk it out before writing anything.** Do not draft a full plan immediately.
+   - Ask focused questions one or two at a time to understand intent, constraints, and preferences.
+   - Surface design options and tradeoffs in plain language, not walls of text.
+   - Get alignment on approach before committing to a plan structure.
+   - Only move to drafting once the direction is agreed.
+6. Draft an ordered implementation plan:
    - Each step should be scoped to one logical unit of work, small enough to review in isolation.
    - If the scope seems too large for a single ticket, flag it and propose splitting into multiple tickets instead of adding more steps.
    - Include test expectations for each meaningful step.
    - Flag any scope concerns or design document conflicts before the plan is approved.
-6. Present the plan for human review.
-7. Once the user agrees with the plan, write the ticket immediately without waiting for an explicit instruction to do so.
+7. Present the plan for human review.
+8. Once the user agrees with the plan, write the ticket immediately without waiting for an explicit instruction to do so.
 
 ## Constraints
 

@@ -11,6 +11,7 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
+				"d17a0000-0000-0000-0000-000000000017",
 				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
 			]
 		},
@@ -339,6 +340,22 @@
 				{
 					"details": "Remove the Speed stat from the result panel. It reads as zero at run end and adds no meaningful information.\n\nDone when: The Speed stat no longer appears on either the success or collapse result panel.",
 					"done": true
+				}
+			]
+		},
+		{
+			"uuid": "d17a0000-0000-0000-0000-000000000017",
+			"title": "DG-17",
+			"description": "Task: HUD redesign — reduce HUD footprint after the 640×360 viewport change.\n\nThe original HUDPanel was designed at 1152×648 and now occupies roughly one-third of the 640×360 canvas. The playable road area feels cramped as a result. The fix replaces the monolithic HUDPanel with two focused elements: a thin full-width distance bar pinned to the very top of the viewport, and a compact health+cargo panel in the top-left corner.\n\nWhat gets removed from HUDPanel: TitleLabel, HintLabel, SpeedLabel, ProgressLabel, ProgressBar.\nWhat stays in HUDPanel: health bar + health number label, cargo number label.\nWhat gets added at the HUDLayer level: a new full-width ProgressBar (DistanceBar) 640×10px at the top edge.\n\nAffected files:\n- Scenes/RunScene/RunScene.tscn\n- Scenes/RunScene/run_scene.gd\n\nDone when: HUDPanel is compact (~140×56px, top-left), contains only health bar+number and cargo number, the script has no dangling references to removed nodes, and a thin golden distance bar spans the full top edge of the viewport and advances correctly across a run.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Strip the HUD panel and add health bar.\n\nIn Scenes/RunScene/RunScene.tscn:\n- Delete TitleLabel, HintLabel, SpeedLabel, ProgressLabel, and ProgressBar from HUDPanel.\n- Resize HUDPanel to ~140×56px anchored top-left.\n- Inside the panel's VBoxContainer, restructure to two rows:\n  - Row 1: HBoxContainer with a ProgressBar (health bar, ~80px wide, max=100) and a Label for the health number. Assign unique names %HealthBar and %HealthLabel.\n  - Row 2: Label for cargo count. Assign unique name %CargoLabel.\n\nIn Scenes/RunScene/run_scene.gd:\n- Remove @onready vars for %SpeedLabel, %ProgressLabel, and %ProgressBar.\n- Remove their update lines from _refresh_status().\n- Add @onready var _health_bar pointing to %HealthBar.\n- In _refresh_status(), set _health_bar.value = _run_state.wagon_health (max 100).\n- Update %HealthLabel and %CargoLabel text in _refresh_status() to match the new layout.\n\nDone when: HUDPanel contains only the health bar+number and cargo number, renders compactly in the top-left corner, and the script has no dangling references to removed nodes.",
+					"done": false
+				},
+				{
+					"details": "Add full-width distance bar at top of viewport.\n\nIn Scenes/RunScene/RunScene.tscn:\n- Add a new ProgressBar node directly inside HUDLayer (not inside HUDPanel). Name it DistanceBar, unique name %DistanceBar.\n- Anchors: full width, top edge. offset_left=0, offset_top=0, offset_right=640, offset_bottom=10.\n- Style: fill color golden tan (Color(0.780, 0.624, 0.318)) to match the existing palette. Disable the percentage text label. Transparent background (no panel behind it). min_value=0, max_value=100.\n\nIn Scenes/RunScene/run_scene.gd:\n- Add @onready var _distance_bar pointing to %DistanceBar.\n- In _refresh_status(), set _distance_bar.value = _run_state.get_delivery_progress_ratio() * 100.0.\n\nDone when: A thin golden bar spans the full top edge of the viewport and advances correctly from empty to full over the course of a run.",
+					"done": false
 				}
 			]
 		},
