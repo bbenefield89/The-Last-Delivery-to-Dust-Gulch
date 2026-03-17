@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan It"
+  short_description: "Plan a feature collaboratively, then write the ticket"
+  default_prompt: "Use $plan-it to collaboratively plan the next feature or ticket for this repository, then write the kanban ticket once agreed."

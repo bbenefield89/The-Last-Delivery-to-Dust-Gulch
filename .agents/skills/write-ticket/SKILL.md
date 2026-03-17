@@ -1,3 +1,10 @@
+---
+name: write-ticket
+description: Create a new stepped kanban ticket or retrofit an existing open ticket with steps. Reads `kanban_tasks_data.kanban` to determine the next sequential DG number, drafts the ticket content for review, then writes it to the board.
+---
+
+# Write Ticket
+
 Follow this workflow when asked to create a ticket, write a ticket, or add steps to an existing ticket.
 
 ## Workflow
@@ -9,7 +16,7 @@ Follow this workflow when asked to create a ticket, write a ticket, or add steps
    - create a new ticket
    - retrofit steps onto an existing open ticket
    - rewrite an existing open ticket's steps or description
-3. For every open work ticket written by this command, require:
+3. For every open work ticket written by this skill, require:
    - a valid `DG-<number>` title
    - a category of `Task`, `Bug`, or `TechDebt`
    - a `description` field written in the ticket description format below
@@ -28,7 +35,7 @@ Follow this workflow when asked to create a ticket, write a ticket, or add steps
 
 ## Ticket Description Format
 
-Tickets are consumed by Codex (the implementor). The `description` field must give Codex enough context to understand the full problem without reading other files first.
+The `description` field must give the implementor enough context to understand the full problem without reading other files first.
 
 ```
 <Full problem description. Explain what is broken or needed and why,
@@ -40,7 +47,7 @@ Done when: <Definition of Done for the entire ticket — what does
 
 ## Step Format
 
-Each step's `details` field must be specific enough for Codex to act on in isolation, and must include a Definition of Done.
+Each step's `details` field must be specific enough to act on in isolation, and must include a Definition of Done.
 
 ```
 <Description of what to do in this step.>
@@ -55,7 +62,8 @@ Steps exist to keep each change reviewable in isolation. Use as many steps as th
 ## Repo Notes
 
 - Open work tickets in `Todo` or `Doing` must not be left without steps.
-- `start-next-task` and `merge-it` (Codex skills) both block on step-less open tickets.
+- `$start-next-task` and `$merge-it` both block on step-less open tickets.
+- Ticket title format is `DG-<number>`, numbered sequentially.
 
 ## Required Outcome
 

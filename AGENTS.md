@@ -57,6 +57,8 @@ Do not expand scope into these areas unless explicitly requested:
 - Narrative-heavy dialogue systems
 - Large inventory or survival systems
 
+Bandits may appear only as flavor or simple environmental pressure if they can be added cheaply and the MVP is already stable.
+
 If a request conflicts with the current jam scope, call that out clearly and proceed only after the user confirms the expansion.
 
 ## Kanban Ticket Rules
@@ -71,7 +73,7 @@ When creating tickets:
 - Every open work ticket must include an ordered `steps` array when it is created.
 - Open work tickets in `Todo` or `Doing` must not be left step-less; backfill missing steps before they are worked or merged.
 
-Do not create tickets unless the user explicitly asks for them.
+Write a ticket when a plan or feature has been agreed upon in conversation, without waiting for the user to explicitly ask. Use `$write-ticket` only when the user wants a ticket written directly without a planning discussion first.
 
 ### Ticket Description Format
 
@@ -132,7 +134,35 @@ To signal a block:
 2. Commit current progress with the message `wip(DG-<number>): blocked — <short reason>`.
 3. Report back to the user with a clear description of what you were attempting, what you encountered, and what decision or information is needed to unblock you.
 
-The user will bring the block to Claude (the architect) who will read the ticket, investigate, and plan a path forward.
+Investigate the conflict or missing context yourself when feasible — read the affected code, reason through the options, and update or add ticket steps with a clear path forward. If the investigation requires a design decision you cannot make alone, report back clearly and wait for the user's direction.
+
+## Session Start
+
+At the start of a planning or implementation conversation, check the last few git commit messages to understand what has recently shipped before making new plans or ticket decisions.
+
+## GDD Sync
+
+`Docs/GDD.md` is the source of truth. If a planning discussion or implemented ticket changes or contradicts design intent, update the design document to reflect the agreed direction before or alongside writing the ticket.
+
+## Planning
+
+When the user wants to plan a feature or ticket, use the `$plan-it` skill. This skill reads the GDD, reads affected code, talks through design tradeoffs, drafts an ordered implementation plan for human approval, and writes the ticket once agreed.
+
+When planning:
+- Ask focused questions one or two at a time before drafting.
+- Surface design options and tradeoffs; get alignment before writing steps.
+- Keep plans scoped to the vertical slice. Flag overbuilding.
+- Once the user agrees with the plan, write the ticket immediately.
+
+If a request conflicts with the current jam scope (see Scope Guardrails above), call that out clearly and proceed only after the user confirms the expansion.
+
+## Custom Skills
+
+- `$start-next-task` — Start or resume the next kanban ticket step by step.
+- `$merge-it` — Finish and merge the active ticket; fast-forward `main`.
+- `$implement-plan` — Execute an already-discussed agreed plan end-to-end.
+- `$plan-it` — Plan a feature or ticket collaboratively, then write the ticket.
+- `$write-ticket` — Create or retrofit a kanban ticket with proper steps.
 
 ## Repository Rules
 

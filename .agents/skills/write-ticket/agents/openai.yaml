@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write Ticket"
+  short_description: "Create or retrofit a kanban ticket with proper steps"
+  default_prompt: "Use $write-ticket to create a new kanban ticket or backfill steps on an existing open ticket in this repository."
