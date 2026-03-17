@@ -132,6 +132,7 @@ var _onboarding_active := false
 @onready var _dust_trail: CPUParticles2D = %DustTrail
 @onready var _health_bar: ProgressBar = %HealthBar
 @onready var _health_label: Label = %HealthLabel
+@onready var _distance_bar: ProgressBar = %DistanceBar
 @onready var _cargo_label: Label = %CargoLabel
 @onready var _touch_layer: CanvasLayer = %TouchLayer
 @onready var _touch_left_button: Button = %TouchLeft
@@ -408,18 +409,21 @@ func _process(delta: float) -> void:
 
 ## Refreshes the compact run HUD values from the bound run state.
 func _refresh_status() -> void:
-	if _health_bar == null or _health_label == null or _cargo_label == null:
+	if _health_bar == null or _health_label == null or _distance_bar == null or _cargo_label == null:
 		return
 
 	if _run_state == null:
 		_health_bar.value = 0.0
 		_health_label.text = "--"
+		_distance_bar.value = 0.0
 		_cargo_label.text = "Cargo --"
 		return
 
 	_health_bar.max_value = 100.0
 	_health_bar.value = _run_state.wagon_health
 	_health_label.text = "%d" % _run_state.wagon_health
+	_distance_bar.max_value = 100.0
+	_distance_bar.value = _run_state.get_delivery_progress_ratio() * 100.0
 	_cargo_label.text = "Cargo %d" % _run_state.cargo_value
 
 
