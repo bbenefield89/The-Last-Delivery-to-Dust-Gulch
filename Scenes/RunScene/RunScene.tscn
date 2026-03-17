@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://v3sqh1pw8m2l"]
+[gd_scene load_steps=9 format=3 uid="uid://v3sqh1pw8m2l"]
 
 [ext_resource type="Script" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
 [ext_resource type="Script" path="res://Scripts/Hazards/hazard_spawner.gd" id="2_ok7u7"]
@@ -46,6 +46,13 @@ corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 shadow_color = Color(0, 0, 0, 0.34)
 shadow_size = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_fill"]
+bg_color = Color(0.74902, 0.223529, 0.184314, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [node name="RunScene" type="Node2D"]
 script = ExtResource("1_4n0rj")
@@ -165,63 +172,59 @@ layer = 0
 [node name="HUDPanel" type="PanelContainer" parent="HUDLayer"]
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 236.0
-offset_bottom = 170.0
+offset_right = 156.0
+offset_bottom = 72.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_hud_panel")
 
 [node name="MarginContainer" type="MarginContainer" parent="HUDLayer/HUDPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 4
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 4
 
-[node name="TitleLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
+[node name="HealthRow" type="HBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="HealthTag" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
-theme_override_font_sizes/font_size = 26
-text = "Dust Gulch Run"
+theme_override_font_sizes/font_size = 12
+text = "HP"
 
-[node name="HintLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
+[node name="HealthBarMargin" type="MarginContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.921569, 0.843137, 0.65098, 1)
-text = "Steer with A/D or Left/Right."
+size_flags_horizontal = 3
+theme_override_constants/margin_top = 5
 
-[node name="HealthLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
+[node name="HealthBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthBarMargin"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 10)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
+theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="HealthLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
-text = "Health: --"
+theme_override_font_sizes/font_size = 14
+text = "--"
 
 [node name="CargoLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
-text = "Cargo: --"
-
-[node name="SpeedLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
-text = "Speed: --"
-
-[node name="ProgressLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
-text = "Distance: --"
-
-[node name="ProgressBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
-max_value = 100.0
-value = 0.0
-show_percentage = false
+theme_override_font_sizes/font_size = 14
+text = "Cargo --"
 
 [node name="TouchLayer" type="CanvasLayer" parent="."]
 unique_name_in_owner = true

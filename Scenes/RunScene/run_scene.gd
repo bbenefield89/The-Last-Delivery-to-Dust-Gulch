@@ -130,11 +130,9 @@ var _onboarding_active := false
 @onready var _horse_left_sprite: Sprite2D = $World/Wagon/HorseTeam/HorseLeft
 @onready var _horse_right_sprite: Sprite2D = $World/Wagon/HorseTeam/HorseRight
 @onready var _dust_trail: CPUParticles2D = %DustTrail
+@onready var _health_bar: ProgressBar = %HealthBar
 @onready var _health_label: Label = %HealthLabel
 @onready var _cargo_label: Label = %CargoLabel
-@onready var _speed_label: Label = %SpeedLabel
-@onready var _progress_label: Label = %ProgressLabel
-@onready var _progress_bar: ProgressBar = %ProgressBar
 @onready var _touch_layer: CanvasLayer = %TouchLayer
 @onready var _touch_left_button: Button = %TouchLeft
 @onready var _touch_right_button: Button = %TouchRight
@@ -408,27 +406,21 @@ func _process(delta: float) -> void:
 	_refresh_touch_controls()
 	_refresh_audio_presentation()
 
-
+## Refreshes the compact run HUD values from the bound run state.
 func _refresh_status() -> void:
-	if _health_label == null or _cargo_label == null or _speed_label == null or _progress_label == null or _progress_bar == null:
+	if _health_bar == null or _health_label == null or _cargo_label == null:
 		return
 
 	if _run_state == null:
-		_health_label.text = "Health: --"
-		_cargo_label.text = "Cargo: --"
-		_speed_label.text = "Speed: --"
-		_progress_label.text = "Distance: --"
-		_progress_bar.value = 0.0
+		_health_bar.value = 0.0
+		_health_label.text = "--"
+		_cargo_label.text = "Cargo --"
 		return
 
-	_health_label.text = "Health: %d" % _run_state.wagon_health
-	_cargo_label.text = "Cargo: %d" % _run_state.cargo_value
-	_speed_label.text = "Speed: %.0f" % _run_state.current_speed
-	_progress_label.text = "Distance: %.0f / %.0f" % [
-		_run_state.distance_remaining,
-		_run_state.route_distance,
-	]
-	_progress_bar.value = _run_state.get_delivery_progress_ratio() * 100.0
+	_health_bar.max_value = 100.0
+	_health_bar.value = _run_state.wagon_health
+	_health_label.text = "%d" % _run_state.wagon_health
+	_cargo_label.text = "Cargo %d" % _run_state.cargo_value
 
 
 ## Shows only the active recovery sequence prompt when gameplay allows it.

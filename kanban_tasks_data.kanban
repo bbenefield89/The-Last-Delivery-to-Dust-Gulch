@@ -11,14 +11,15 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"d17a0000-0000-0000-0000-000000000017",
 				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"d17a0000-0000-0000-0000-000000000017"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -351,7 +352,7 @@
 			"steps": [
 				{
 					"details": "Strip the HUD panel and add health bar.\n\nIn Scenes/RunScene/RunScene.tscn:\n- Delete TitleLabel, HintLabel, SpeedLabel, ProgressLabel, and ProgressBar from HUDPanel.\n- Resize HUDPanel to ~140×56px anchored top-left.\n- Inside the panel's VBoxContainer, restructure to two rows:\n  - Row 1: HBoxContainer with a ProgressBar (health bar, ~80px wide, max=100) and a Label for the health number. Assign unique names %HealthBar and %HealthLabel.\n  - Row 2: Label for cargo count. Assign unique name %CargoLabel.\n\nIn Scenes/RunScene/run_scene.gd:\n- Remove @onready vars for %SpeedLabel, %ProgressLabel, and %ProgressBar.\n- Remove their update lines from _refresh_status().\n- Add @onready var _health_bar pointing to %HealthBar.\n- In _refresh_status(), set _health_bar.value = _run_state.wagon_health (max 100).\n- Update %HealthLabel and %CargoLabel text in _refresh_status() to match the new layout.\n\nDone when: HUDPanel contains only the health bar+number and cargo number, renders compactly in the top-left corner, and the script has no dangling references to removed nodes.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add full-width distance bar at top of viewport.\n\nIn Scenes/RunScene/RunScene.tscn:\n- Add a new ProgressBar node directly inside HUDLayer (not inside HUDPanel). Name it DistanceBar, unique name %DistanceBar.\n- Anchors: full width, top edge. offset_left=0, offset_top=0, offset_right=640, offset_bottom=10.\n- Style: fill color golden tan (Color(0.780, 0.624, 0.318)) to match the existing palette. Disable the percentage text label. Transparent background (no panel behind it). min_value=0, max_value=100.\n\nIn Scenes/RunScene/run_scene.gd:\n- Add @onready var _distance_bar pointing to %DistanceBar.\n- In _refresh_status(), set _distance_bar.value = _run_state.get_delivery_progress_ratio() * 100.0.\n\nDone when: A thin golden bar spans the full top edge of the viewport and advances correctly from empty to full over the course of a run.",

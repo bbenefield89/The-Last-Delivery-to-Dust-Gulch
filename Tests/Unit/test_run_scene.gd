@@ -51,21 +51,23 @@ func test_setup_populates_hud_labels_with_run_state_values() -> void:
 	state.distance_remaining = 876.0
 	state.wagon_health = 77
 	state.cargo_value = 63
-	state.current_speed = 345.0
 	state.lateral_position = 12.0
 	state.active_failure = &"wheel_loose"
 	scene.setup(state)
 
+	var health_tag: Label = scene.get_node("HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthTag")
+	var health_bar_margin: MarginContainer = scene.get_node("HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthBarMargin")
+	var health_bar: ProgressBar = scene.get_node("%HealthBar")
 	var health_label: Label = scene.get_node("%HealthLabel")
 	var cargo_label: Label = scene.get_node("%CargoLabel")
-	var speed_label: Label = scene.get_node("%SpeedLabel")
-	var progress_label: Label = scene.get_node("%ProgressLabel")
-	var progress_bar: ProgressBar = scene.get_node("%ProgressBar")
-	assert_eq(health_label.text, "Health: 77")
-	assert_eq(cargo_label.text, "Cargo: 63")
-	assert_eq(speed_label.text, "Speed: 345")
-	assert_eq(progress_label.text, "Distance: 876 / 500")
-	assert_almost_eq(progress_bar.value, 0.0, 0.01)
+	assert_eq(health_tag.text, "HP")
+	assert_eq(health_bar_margin.get_theme_constant("margin_top"), 5)
+	assert_eq(health_label.text, "77")
+	assert_eq(cargo_label.text, "Cargo 63")
+	assert_eq(health_bar.value, 77.0)
+	assert_false(scene.has_node("%SpeedLabel"))
+	assert_false(scene.has_node("%ProgressLabel"))
+	assert_false(scene.has_node("%ProgressBar"))
 	assert_false(scene.has_node("%OutcomeLabel"))
 
 
@@ -839,17 +841,26 @@ func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window(
 	assert_eq(state.recovery_cooldown_remaining, 0.0)
 
 
-func test_progress_bar_tracks_delivery_completion_ratio() -> void:
+func test_step1_hud_panel_only_contains_health_and_cargo() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	var state := RunStateType.new()
-	state.distance_remaining = 125.0
-	scene.setup(state)
+	var hud_panel: PanelContainer = scene.get_node("HUDLayer/HUDPanel")
+	var health_tag: Label = scene.get_node("HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthTag")
+	var health_bar: ProgressBar = scene.get_node("%HealthBar")
+	var health_label: Label = scene.get_node("%HealthLabel")
+	var cargo_label: Label = scene.get_node("%CargoLabel")
 
-	var progress_bar: ProgressBar = scene.get_node("%ProgressBar")
-	assert_almost_eq(progress_bar.value, 75.0, 0.01)
+	assert_eq(hud_panel.size.x, 140.0)
+	assert_true(hud_panel.size.y <= 58.0)
+	assert_eq(health_tag.text, "HP")
+	assert_not_null(health_bar)
+	assert_not_null(health_label)
+	assert_not_null(cargo_label)
+	assert_false(scene.has_node("%SpeedLabel"))
+	assert_false(scene.has_node("%ProgressLabel"))
+	assert_false(scene.has_node("%ProgressBar"))
 
 
 func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() -> void:
