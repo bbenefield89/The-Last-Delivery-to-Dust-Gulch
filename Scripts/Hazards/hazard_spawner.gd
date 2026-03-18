@@ -6,20 +6,31 @@ extends Node2D
 const LANE_X_POSITIONS := [-68.0, 0.0, 68.0]
 const DEFAULT_SPAWN_Y := -320.0
 const DEFAULT_DESPAWN_Y := 260.0
+const DEFAULT_HAZARD_TYPE := &"pothole"
 const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Pothole/Pothole-32x32.png")
 const ROCK_TEXTURE := preload("res://Assets/Tilesets/Boulder/Boulder-32x32.png")
 const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Tumbleweed/Tumbleweed-32x32.png")
 const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const PRESSURE_PAIR_Y_OFFSET := 56.0
-const HAZARD_DAMAGE := {
-	&"pothole": 10,
-	&"rock": 15,
-	&"tumbleweed": 6,
-}
-const HAZARD_CARGO_DAMAGE := {
-	&"pothole": 4,
-	&"rock": 7,
-	&"tumbleweed": 3,
+const HAZARD_PROFILES := {
+	&"pothole": {
+		"texture": POTHOLE_TEXTURE,
+		"damage": 10,
+		"cargo_damage": 4,
+		"size": Vector2(32.0, 24.0),
+	},
+	&"rock": {
+		"texture": ROCK_TEXTURE,
+		"damage": 15,
+		"cargo_damage": 7,
+		"size": Vector2(36.0, 36.0),
+	},
+	&"tumbleweed": {
+		"texture": TUMBLEWEED_TEXTURE,
+		"damage": 6,
+		"cargo_damage": 3,
+		"size": Vector2(32.0, 32.0),
+	},
 }
 
 # Private Fields
@@ -142,21 +153,13 @@ func _get_pressure_lane_index(primary_lane_index: int) -> int:
 ## Builds a readable sprite for the requested hazard type.
 func _build_hazard_visual(hazard_type: StringName) -> Sprite2D:
 	var hazard := Sprite2D.new()
-	hazard.texture = _get_hazard_texture(hazard_type)
+	hazard.texture = _get_hazard_profile(hazard_type)["texture"]
 	return hazard
 
 
-## Resolves the imported sprite texture for the requested hazard type.
-func _get_hazard_texture(hazard_type: StringName) -> Texture2D:
-	match hazard_type:
-		&"pothole":
-			return POTHOLE_TEXTURE
-		&"rock":
-			return ROCK_TEXTURE
-		&"tumbleweed":
-			return TUMBLEWEED_TEXTURE
-		_:
-			return POTHOLE_TEXTURE
+## Resolves the shared gameplay profile for the requested hazard type.
+func _get_hazard_profile(hazard_type: StringName) -> Dictionary:
+	return HAZARD_PROFILES.get(hazard_type, HAZARD_PROFILES[DEFAULT_HAZARD_TYPE])
 
 
 ## Frees hazards after they scroll past the visible play area.
@@ -179,10 +182,11 @@ func collect_collisions(wagon_position: Vector2, wagon_size: Vector2) -> Array[D
 		var hazard_size := _get_hazard_size(hazard.get_meta("hazard_type", &""))
 		var hazard_rect := Rect2(hazard.position - (hazard_size * 0.5), hazard_size)
 		if wagon_rect.intersects(hazard_rect):
+			var profile := _get_hazard_profile(hazard.get_meta("hazard_type", &""))
 			collisions.append({
 				"type": hazard.get_meta("hazard_type", &""),
-				"damage": HAZARD_DAMAGE.get(hazard.get_meta("hazard_type", &""), 0),
-				"cargo_damage": HAZARD_CARGO_DAMAGE.get(hazard.get_meta("hazard_type", &""), 0),
+				"damage": profile["damage"],
+				"cargo_damage": profile["cargo_damage"],
 				"node": hazard,
 			})
 
@@ -191,15 +195,7 @@ func collect_collisions(wagon_position: Vector2, wagon_size: Vector2) -> Array[D
 
 ## Returns the collision size used for each hazard type.
 func _get_hazard_size(hazard_type: StringName) -> Vector2:
-	match hazard_type:
-		&"pothole":
-			return Vector2(32.0, 24.0)
-		&"rock":
-			return Vector2(36.0, 36.0)
-		&"tumbleweed":
-			return Vector2(32.0, 32.0)
-		_:
-			return Vector2(32.0, 32.0)
+	return _get_hazard_profile(hazard_type)["size"]
 
 
 class SpawnBand:

@@ -374,7 +374,7 @@
 				},
 				{
 					"details": "Keep downstream hazard behavior unchanged while randomizing only spawn selection. The wagon should still collide with the same hazard nodes, hazards should still report the same damage and cargo damage values, and run_scene.gd should continue to route pothole, rock, and tumbleweed impact audio exactly as it does now after hazards spawn.\n\nDone when: this ticket changes spawn variety only, and no gameplay or audio logic downstream of an already-spawned hazard has been rewritten.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Rewrite Tests/Unit/test_hazard_spawner.gd so it validates the new band-based spawning rules instead of the old fixed sequence. Add a deterministic randomness seam in the spawner if needed so tests can prove weighted band selection, band-specific spacing ranges, lane randomization, and late-only pressure-pair spawning without flaking. Update any run-scene tests that currently assume the old fixed spawn order so they remain valid under the new hazard randomization.\n\nDone when: the hazard spawner tests no longer assert the old PATTERN behavior, the new randomization rules are covered by automated tests, and the repo verification flow still passes with the updated tests.",
