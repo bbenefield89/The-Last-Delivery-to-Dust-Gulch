@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"17a69553-9cd1-409a-8231-b9d6ce1c70f3",
 				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
 				"97954889-ed96-474c-8b51-201bad60aa89",
 				"d4c22985-085e-437a-89a0-a19eb4210cff",
@@ -21,7 +20,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"17a69553-9cd1-409a-8231-b9d6ce1c70f3"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -392,7 +393,7 @@
 			"steps": [
 				{
 					"details": "Add a shared recovery-sequence generator in the recovery/failure slice that accepts route progress and a prompt pool, and returns a generated Array[StringName]. Keep the current prompt pool limited to steer_left and steer_right for now. Implement band-based weighted sequence lengths so early favors 3 with occasional 4, mid favors 4 with occasional 5, and late favors 5 with occasional 6. Repeated identical prompts are allowed.\n\nDone when: the generator can build left/right prompt sequences from progress alone, supports deterministic testing through an internal randomness seam if needed, and does not inspect interruption type or hazard source.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Update Scenes/RunScene/run_scene.gd so both wheel_loose and horse_panic request their recovery prompt sequences from the shared generator instead of using fixed arrays. Keep WHEEL_LOOSE_RECOVERY_DURATION and HORSE_PANIC_RECOVERY_DURATION unchanged, and leave titles, hints, penalties, wobble, trigger flow, and audio presentation exactly as they work now.\n\nDone when: both interruption states use generated prompt sequences, but all existing state-specific presentation and timing behavior remains unchanged outside of the prompt content itself.",
