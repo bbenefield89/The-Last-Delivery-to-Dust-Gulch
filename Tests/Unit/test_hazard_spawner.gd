@@ -3,45 +3,120 @@ extends GutTest
 const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 
 
-func test_advance_spawns_pattern_entries_with_lane_and_type_metadata() -> void:
+func _create_seeded_spawner() -> Node:
 	var spawner := HazardSpawnerType.new()
 	add_child_autofree(spawner)
+	return spawner
+
+
+func _prime_seeded_plan(spawner: Node, seed: int, route_progress_ratio: float) -> Variant:
+	spawner._rng.seed = seed
+	spawner._route_progress_ratio = route_progress_ratio
+	spawner._prime_next_spawn()
+	return spawner._next_spawn_plan
+
+
+func test_progress_bands_define_expected_spacing_ranges_and_weights() -> void:
+	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	spawner.advance(540.0)
+	spawner._route_progress_ratio = 0.0
+	var early_band = spawner._get_active_band()
+	assert_eq(early_band.spacing_min, 520.0)
+	assert_eq(early_band.spacing_max, 660.0)
+	assert_eq(early_band.weights.pothole, 6)
+	assert_eq(early_band.weights.rock, 2)
+	assert_eq(early_band.weights.tumbleweed, 4)
+	assert_false(early_band.allows_pressure_pair)
+
+	spawner._route_progress_ratio = 0.5
+	var mid_band = spawner._get_active_band()
+	assert_eq(mid_band.spacing_min, 420.0)
+	assert_eq(mid_band.spacing_max, 560.0)
+	assert_eq(mid_band.weights.pothole, 4)
+	assert_eq(mid_band.weights.rock, 3)
+	assert_eq(mid_band.weights.tumbleweed, 3)
+	assert_false(mid_band.allows_pressure_pair)
+
+	spawner._route_progress_ratio = 0.8
+	var late_band = spawner._get_active_band()
+	assert_eq(late_band.spacing_min, 320.0)
+	assert_eq(late_band.spacing_max, 460.0)
+	assert_eq(late_band.weights.pothole, 4)
+	assert_eq(late_band.weights.rock, 5)
+	assert_eq(late_band.weights.tumbleweed, 3)
+	assert_true(late_band.allows_pressure_pair)
+
+
+func test_seeded_spawn_plan_advance_uses_rolled_lane_and_type_metadata() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var plan = _prime_seeded_plan(spawner, 12, 0.1)
+	spawner.advance(plan.spacing, 0.1)
+
+	assert_eq(spawner.get_child_count(), 1)
 
 	var hazard: Sprite2D = spawner.get_child(0)
-	assert_eq(hazard.get_meta("hazard_type"), &"pothole")
-	assert_eq(hazard.get_meta("lane_index"), 1)
-	assert_eq(hazard.position.x, 0.0)
-	assert_eq(hazard.texture, HazardSpawnerType.POTHOLE_TEXTURE)
+	assert_eq(hazard.get_meta("hazard_type"), plan.hazard_type)
+	assert_eq(hazard.get_meta("lane_index"), plan.lane_index)
+	assert_eq(hazard.position.x, HazardSpawnerType.LANE_X_POSITIONS[plan.lane_index])
+	assert_eq(hazard.texture, spawner._get_hazard_profile(plan.hazard_type)["texture"])
 
 
-func test_advance_cycles_through_multiple_hazard_types() -> void:
-	var spawner := HazardSpawnerType.new()
-	add_child_autofree(spawner)
+func test_seeded_spawn_rolls_keep_spacing_inside_band_ranges() -> void:
+	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	spawner.advance(3200.0)
+	for roll_index in range(12):
+		var early_plan = _prime_seeded_plan(spawner, 100 + roll_index, 0.1)
+		assert_true(early_plan.spacing >= 520.0)
+		assert_true(early_plan.spacing <= 660.0)
 
-	var spawned_types: Array[StringName] = []
-	for child in spawner.get_children():
-		if child is Sprite2D:
-			spawned_types.append(child.get_meta("hazard_type"))
+		var mid_plan = _prime_seeded_plan(spawner, 200 + roll_index, 0.5)
+		assert_true(mid_plan.spacing >= 420.0)
+		assert_true(mid_plan.spacing <= 560.0)
 
-	assert_true(spawned_types.has(&"pothole"))
-	assert_true(spawned_types.has(&"rock"))
-	assert_true(spawned_types.has(&"tumbleweed"))
+		var late_plan = _prime_seeded_plan(spawner, 300 + roll_index, 0.9)
+		assert_true(late_plan.spacing >= 320.0)
+		assert_true(late_plan.spacing <= 460.0)
+
+
+func test_seeded_rolls_randomize_lane_selection_across_three_lanes() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var lane_indices: Dictionary = {}
+	for roll_index in range(18):
+		var plan = _prime_seeded_plan(spawner, 400 + roll_index, 0.5)
+		lane_indices[plan.lane_index] = true
+
+	assert_eq(lane_indices.size(), HazardSpawnerType.LANE_X_POSITIONS.size())
+
+
+func test_late_band_rolls_add_pressure_pairs_but_earlier_bands_do_not() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	for roll_index in range(12):
+		var early_plan = _prime_seeded_plan(spawner, 500 + roll_index, 0.2)
+		assert_false(early_plan.has_pressure_pair())
+
+		var mid_plan = _prime_seeded_plan(spawner, 600 + roll_index, 0.65)
+		assert_false(mid_plan.has_pressure_pair())
+
+		var late_plan = _prime_seeded_plan(spawner, 700 + roll_index, 0.75)
+		assert_true(late_plan.has_pressure_pair())
+		assert_ne(late_plan.pressure_pair_lane_index, late_plan.lane_index)
 
 
 func test_each_hazard_type_uses_a_distinct_readable_sprite() -> void:
-	var spawner := HazardSpawnerType.new()
-	add_child_autofree(spawner)
+	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	var pothole := spawner._build_hazard_visual(&"pothole")
-	var rock := spawner._build_hazard_visual(&"rock")
-	var tumbleweed := spawner._build_hazard_visual(&"tumbleweed")
+	var pothole: Sprite2D = spawner._build_hazard_visual(&"pothole")
+	var rock: Sprite2D = spawner._build_hazard_visual(&"rock")
+	var tumbleweed: Sprite2D = spawner._build_hazard_visual(&"tumbleweed")
 	autofree(pothole)
 	autofree(rock)
 	autofree(tumbleweed)
@@ -55,11 +130,10 @@ func test_each_hazard_type_uses_a_distinct_readable_sprite() -> void:
 
 
 func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
-	var spawner := HazardSpawnerType.new()
-	add_child_autofree(spawner)
+	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	spawner.advance(500.0)
+	spawner._spawn_hazard(&"pothole", 1)
 
 	for child in spawner.get_children():
 		if child is Sprite2D:
@@ -71,64 +145,17 @@ func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
 	assert_eq(spawner.get_child_count(), 0)
 
 
-func test_collect_collisions_reports_damage_for_intersecting_hazard() -> void:
-	var spawner := HazardSpawnerType.new()
-	add_child_autofree(spawner)
+func test_collect_collisions_reports_profile_damage_for_intersecting_hazard() -> void:
+	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	spawner.advance(540.0)
+	spawner._spawn_hazard(&"pothole", 1)
 
-	var collisions := spawner.collect_collisions(
+	var collisions: Array[Dictionary] = spawner.collect_collisions(
 		Vector2(0.0, HazardSpawnerType.DEFAULT_SPAWN_Y),
 		Vector2(32.0, 64.0)
 	)
 	assert_eq(collisions.size(), 1)
 	assert_eq(collisions[0]["type"], &"pothole")
 	assert_eq(collisions[0]["damage"], 10)
-
-
-func test_route_progress_reduces_spawn_spacing_for_faster_pacing() -> void:
-	var spawner := HazardSpawnerType.new()
-	add_child_autofree(spawner)
-	await wait_process_frames(1)
-
-	spawner.advance(500.0, 0.0)
-	assert_eq(spawner.get_child_count(), 0)
-
-	spawner.advance(40.0, 0.0)
-	assert_eq(spawner.get_child_count(), 1)
-
-	var accelerated_spawner := HazardSpawnerType.new()
-	add_child_autofree(accelerated_spawner)
-	await wait_process_frames(1)
-
-	accelerated_spawner.advance(380.0, 1.0)
-	assert_true(accelerated_spawner.get_child_count() >= 1)
-
-
-func test_late_route_progress_adds_pressure_pair_hazard() -> void:
-	var spawner := HazardSpawnerType.new()
-	add_child_autofree(spawner)
-	await wait_process_frames(1)
-
-	spawner.advance(500.0, 0.75)
-
-	assert_eq(spawner.get_child_count(), 2)
-
-	var primary_hazard: Sprite2D = spawner.get_child(0)
-	var pressure_hazard: Sprite2D = spawner.get_child(1)
-
-	assert_eq(primary_hazard.get_meta("lane_index"), 1)
-	assert_eq(pressure_hazard.get_meta("lane_index"), 0)
-	assert_eq(pressure_hazard.get_meta("hazard_type"), &"rock")
-	assert_eq(pressure_hazard.texture, HazardSpawnerType.ROCK_TEXTURE)
-
-
-func test_pair_pressure_does_not_start_before_tuned_threshold() -> void:
-	var spawner := HazardSpawnerType.new()
-	add_child_autofree(spawner)
-	await wait_process_frames(1)
-
-	spawner.advance(600.0, 0.7)
-
-	assert_eq(spawner.get_child_count(), 1)
+	assert_eq(collisions[0]["cargo_damage"], 4)

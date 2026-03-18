@@ -16,6 +16,14 @@ func _setup_active_run(scene: Node, state: RunStateType) -> void:
 	_dismiss_onboarding(scene)
 
 
+func _spawn_test_hazard(scene: Node, hazard_type: StringName, lane_index: int = 1) -> Sprite2D:
+	var spawner = scene.get_node("%HazardSpawner")
+	spawner._spawn_hazard(hazard_type, lane_index)
+	var hazard: Sprite2D = spawner.get_child(spawner.get_child_count() - 1)
+	hazard.position = Vector2(0.0, 0.0)
+	return hazard
+
+
 func _click_control(control: Control) -> void:
 	var center := control.get_global_rect().get_center()
 
@@ -181,12 +189,7 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
 
-	var spawner = scene.get_node("%HazardSpawner")
-	spawner.advance(540.0)
-	var hazard: Sprite2D = spawner.get_child(0)
-	for i in range(1, spawner.get_child_count()):
-		spawner.get_child(i).queue_free()
-	hazard.position = Vector2(0.0, 0.0)
+	_spawn_test_hazard(scene, &"pothole")
 	await wait_process_frames(1)
 	scene._process(0.0)
 	await wait_process_frames(1)
@@ -209,12 +212,7 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
 
-	var spawner = scene.get_node("%HazardSpawner")
-	spawner.advance(540.0)
-	var hazard: Sprite2D = spawner.get_child(0)
-	for i in range(1, spawner.get_child_count()):
-		spawner.get_child(i).queue_free()
-	hazard.position = Vector2(0.0, 0.0)
+	_spawn_test_hazard(scene, &"pothole")
 	await wait_process_frames(1)
 	scene._process(0.05)
 
@@ -232,14 +230,9 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
-	var spawner = scene.get_node("%HazardSpawner")
-	spawner.advance(540.0)
-	var hazard: Sprite2D = spawner.get_child(0)
-	for i in range(1, spawner.get_child_count()):
-		spawner.get_child(i).queue_free()
-	hazard.position = Vector2(0.0, 0.0)
+	_spawn_test_hazard(scene, &"pothole")
 	await wait_process_frames(1)
 	scene._process(0.05)
 	state.clear_failure()
@@ -841,7 +834,7 @@ func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window(
 	assert_eq(state.recovery_cooldown_remaining, 0.0)
 
 
-func test_step1_hud_panel_only_contains_health_and_cargo() -> void:
+func test_hud_panel_uses_compact_health_distance_and_cargo_layout() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
@@ -849,13 +842,15 @@ func test_step1_hud_panel_only_contains_health_and_cargo() -> void:
 	var hud_panel: PanelContainer = scene.get_node("HUDLayer/HUDPanel")
 	var health_tag: Label = scene.get_node("HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthTag")
 	var health_bar: ProgressBar = scene.get_node("%HealthBar")
+	var distance_bar: ProgressBar = scene.get_node("%DistanceBar")
 	var health_label: Label = scene.get_node("%HealthLabel")
 	var cargo_label: Label = scene.get_node("%CargoLabel")
 
 	assert_eq(hud_panel.size.x, 140.0)
-	assert_true(hud_panel.size.y <= 58.0)
+	assert_eq(hud_panel.size.y, 79.0)
 	assert_eq(health_tag.text, "HP")
 	assert_not_null(health_bar)
+	assert_not_null(distance_bar)
 	assert_not_null(health_label)
 	assert_not_null(cargo_label)
 	assert_false(scene.has_node("%SpeedLabel"))

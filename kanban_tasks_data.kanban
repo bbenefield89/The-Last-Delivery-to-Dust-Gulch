@@ -21,9 +21,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -44,7 +42,8 @@
 				"82e0cb8f-f2b8-4030-a441-52eabb24aee7",
 				"8f0f1b93-0c64-4299-9f64-cafd9f764de1",
 				"b3e7a12f-4c91-4d5e-9f83-1d2e3f4a5b6c",
-				"8bfb1b88-1068-4af6-be5f-645a0b5f852d"
+				"8bfb1b88-1068-4af6-be5f-645a0b5f852d",
+				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
 			]
 		}
 	],
@@ -373,15 +372,15 @@
 			"steps": [
 				{
 					"details": "Replace the fixed PATTERN loop in Scripts/Hazards/hazard_spawner.gd with weighted random hazard selection by progress band. Keep the current three hazard types and three lanes. Early band should spawn only single hazards with spacing in the 520.0 to 660.0 range. Mid band should spawn only single hazards with spacing in the 420.0 to 560.0 range and more balanced weights. Late band should use spacing in the 320.0 to 460.0 range and still support the existing pressure-pair concept.\n\nDone when: the spawner no longer depends on a fixed repeating pattern, hazard type selection is band-driven and randomized, and the late pressure-pair path still exists only in late progress.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Keep downstream hazard behavior unchanged while randomizing only spawn selection. The wagon should still collide with the same hazard nodes, hazards should still report the same damage and cargo damage values, and run_scene.gd should continue to route pothole, rock, and tumbleweed impact audio exactly as it does now after hazards spawn.\n\nDone when: this ticket changes spawn variety only, and no gameplay or audio logic downstream of an already-spawned hazard has been rewritten.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Rewrite Tests/Unit/test_hazard_spawner.gd so it validates the new band-based spawning rules instead of the old fixed sequence. Add a deterministic randomness seam in the spawner if needed so tests can prove weighted band selection, band-specific spacing ranges, lane randomization, and late-only pressure-pair spawning without flaking. Update any run-scene tests that currently assume the old fixed spawn order so they remain valid under the new hazard randomization.\n\nDone when: the hazard spawner tests no longer assert the old PATTERN behavior, the new randomization rules are covered by automated tests, and the repo verification flow still passes with the updated tests.",
-					"done": false
+					"done": true
 				}
 			]
 		},
