@@ -11,13 +11,16 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
+				"17a69553-9cd1-409a-8231-b9d6ce1c70f3",
+				"9ff0a204-c8bd-4e0b-972f-8a32eb242000"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -362,19 +365,59 @@
 		{
 			"uuid": "35ee46bc-0b91-4e29-85b7-acb2a4270f34",
 			"title": "DG-11",
-			"description": "Task: Route variety and world feel.\nGoal: Reduce repetition so the delivery run feels like a place rather than a single repeating strip.\nEnd state: The route contains enough environmental variation and presentation pacing to stay interesting across the full MVP run length.\nOut of scope for this ticket: branching levels or new gameplay modes.\n\nDone when: The full 1-to-3-minute run contains visible environmental variation across the route that prevents it from feeling like a single repeating strip, without introducing new gameplay mechanics.",
+			"description": "Task: Hazard spawn randomization.\n\nThe current run replays the same hazard script every time because Scripts/Hazards/hazard_spawner.gd uses a fixed repeating pattern of hazard type, lane, and spacing. That makes the route feel predictable even before we touch QTE or bad-luck systems.\n\nRepurpose this ticket so it only covers hazard spawn variety. Keep the current single route, current hazard types, current collision behavior, current impact audio routing, and current late-run pressure ramp. Do not change recovery QTE logic, bad-luck timing, failure/recovery state flow, or add new hazard types in this ticket.\n\nUse weighted progress bands so the run still ramps intentionally while no longer replaying the same sequence every run:\n- early: 0.00 to 0.33 route progress\n- mid: 0.33 to 0.66 route progress\n- late: 0.66 to 1.00 route progress\n\nTarget behavior for this ticket:\n- hazard type selection is randomized within weighted band rules\n- lane selection is randomized\n- spawn spacing is randomized within a min/max range per band\n- the existing late pressure-pair behavior still exists only in the late band\n\nAffected files:\n- Scripts/Hazards/hazard_spawner.gd\n- Tests/Unit/test_hazard_spawner.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: repeated runs no longer produce the same hazard order, lane order, and spacing cadence; the current hazard collision and audio behavior still works unchanged after spawn; and automated tests cover the new band-based spawn rules without relying on a fixed scripted pattern.",
 			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
 			"steps": [
 				{
-					"details": "Add visual variation passes to roadside props, background dressing, and route signage.\n\nDone when: At least two distinct visual prop types or background variations appear along the route and are visible across a full run.",
+					"details": "Replace the fixed PATTERN loop in Scripts/Hazards/hazard_spawner.gd with weighted random hazard selection by progress band. Keep the current three hazard types and three lanes. Early band should spawn only single hazards with spacing in the 520.0 to 660.0 range. Mid band should spawn only single hazards with spacing in the 420.0 to 560.0 range and more balanced weights. Late band should use spacing in the 320.0 to 460.0 range and still support the existing pressure-pair concept.\n\nDone when: the spawner no longer depends on a fixed repeating pattern, hazard type selection is band-driven and randomized, and the late pressure-pair path still exists only in late progress.",
+					"done": true
+				},
+				{
+					"details": "Keep downstream hazard behavior unchanged while randomizing only spawn selection. The wagon should still collide with the same hazard nodes, hazards should still report the same damage and cargo damage values, and run_scene.gd should continue to route pothole, rock, and tumbleweed impact audio exactly as it does now after hazards spawn.\n\nDone when: this ticket changes spawn variety only, and no gameplay or audio logic downstream of an already-spawned hazard has been rewritten.",
 					"done": false
 				},
 				{
-					"details": "Introduce simple presentation beats so the route does not feel visually flat from start to finish.\n\nDone when: At least one distinct mid-run or late-run visual landmark or transition element appears to break up visual monotony.",
+					"details": "Rewrite Tests/Unit/test_hazard_spawner.gd so it validates the new band-based spawning rules instead of the old fixed sequence. Add a deterministic randomness seam in the spawner if needed so tests can prove weighted band selection, band-specific spacing ranges, lane randomization, and late-only pressure-pair spawning without flaking. Update any run-scene tests that currently assume the old fixed spawn order so they remain valid under the new hazard randomization.\n\nDone when: the hazard spawner tests no longer assert the old PATTERN behavior, the new randomization rules are covered by automated tests, and the repo verification flow still passes with the updated tests.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "17a69553-9cd1-409a-8231-b9d6ce1c70f3",
+			"title": "DG-18",
+			"description": "Task: Shared recovery QTE generator.\n\nThe current recovery QTE content is hardcoded per interruption state in Scenes/RunScene/run_scene.gd. wheel_loose always uses one fixed prompt sequence and horse_panic always uses another fixed prompt sequence. That makes repeated recoveries feel scripted, and it ties prompt content to the event source instead of to the overall run pressure.\n\nThis ticket should only change how recovery prompt sequences are generated. Keep the current interruption states, trigger rules, bad-luck timing, titles, hints, active wobble/steering behavior, failure penalties, audio cues, and per-state recovery durations. Do not fold hazard spawning or bad-luck randomization into this ticket.\n\nReplace the hardcoded per-state prompt arrays with one shared generator that builds a sequence from route progress and a supplied prompt pool. For this ticket the prompt pool stays limited to steer_left and steer_right, but the generator interface should be shaped so future prompt types can be added without rewriting state-specific logic.\n\nUse route-progress bands for sequence length:\n- early: 0.00 to 0.33 progress, favor 3 prompts and occasionally 4\n- mid: 0.33 to 0.66 progress, favor 4 prompts and occasionally 5\n- late: 0.66 to 1.00 progress, favor 5 prompts and occasionally 6\n\nRepeated identical prompts are allowed. The generator must not inspect hazard type, bad-luck source, or active interruption state when choosing prompt content.\n\nAffected files:\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_scene.gd\n- Tests/Unit/test_recovery_sequence_generator.gd\n- one new shared generator script in the recovery/failure slice\n\nDone when: wheel_loose and horse_panic both source their prompt sequences from the same shared generator, generated sequence length scales by route progress band, current per-state presentation and timing stay unchanged, and automated tests cover the generator and run-scene integration deterministically.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add a shared recovery-sequence generator in the recovery/failure slice that accepts route progress and a prompt pool, and returns a generated Array[StringName]. Keep the current prompt pool limited to steer_left and steer_right for now. Implement band-based weighted sequence lengths so early favors 3 with occasional 4, mid favors 4 with occasional 5, and late favors 5 with occasional 6. Repeated identical prompts are allowed.\n\nDone when: the generator can build left/right prompt sequences from progress alone, supports deterministic testing through an internal randomness seam if needed, and does not inspect interruption type or hazard source.",
 					"done": false
 				},
 				{
-					"details": "Tune the cadence of environmental changes so the run stays readable while feeling less repetitive.\n\nDone when: Environmental changes occur at intervals that feel natural during a full run playtest without distracting from hazard avoidance.",
+					"details": "Update Scenes/RunScene/run_scene.gd so both wheel_loose and horse_panic request their recovery prompt sequences from the shared generator instead of using fixed arrays. Keep WHEEL_LOOSE_RECOVERY_DURATION and HORSE_PANIC_RECOVERY_DURATION unchanged, and leave titles, hints, penalties, wobble, trigger flow, and audio presentation exactly as they work now.\n\nDone when: both interruption states use generated prompt sequences, but all existing state-specific presentation and timing behavior remains unchanged outside of the prompt content itself.",
+					"done": false
+				},
+				{
+					"details": "Add deterministic automated coverage for the new generator and update run-scene tests so they no longer rely on fixed state-specific prompt arrays. Cover the band-based length rules, repeated-prompt allowance, and the integration path that wires both interruption states through the generator while preserving their current durations and presentation behavior.\n\nDone when: the new generator has focused unit coverage, run-scene tests validate generated-sequence integration without flaking, and the normal repo verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "9ff0a204-c8bd-4e0b-972f-8a32eb242000",
+			"title": "DG-19",
+			"description": "Task: Bad-luck cadence randomization.\n\nThe run currently uses a fully predictable bad-luck timer in Scenes/RunScene/run_scene.gd. _get_bad_luck_interval() linearly interpolates from 13.0 seconds early to 8.0 seconds late, and when the timer matures it always attempts the same timer-driven interruption path. That means repeat runs tend to get bad-luck pressure at nearly the same timestamps even after hazard spawning becomes more varied.\n\nThis follow-up ticket should only change the timing and scheduling of the timer-driven bad-luck path. Keep the current single route, current hazard spawning system, current hazard-hit mapping, current interruption states, and current audio/presentation behavior. Do not change recovery QTE generation in this ticket. If DG-18 is not implemented yet, bad luck should continue to enter the current horse_panic path exactly as it does now.\n\nReplace the current linear interval lookup with a scheduled randomized interval rolled from route-progress bands at the time the next bad-luck event is scheduled:\n- early: 0.00 to 0.33 progress, roll 12.0 to 14.0 seconds\n- mid: 0.33 to 0.66 progress, roll 9.5 to 11.5 seconds\n- late: 0.66 to 1.00 progress, roll 7.5 to 9.0 seconds\n\nOnly one bad-luck timer should be active at a time. Roll the next interval on run setup and again whenever a failure successfully starts, whether it came from bad luck or from a hazard collision. That keeps the timer from immediately expiring after another interruption resolves.\n\nBad luck must remain blocked while an active interruption or recovery cooldown is in progress. If the scheduled bad-luck time elapses while the run is blocked from starting a new interruption, keep one pending bad-luck trigger armed and fire it on the first frame where RunState.can_start_failure(...) allows it again. Do not queue multiple pending bad-luck triggers.\n\nTimer-driven bad luck should still start horse_panic with source bad_luck so the current horse-neigh/horse-panic presentation remains the only random bad-luck cue.\n\nAffected files:\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: repeated runs no longer receive timer-driven bad luck on near-identical timestamps, bad-luck cadence still ramps across the run through the defined interval bands, bad luck still uses the existing horse_panic/bad_luck presentation path, and automated tests cover the new scheduling behavior deterministically.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Replace the current linear bad-luck interval lookup in Scenes/RunScene/run_scene.gd with a scheduled interval system that rolls the next bad-luck delay from the current route-progress band. Use the defined early, mid, and late ranges, keep only one scheduled timer active at a time, and roll the first interval during run setup.\n\nDone when: bad-luck timing is driven by one rolled interval at a time instead of a continuous 13.0 to 8.0 lerp, and the rolled interval always comes from the correct progress band.",
+					"done": false
+				},
+				{
+					"details": "Reschedule the next bad-luck interval whenever a failure successfully starts, including both timer-driven bad luck and collision-triggered interruptions. Keep bad luck blocked during active interruptions and recovery cooldown. If the scheduled time matures while blocked, store a single pending bad-luck trigger and fire it on the first frame where the run is eligible to start a new interruption again. Timer-driven bad luck must continue to call RunState.start_failure(&\"horse_panic\", &\"bad_luck\") so presentation stays unchanged.\n\nDone when: collision-triggered interruptions and timer-driven interruptions both push the next bad-luck roll forward cleanly, blocked bad luck is deferred instead of silently discarded, and the timer-driven path still enters horse_panic from source bad_luck.",
+					"done": false
+				},
+				{
+					"details": "Add deterministic automated coverage in Tests/Unit/test_run_scene.gd for the new scheduler behavior. Cover band-specific interval selection, first-roll setup behavior, rescheduling after a successful hazard-triggered failure, deferred pending bad luck through recovery cooldown, single-pending-trigger behavior, and continued use of the horse_panic/bad_luck path for timer-driven bad luck.\n\nDone when: the new bad-luck cadence rules are covered without flaking and the normal repo verification flow still passes.",
 					"done": false
 				}
 			]
