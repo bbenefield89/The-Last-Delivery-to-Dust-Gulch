@@ -12,7 +12,10 @@
 			"title": "Todo",
 			"tasks": [
 				"17a69553-9cd1-409a-8231-b9d6ce1c70f3",
-				"9ff0a204-c8bd-4e0b-972f-8a32eb242000"
+				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
+				"97954889-ed96-474c-8b51-201bad60aa89",
+				"d4c22985-085e-437a-89a0-a19eb4210cff",
+				"677fbfae-de4a-4e95-891c-00ee0a7de59c"
 			]
 		},
 		{
@@ -370,11 +373,11 @@
 			"steps": [
 				{
 					"details": "Replace the fixed PATTERN loop in Scripts/Hazards/hazard_spawner.gd with weighted random hazard selection by progress band. Keep the current three hazard types and three lanes. Early band should spawn only single hazards with spacing in the 520.0 to 660.0 range. Mid band should spawn only single hazards with spacing in the 420.0 to 560.0 range and more balanced weights. Late band should use spacing in the 320.0 to 460.0 range and still support the existing pressure-pair concept.\n\nDone when: the spawner no longer depends on a fixed repeating pattern, hazard type selection is band-driven and randomized, and the late pressure-pair path still exists only in late progress.",
-					"done": true
+					"done": false
 				},
 				{
 					"details": "Keep downstream hazard behavior unchanged while randomizing only spawn selection. The wagon should still collide with the same hazard nodes, hazards should still report the same damage and cargo damage values, and run_scene.gd should continue to route pothole, rock, and tumbleweed impact audio exactly as it does now after hazards spawn.\n\nDone when: this ticket changes spawn variety only, and no gameplay or audio logic downstream of an already-spawned hazard has been rewritten.",
-					"done": true
+					"done": false
 				},
 				{
 					"details": "Rewrite Tests/Unit/test_hazard_spawner.gd so it validates the new band-based spawning rules instead of the old fixed sequence. Add a deterministic randomness seam in the spawner if needed so tests can prove weighted band selection, band-specific spacing ranges, lane randomization, and late-only pressure-pair spawning without flaking. Update any run-scene tests that currently assume the old fixed spawn order so they remain valid under the new hazard randomization.\n\nDone when: the hazard spawner tests no longer assert the old PATTERN behavior, the new randomization rules are covered by automated tests, and the repo verification flow still passes with the updated tests.",
@@ -451,6 +454,66 @@
 				{
 					"details": "In run_scene.gd _refresh_audio_presentation() (around line 726), replace the current result-state audio logic. Add two preload constants at the top of the file: WIN_STINGER pointing to Assets/Audio/win-stinger.{ext} and COLLAPSE_STINGER pointing to Assets/Audio/collapse-stinger.{ext}. Replace the repurposed sounds: when result state is RESULT_SUCCESS, play WIN_STINGER via _result_player; when result state is RESULT_COLLAPSED, play COLLAPSE_STINGER via _result_player.\n\nAsset paths: Assets/Audio/win-stinger.{ext}, Assets/Audio/collapse-stinger.{ext}\n\nDone when: A distinct win fanfare plays on delivery success and a distinct crash/collapse sting plays on wagon collapse, with no repurposed background music or impact sounds used for result states.",
 					"done": true
+				}
+			]
+		},
+		{
+			"uuid": "97954889-ed96-474c-8b51-201bad60aa89",
+			"title": "DG-20",
+			"description": "Task: Livestock crossing hazard.\n\nThe GDD lists livestock crossing as part of the route hazard set, but the current game only supports potholes, rocks, and tumbleweeds. Add one livestock hazard to the existing single-route run so the road can occasionally present a moving crossing threat instead of only static lane obstacles.\n\nKeep this ticket lightweight. Implement one livestock hazard type only, using the existing hazard/collision pipeline and current failure system. Do not add herds, new failure types, or branching path logic. The new hazard should be clearly readable, should cross the road instead of sitting still, and should despawn cleanly once it leaves the play area or is resolved by passing.\n\nIntegrate livestock into the current hazard spawning system as a rarer event than the core three hazards. It should appear only after the onboarding segment and should remain uncommon enough that it reads as a surprise beat rather than constant clutter.\n\nAffected files:\n- Scripts/Hazards/hazard_spawner.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_hazard_spawner.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: the run can spawn an avoidable livestock crossing hazard, the hazard moves across the road cleanly, collisions route through the current hazard-response path without adding a new failure type, and automated tests cover spawning and collision behavior.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add one livestock hazard type to the spawner and hazard construction path. Give it a readable visual, collision shape, and horizontal crossing movement that carries it across the road before despawning.\n\nDone when: a livestock hazard can be spawned, moves across the road as expected, and cleans itself up without lingering off-screen.",
+					"done": false
+				},
+				{
+					"details": "Integrate livestock into the current spawn mix as a rare hazard and keep the existing downstream collision/failure flow intact. Do not introduce a livestock-specific failure state in this ticket.\n\nDone when: livestock appears rarely during normal runs and a collision still uses the current hazard-impact handling without requiring a new failure feature.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for livestock spawning, movement/despawn behavior, and collision integration with the current run scene.\n\nDone when: tests cover the new hazard path without breaking existing hazard coverage.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "d4c22985-085e-437a-89a0-a19eb4210cff",
+			"title": "DG-21",
+			"description": "Task: Roadside debris hazard.\n\nThe GDD calls out roadside debris or cactus-style obstacles as part of the route pressure, but the current game still only uses potholes, rocks, and tumbleweeds. Add one lightweight roadside debris hazard so the route has another readable western obstacle without expanding the failure system.\n\nKeep this ticket focused on a single new hazard type. The hazard can be implemented as cactus, crate debris, or another simple roadside obstruction, but it must behave as a clear avoidable obstacle inside the existing hazard pipeline. Do not add destruction states, collectible interactions, or new failure types.\n\nThis hazard should read differently from rock and pothole at a glance, use the existing collision handling path, and fit naturally into the single-route run without changing route layout.\n\nAffected files:\n- Scripts/Hazards/hazard_spawner.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_hazard_spawner.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: the run includes one new roadside debris hazard type with readable visuals and collision behavior, it is integrated into the current spawn system without changing the failure model, and automated tests cover its spawn and collision path.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add one roadside debris hazard type to the spawner and visual build path. Give it a distinct readable look from the existing rock, pothole, and tumbleweed hazards.\n\nDone when: the hazard can be spawned and is visually distinguishable from the current three hazard types during gameplay.",
+					"done": false
+				},
+				{
+					"details": "Wire the new hazard into the current collision and spawn systems without adding any new failure state or special-case gameplay branch.\n\nDone when: the new hazard participates in normal run spawning and collision response using the existing systems.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for the new hazard's spawn path and collision integration.\n\nDone when: tests prove the new hazard type is buildable, spawnable, and handled correctly by the current run scene.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "677fbfae-de4a-4e95-891c-00ee0a7de59c",
+			"title": "DG-22",
+			"description": "Task: Lightweight run scoring.\n\nThe current run ends with success or collapse and a small stat summary, but there is no lightweight scoring or delivery grade layer. The GDD treats scoring as optional, so this ticket should keep it small: add a simple score model that gives the player a clearer end-of-run summary without introducing leaderboards, persistence, or progression systems.\n\nUse only values the run already tracks cleanly. Score should be based on delivery completion plus remaining wagon health and remaining cargo value. Present the final result as a single score number and a simple delivery grade on the result panel. Do not add online ranking, save data, unlocks, or post-run rewards.\n\nThis ticket should extend the existing result flow rather than creating a new screen.\n\nAffected files:\n- Scripts/RunState/run_state.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_state.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: completed and failed runs both produce a deterministic score and grade from existing run stats, the result panel displays them cleanly, and automated tests cover the score calculation and result display behavior.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add a small deterministic score calculation using existing tracked run values: delivery completion, wagon health remaining, and cargo value remaining. Define one formula and one grade mapping for the result panel to use.\n\nDone when: score and grade can be calculated from current run state without introducing new persistence or progression systems.",
+					"done": false
+				},
+				{
+					"details": "Update the existing run result panel to display the new score and delivery grade for both success and collapse outcomes.\n\nDone when: the result UI shows the new score and grade cleanly without replacing the current end-of-run flow.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for the score calculation and result-panel display wiring.\n\nDone when: tests verify the score and grade rules and the result panel reflects them correctly for representative run outcomes.",
+					"done": false
 				}
 			]
 		}
