@@ -1,6 +1,7 @@
 extends GutTest
 
 const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
+const RecoverySequenceGeneratorType := preload("res://Scripts/Failures/recovery_sequence_generator.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 
 
@@ -14,6 +15,18 @@ func _dismiss_onboarding(scene: Node) -> void:
 func _setup_active_run(scene: Node, state: RunStateType) -> void:
 	scene.setup(state)
 	_dismiss_onboarding(scene)
+
+
+func _build_expected_recovery_sequence(scene: Node, progress: float, seed: int) -> Array[StringName]:
+	var generator := RecoverySequenceGeneratorType.new()
+	generator.set_seed(seed)
+	return generator.generate_sequence(progress, scene.RECOVERY_PROMPT_POOL)
+
+
+func _start_seeded_recovery_sequence(scene: Node, state: RunStateType, seed: int) -> Array[StringName]:
+	scene._recovery_sequence_generator.set_seed(seed)
+	scene._advance_failure_triggers(0.0)
+	return _build_expected_recovery_sequence(scene, state.get_delivery_progress_ratio(), seed)
 
 
 func _spawn_test_hazard(scene: Node, hazard_type: StringName, lane_index: int = 1) -> Sprite2D:
@@ -566,20 +579,20 @@ func test_wheel_loose_starts_recovery_sequence_prompt() -> void:
 	state.start_failure(&"wheel_loose", &"rock")
 	scene.setup(state)
 
-	scene._advance_failure_triggers(0.0)
+	var expected_sequence := _start_seeded_recovery_sequence(scene, state, 10)
 
 	assert_true(state.has_active_recovery_sequence())
-	assert_eq(state.get_current_recovery_prompt(), &"steer_left")
+	assert_eq(state.recovery_sequence, expected_sequence)
+	assert_eq(state.get_current_recovery_prompt(), expected_sequence[0])
 
 	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
 	scene._refresh_recovery_prompt()
 
 	assert_true(recovery_panel.visible)
-	assert_eq(recovery_steps.get_child_count(), 3)
-	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, char(0xE020))
-	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, char(0xE022))
-	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, char(0xE020))
+	assert_eq(recovery_steps.get_child_count(), expected_sequence.size())
+	for index in range(expected_sequence.size()):
+		assert_eq((recovery_steps.get_child(index).get_child(0) as Label).text, scene._format_recovery_action(expected_sequence[index]))
 
 
 func test_recovery_prompt_steps_use_embedded_arrow_font() -> void:
@@ -590,7 +603,7 @@ func test_recovery_prompt_steps_use_embedded_arrow_font() -> void:
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	scene.setup(state)
-	scene._advance_failure_triggers(0.0)
+	_start_seeded_recovery_sequence(scene, state, 10)
 	scene._refresh_recovery_prompt()
 
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
@@ -608,12 +621,12 @@ func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
-	scene._advance_failure_triggers(0.0)
+	var expected_sequence := _start_seeded_recovery_sequence(scene, state, 10)
 
 	var recovery_step_player: AudioStreamPlayer = scene.get_node("%RecoveryStepPlayer")
 	var recovery_success_player: AudioStreamPlayer = scene.get_node("%RecoverySuccessPlayer")
 
-	for action_name in [&"steer_left", &"steer_right", &"steer_left"]:
+	for action_name in expected_sequence:
 		var event := InputEventAction.new()
 		event.action = action_name
 		event.pressed = true
@@ -635,14 +648,14 @@ func test_recovery_prompt_advances_highlight_with_direct_input_actions() -> void
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
-	scene._advance_failure_triggers(0.0)
+	var expected_sequence := _start_seeded_recovery_sequence(scene, state, 10)
 
 	var left_event := InputEventAction.new()
-	left_event.action = &"steer_left"
+	left_event.action = expected_sequence[0]
 	left_event.pressed = true
 	scene._input(left_event)
 
-	assert_eq(state.get_current_recovery_prompt(), &"steer_right")
+	assert_eq(state.get_current_recovery_prompt(), expected_sequence[1])
 
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
 	var first_step: PanelContainer = recovery_steps.get_child(0)
@@ -659,12 +672,12 @@ func test_recovery_step_audio_plays_on_non_final_correct_input() -> void:
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
-	scene._advance_failure_triggers(0.0)
+	var expected_sequence := _start_seeded_recovery_sequence(scene, state, 10)
 
 	var recovery_step_player: AudioStreamPlayer = scene.get_node("%RecoveryStepPlayer")
 	var recovery_success_player: AudioStreamPlayer = scene.get_node("%RecoverySuccessPlayer")
 	var left_event := InputEventAction.new()
-	left_event.action = &"steer_left"
+	left_event.action = expected_sequence[0]
 	left_event.pressed = true
 
 	scene._input(left_event)
@@ -680,22 +693,21 @@ func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
+	state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.2
 	state.start_failure(&"horse_panic", &"tumbleweed")
 	scene.setup(state)
-	scene._advance_failure_triggers(0.0)
+	var expected_sequence := _start_seeded_recovery_sequence(scene, state, 24)
 
-	assert_eq(state.recovery_sequence, scene.HORSE_PANIC_RECOVERY_SEQUENCE)
+	assert_eq(state.recovery_sequence, expected_sequence)
 
 	var recovery_title: Label = scene.get_node("%RecoveryTitle")
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
 	scene._refresh_recovery_prompt()
 
 	assert_eq(recovery_title.text, "Horse Panic: Calm the Team")
-	assert_eq(recovery_steps.get_child_count(), 4)
-	assert_eq((recovery_steps.get_child(0).get_child(0) as Label).text, char(0xE020))
-	assert_eq((recovery_steps.get_child(1).get_child(0) as Label).text, char(0xE022))
-	assert_eq((recovery_steps.get_child(2).get_child(0) as Label).text, char(0xE020))
-	assert_eq((recovery_steps.get_child(3).get_child(0) as Label).text, char(0xE022))
+	assert_eq(recovery_steps.get_child_count(), expected_sequence.size())
+	for index in range(expected_sequence.size()):
+		assert_eq((recovery_steps.get_child(index).get_child(0) as Label).text, scene._format_recovery_action(expected_sequence[index]))
 
 
 func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
@@ -706,9 +718,9 @@ func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
 	var state := RunStateType.new()
 	state.start_failure(&"horse_panic", &"tumbleweed")
 	_setup_active_run(scene, state)
-	scene._advance_failure_triggers(0.0)
+	_start_seeded_recovery_sequence(scene, state, 24)
 
-	for action_name in scene.HORSE_PANIC_RECOVERY_SEQUENCE:
+	for action_name in state.recovery_sequence:
 		var event := InputEventAction.new()
 		event.action = action_name
 		event.pressed = true
@@ -768,9 +780,9 @@ func test_successful_recovery_sets_success_outcome_without_resource_penalty() ->
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
-	scene._advance_failure_triggers(0.0)
+	_start_seeded_recovery_sequence(scene, state, 10)
 
-	for action_name in scene.WHEEL_LOOSE_RECOVERY_SEQUENCE:
+	for action_name in state.recovery_sequence:
 		var event := InputEventAction.new()
 		event.action = action_name
 		event.pressed = true
@@ -922,12 +934,16 @@ func test_touch_steering_counts_as_recovery_input() -> void:
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
-	scene._advance_failure_triggers(0.0)
+	var expected_sequence := _start_seeded_recovery_sequence(scene, state, 10)
 
-	var touch_left: Button = scene.get_node("%TouchLeft")
-	touch_left.button_down.emit()
+	var touch_button: Button = (
+		scene.get_node("%TouchLeft")
+		if expected_sequence[0] == &"steer_left"
+		else scene.get_node("%TouchRight")
+	)
+	touch_button.button_down.emit()
 	await wait_process_frames(1)
-	touch_left.button_up.emit()
+	touch_button.button_up.emit()
 
 	assert_eq(state.recovery_prompt_index, 1)
 

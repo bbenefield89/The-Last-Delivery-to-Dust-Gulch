@@ -24,15 +24,11 @@
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
-			"title": "Doing",
-			"tasks": [
-				"17a69553-9cd1-409a-8231-b9d6ce1c70f3"
-			]
+			"title": "Doing",`r`n`t`t`t"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
-			"title": "Done",
-			"tasks": [
+			"title": "Done",`r`n`t`t`t"tasks": [`r`n`t`t`t`t"17a69553-9cd1-409a-8231-b9d6ce1c70f3",
 				"d17a0000-0000-0000-0000-000000000017",
 				"eafe6edb-66c9-43e7-947a-8908a6bdfa9c",
 				"d16a0000-0000-0000-0000-000000000016",
@@ -406,7 +402,7 @@
 				},
 				{
 					"details": "Add deterministic automated coverage for the new generator and update run-scene tests so they no longer rely on fixed state-specific prompt arrays. Cover the band-based length rules, repeated-prompt allowance, and the integration path that wires both interruption states through the generator while preserving their current durations and presentation behavior.\n\nDone when: the new generator has focused unit coverage, run-scene tests validate generated-sequence integration without flaking, and the normal repo verification flow still passes.",
-					"done": false
+					"done": true
 				}
 			]
 		},
@@ -637,3 +633,4 @@
 		]
 	}
 }
+
