@@ -60,6 +60,10 @@ const HORSE_PANIC_WOBBLE_DEGREES := 8.0
 const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
 const BAD_LUCK_INTERVAL_EARLY := 13.0
 const BAD_LUCK_INTERVAL_LATE := 8.0
+const RECOVERY_PROMPT_POOL: Array[StringName] = [
+	&"steer_left",
+	&"steer_right",
+]
 const WHEEL_LOOSE_RECOVERY_SEQUENCE: Array[StringName] = [
 	&"steer_left",
 	&"steer_right",
@@ -116,6 +120,7 @@ var _navigation_click_in_progress := false
 var _tumbleweed_impact_serial := 0
 var _pause_menu_open := false
 var _onboarding_active := false
+var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGenerator.new()
 
 @onready var _backdrop: Sprite2D = $World/Backdrop
 @onready var _road: Sprite2D = $World/Road
@@ -638,21 +643,34 @@ func _check_for_loss() -> void:
 	_run_state.current_speed = 0.0
 
 
+## Ensures the active failure owns a generated recovery sequence with the correct duration.
 func _sync_recovery_sequence() -> void:
 	if _run_state == null:
 		return
 
 	if _run_state.active_failure == &"wheel_loose":
 		if not _run_state.has_active_recovery_sequence():
-			_run_state.start_recovery_sequence(WHEEL_LOOSE_RECOVERY_SEQUENCE, WHEEL_LOOSE_RECOVERY_DURATION)
+			_start_generated_recovery_sequence(WHEEL_LOOSE_RECOVERY_DURATION)
 		return
 	if _run_state.active_failure == &"horse_panic":
 		if not _run_state.has_active_recovery_sequence():
-			_run_state.start_recovery_sequence(HORSE_PANIC_RECOVERY_SEQUENCE, HORSE_PANIC_RECOVERY_DURATION)
+			_start_generated_recovery_sequence(HORSE_PANIC_RECOVERY_DURATION)
 		return
 
 	if _run_state.has_active_recovery_sequence():
 		_run_state.clear_recovery_sequence()
+
+
+## Starts one generated recovery prompt sequence using route progress and the shared prompt pool.
+func _start_generated_recovery_sequence(duration: float) -> void:
+	if _run_state == null:
+		return
+
+	var recovery_sequence := _recovery_sequence_generator.generate_sequence(
+		_run_state.get_delivery_progress_ratio(),
+		RECOVERY_PROMPT_POOL
+	)
+	_run_state.start_recovery_sequence(recovery_sequence, duration)
 
 
 ## Routes pause, onboarding, and recovery input for the run scene.

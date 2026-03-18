@@ -38,11 +38,11 @@ func randomize() -> void:
 
 ## Builds a prompt sequence from progress only, allowing repeated prompts when rolled.
 func generate_sequence(route_progress_ratio: float, prompt_pool: Array[StringName]) -> Array[StringName]:
-	var normalized_progress := clamp(route_progress_ratio, 0.0, 1.0)
+	var normalized_progress: float = clamp(route_progress_ratio, 0.0, 1.0)
 	if prompt_pool.is_empty():
 		return []
 
-	var sequence_length := _roll_sequence_length(normalized_progress)
+	var sequence_length: int = _roll_sequence_length(normalized_progress)
 	var sequence: Array[StringName] = []
 	for index in range(sequence_length):
 		sequence.append(_roll_prompt(prompt_pool))
@@ -61,7 +61,7 @@ func _roll_sequence_length(route_progress_ratio: float) -> int:
 
 ## Rolls one prompt from the supplied pool, allowing the same prompt to repeat.
 func _roll_prompt(prompt_pool: Array[StringName]) -> StringName:
-	var prompt_index := _rng.randi_range(0, prompt_pool.size() - 1)
+	var prompt_index: int = _rng.randi_range(0, prompt_pool.size() - 1)
 	return prompt_pool[prompt_index]
 
 
@@ -71,7 +71,7 @@ func _roll_weighted_length(length_weights: Array) -> int:
 	for length_weight in length_weights:
 		total_weight += int(length_weight["weight"])
 
-	var roll := _rng.randi_range(1, total_weight)
+	var roll: int = _rng.randi_range(1, total_weight)
 	var running_total := 0
 	for length_weight in length_weights:
 		running_total += int(length_weight["weight"])

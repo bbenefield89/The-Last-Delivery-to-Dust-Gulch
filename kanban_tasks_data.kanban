@@ -14,7 +14,12 @@
 				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
 				"97954889-ed96-474c-8b51-201bad60aa89",
 				"d4c22985-085e-437a-89a0-a19eb4210cff",
-				"677fbfae-de4a-4e95-891c-00ee0a7de59c"
+				"677fbfae-de4a-4e95-891c-00ee0a7de59c",
+				"66be59e9-0f83-45e7-b735-73b9394d78dc",
+				"18282a78-c593-4d8b-bb37-bcf2350354f8",
+				"e0958d3a-e763-454c-a978-271443797d74",
+				"0ca1b626-31ec-4978-9352-36006543cbb9",
+				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6"
 			]
 		},
 		{
@@ -397,7 +402,7 @@
 				},
 				{
 					"details": "Update Scenes/RunScene/run_scene.gd so both wheel_loose and horse_panic request their recovery prompt sequences from the shared generator instead of using fixed arrays. Keep WHEEL_LOOSE_RECOVERY_DURATION and HORSE_PANIC_RECOVERY_DURATION unchanged, and leave titles, hints, penalties, wobble, trigger flow, and audio presentation exactly as they work now.\n\nDone when: both interruption states use generated prompt sequences, but all existing state-specific presentation and timing behavior remains unchanged outside of the prompt content itself.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add deterministic automated coverage for the new generator and update run-scene tests so they no longer rely on fixed state-specific prompt arrays. Cover the band-based length rules, repeated-prompt allowance, and the integration path that wires both interruption states through the generator while preserving their current durations and presentation behavior.\n\nDone when: the new generator has focused unit coverage, run-scene tests validate generated-sequence integration without flaking, and the normal repo verification flow still passes.",
@@ -513,6 +518,106 @@
 				},
 				{
 					"details": "Add automated coverage for the score calculation and result-panel display wiring.\n\nDone when: tests verify the score and grade rules and the result panel reflects them correctly for representative run outcomes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "66be59e9-0f83-45e7-b735-73b9394d78dc",
+			"title": "DG-23",
+			"description": "Task: Arcade risk / reward bonuses.\n\nThe game is getting a base scoring layer in DG-22, but that score will still mostly reflect survival and end-state values. To make the run feel more like an arcade lane-runner, add a small set of active bonus hooks that reward skilled, dangerous play without introducing progression, unlocks, or new failure types.\n\nKeep this ticket narrow. Add exactly two bonus sources:\n- Near Miss: award +50 when a hazard passes the wagon without collision and its closest center-point distance to the wagon was <= 28.0 world units.\n- Perfect Recovery: award +100 when a recovery sequence is completed with no wrong input and no timeout.\n\nBoth bonuses should add into the score introduced by DG-22. They should also produce a short in-run callout so the player can feel the reward immediately. Do not add combo meters, multipliers, banking, or score decay in this ticket.\n\nAffected files:\n- Scripts/RunState/run_state.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_state.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: near misses and perfect recoveries both grant deterministic score bonuses, the player gets a brief readable in-run bonus callout for each, and automated tests cover bonus detection and score integration.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add Near Miss and Perfect Recovery score events to the run-scoring model using the exact bonus values above.\n\nDone when: both bonus types are recorded and added into total run score deterministically.",
+					"done": false
+				},
+				{
+					"details": "Add a lightweight in-run bonus callout for those two events only. Use a short text popup such as NEAR MISS +50 and PERFECT RECOVERY +100 that fades after about 0.75 seconds.\n\nDone when: each bonus produces immediate readable feedback during play without obscuring the road.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for near-miss detection, perfect-recovery detection, and score accumulation from both bonuses.\n\nDone when: the new risk / reward hooks are covered without flaking.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "18282a78-c593-4d8b-bb37-bcf2350354f8",
+			"title": "DG-24",
+			"description": "Task: Mastery feedback and result breakdown.\n\nAfter DG-22 and DG-23, the game will have score and bonus hooks, but the player still needs better proof that they are improving. Add a small end-of-run mastery breakdown to the existing result panel so skill expression is visible beyond success or collapse.\n\nKeep this ticket presentation-focused and lightweight. Add these result stats:\n- Hazards Dodged\n- Near Misses\n- Perfect Recoveries\n- Recovery Failures\n\nDo not add persistence, history screens, leaderboards, or progression systems. This ticket should extend the current result panel only.\n\nAffected files:\n- Scripts/RunState/run_state.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_state.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: the result panel shows the four mastery stats above for both successful and failed runs, the values are deterministic from the run state, and automated tests cover the stat tracking and UI display.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add run-state tracking for Hazards Dodged, Near Misses, Perfect Recoveries, and Recovery Failures.\n\nDone when: the run tracks all four counters deterministically through normal gameplay.",
+					"done": false
+				},
+				{
+					"details": "Extend the existing result panel to show those four stats cleanly for both success and collapse outcomes.\n\nDone when: the player can read the mastery breakdown on the normal result screen without a new menu flow.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for stat tracking and result-panel rendering.\n\nDone when: tests verify the counters and their display for representative win and loss cases.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "e0958d3a-e763-454c-a978-271443797d74",
+			"title": "DG-25",
+			"description": "Task: Obstacle role differentiation pass.\n\nThe game has multiple hazards, but they still need clearer arcade roles so each one tests a different driving skill instead of feeling like interchangeable blockers. This ticket is a design-and-balance pass over the hazard set after DG-20 and DG-21 land.\n\nLock these roles for the current hazard set:\n- Pothole: common lane-commit hazard; static; lowest damage; used as filler pressure.\n- Rock: rarer hard blocker; static; highest damage; used as the main do not be in this lane anchor.\n- Tumbleweed: medium-frequency moving hazard; drifts laterally during its scroll lifetime; used for timing pressure.\n- Livestock: rare full crossing hazard; used for surprise timing checks.\n- Roadside Debris: outer-lane biased blocker; used to punish hugging road edges.\n\nThis ticket should tune hazard behavior and spawn usage to support those roles. Do not add new hazard types or new failure types here.\n\nAffected files:\n- Scripts/Hazards/hazard_spawner.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_hazard_spawner.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: each hazard has a distinct readable gameplay job, the spawn system reflects those roles, and automated tests cover any new movement or spawn constraints added by the pass.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Update hazard behavior and spawn constraints so each existing hazard matches the role definitions above.\n\nDone when: the full hazard set behaves according to those fixed arcade roles.",
+					"done": false
+				},
+				{
+					"details": "Tune spawn usage so the roles show up in actual runs. Keep potholes common, rocks rarer, tumbleweeds and livestock movement-driven, and roadside debris biased toward outer-lane pressure.\n\nDone when: play patterns reflect different obstacle jobs instead of five interchangeable hazards.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for any new movement rules, spawn-lane rules, and hazard-role constraints introduced by the pass.\n\nDone when: the differentiated hazard behavior is covered without breaking existing hazard tests.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "0ca1b626-31ec-4978-9352-36006543cbb9",
+			"title": "DG-26",
+			"description": "Task: Run phase setpieces.\n\nThe run currently escalates, but it still needs clearer authored beats so it feels like an arcade course instead of one continuous pressure slope. Add a small set of distinct route phases using progress-driven spawn profiles on the existing single road.\n\nUse these phases:\n- Warm-Up 0.00-0.20: single hazards only, no timer-driven bad luck, no moving crossing hazards.\n- First Trouble 0.20-0.45: introduce normal bad luck and first moving hazards.\n- Crossing Beat 0.45-0.60: temporarily bias toward livestock and tumbleweed timing pressure, with reduced static clutter.\n- Clutter Beat 0.60-0.80: bias toward rocks and roadside debris with tighter lane reads.\n- Reset Before Finale 0.80-0.88: brief readability reset with lighter density and no pressure pairs.\n\nThis ticket should use spawn and bad-luck profile changes and lightweight presentation cues only. Do not create a new level, separate scenes, or cutaway events.\n\nAffected files:\n- Scripts/Hazards/hazard_spawner.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_hazard_spawner.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: the run has clearly recognizable mid-run phases with different gameplay texture, the phases are driven by route progress, and automated tests cover the phase-to-profile transitions.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add the five fixed route phases above and switch spawn and bad-luck behavior by progress ratio.\n\nDone when: each progress window uses its assigned gameplay profile.",
+					"done": false
+				},
+				{
+					"details": "Add a lightweight phase cue for phase changes, such as a short on-screen label or banner.\n\nDone when: players can feel that the run has entered a new beat without adding a new screen flow.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for phase boundaries and the profile changes each phase is supposed to enforce.\n\nDone when: tests prove the run transitions through the authored beats correctly.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6",
+			"title": "DG-27",
+			"description": "Task: Final stretch climax.\n\nThe GDD calls for a desperate final stretch, but the last part of the run still needs a distinct arcade climax. Add a fixed finale state for the last 12 percent of route progress so reaching Dust Gulch feels like surviving a deliberate gauntlet instead of just continuing the normal loop.\n\nFinale rules:\n- Start the finale at 0.88 progress.\n- Show a short FINAL STRETCH cue when it begins.\n- Suspend timer-driven bad luck for the rest of the run so the ending is driven by readable driving skill, not random interruption timing.\n- Replace free-form hazard randomization with a fixed four-beat finale sequence:\n  1. one anchored blocker that leaves one clear side lane\n  2. one moving crossing hazard that attacks the remaining timing window\n  3. one pressure pair that still leaves exactly one survivable lane\n  4. one short clear runway of at least 240.0 world units before the win trigger\n\nThis ticket depends on DG-20, DG-21, and DG-26 being complete first.\n\nAffected files:\n- Scripts/Hazards/hazard_spawner.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_hazard_spawner.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: the last 12 percent of the route plays as a recognizable finale with a start cue, a fixed readable gauntlet, no timer-driven bad luck, and a short release window before the finish.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add a dedicated finale state that starts at 0.88 progress and suppresses timer-driven bad luck until run end.\n\nDone when: the run enters a distinct final-stretch mode and random bad luck no longer interrupts the finale.",
+					"done": false
+				},
+				{
+					"details": "Implement the fixed four-beat finale sequence exactly as defined above.\n\nDone when: the last segment always resolves through the same readable climax structure with one clear survival path per pressure beat.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for finale entry, bad-luck suppression, finale beat ordering, and the guaranteed clear runway before success.\n\nDone when: the final-stretch behavior is covered deterministically.",
 					"done": false
 				}
 			]
