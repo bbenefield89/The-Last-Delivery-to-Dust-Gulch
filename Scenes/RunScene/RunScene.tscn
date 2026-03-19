@@ -1,23 +1,9 @@
-[gd_scene load_steps=10 format=3 uid="uid://v3sqh1pw8m2l"]
+[gd_scene format=3 uid="uid://v3sqh1pw8m2l"]
 
-[ext_resource type="Script" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
-[ext_resource type="Script" path="res://Scripts/Hazards/hazard_spawner.gd" id="2_ok7u7"]
-[ext_resource type="Texture2D" path="res://Assets/Tilesets/Carriage/Carriage-32x64.png" id="3_qapb8"]
-[ext_resource type="Texture2D" path="res://Assets/Tilesets/Horse/Horse-16x48.png" id="4_rn5qx"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_result_panel"]
-bg_color = Color(0.156863, 0.101961, 0.0666667, 0.94)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.745098, 0.592157, 0.305882, 0.95)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-shadow_color = Color(0, 0, 0, 0.34)
-shadow_size = 5
+[ext_resource type="Script" uid="uid://cdm6b62edidaa" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
+[ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Scripts/Hazards/hazard_spawner.gd" id="2_ok7u7"]
+[ext_resource type="Texture2D" uid="uid://c87jx435lsdui" path="res://Assets/Tilesets/Carriage/Carriage-32x64.png" id="3_qapb8"]
+[ext_resource type="Texture2D" uid="uid://bvfd5lxykfl45" path="res://Assets/Tilesets/Horse/Horse-16x48.png" id="4_rn5qx"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hud_panel"]
 bg_color = Color(0.235294, 0.180392, 0.117647, 0.88)
@@ -61,250 +47,258 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
-[node name="RunScene" type="Node2D"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_result_panel"]
+bg_color = Color(0.156863, 0.101961, 0.0666667, 0.94)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.745098, 0.592157, 0.305882, 0.95)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+shadow_color = Color(0, 0, 0, 0.34)
+shadow_size = 5
+
+[node name="RunScene" type="Node2D" unique_id=825063901]
 script = ExtResource("1_4n0rj")
 
-[node name="World" type="Node2D" parent="."]
+[node name="World" type="Node2D" parent="." unique_id=1731062576]
 
-[node name="Backdrop" type="Sprite2D" parent="World"]
+[node name="Backdrop" type="Sprite2D" parent="World" unique_id=2130331480]
 
-[node name="Road" type="Sprite2D" parent="World"]
+[node name="Road" type="Sprite2D" parent="World" unique_id=1591385740]
 
-[node name="ScrollRoot" type="Node2D" parent="World"]
+[node name="ScrollRoot" type="Node2D" parent="World" unique_id=1220442931]
 unique_name_in_owner = true
 
-[node name="ScrollSegmentA" type="Node2D" parent="World/ScrollRoot"]
+[node name="ScrollSegmentA" type="Node2D" parent="World/ScrollRoot" unique_id=1566709917]
 unique_name_in_owner = true
 
-[node name="ScrollSegmentB" type="Node2D" parent="World/ScrollRoot"]
+[node name="ScrollSegmentB" type="Node2D" parent="World/ScrollRoot" unique_id=2047793795]
 unique_name_in_owner = true
 position = Vector2(0, -960)
 
-[node name="HazardSpawner" type="Node2D" parent="World"]
+[node name="HazardSpawner" type="Node2D" parent="World" unique_id=234043959]
 unique_name_in_owner = true
 script = ExtResource("2_ok7u7")
 
-[node name="Wagon" type="Polygon2D" parent="World"]
+[node name="Wagon" type="Polygon2D" parent="World" unique_id=688295343]
 unique_name_in_owner = true
-polygon = PackedVector2Array(-16, -28, 16, -28, 14, 32, -14, 32)
 color = Color(1, 1, 1, 0)
+polygon = PackedVector2Array(-16, -28, 16, -28, 14, 32, -14, 32)
 
-[node name="Shadow" type="Sprite2D" parent="World/Wagon"]
-position = Vector2(0, 5)
-texture = ExtResource("3_qapb8")
+[node name="Shadow" type="Sprite2D" parent="World/Wagon" unique_id=710484652]
 modulate = Color(0, 0, 0, 0.2)
 z_index = -2
-
-[node name="CarriageSprite" type="Sprite2D" parent="World/Wagon"]
+position = Vector2(0, 5)
 texture = ExtResource("3_qapb8")
 
-[node name="HorseTeam" type="Node2D" parent="World/Wagon"]
+[node name="CarriageSprite" type="Sprite2D" parent="World/Wagon" unique_id=355649902]
+texture = ExtResource("3_qapb8")
+
+[node name="HorseTeam" type="Node2D" parent="World/Wagon" unique_id=1666748263]
 position = Vector2(0, -54)
 
-[node name="HorseLeft" type="Sprite2D" parent="World/Wagon/HorseTeam"]
+[node name="HorseLeft" type="Sprite2D" parent="World/Wagon/HorseTeam" unique_id=1813804162]
 position = Vector2(-8, 0)
 texture = ExtResource("4_rn5qx")
 
-[node name="HorseRight" type="Sprite2D" parent="World/Wagon/HorseTeam"]
+[node name="HorseRight" type="Sprite2D" parent="World/Wagon/HorseTeam" unique_id=1874504157]
 position = Vector2(8, 0)
 texture = ExtResource("4_rn5qx")
 
-[node name="HarnessLeft" type="Line2D" parent="World/Wagon/HorseTeam"]
+[node name="HarnessLeft" type="Line2D" parent="World/Wagon/HorseTeam" unique_id=1283736362]
 points = PackedVector2Array(0, 30, -8, 8)
 width = 2.0
 default_color = Color(0.717647, 0.611765, 0.403922, 1)
 
-[node name="HarnessRight" type="Line2D" parent="World/Wagon/HorseTeam"]
+[node name="HarnessRight" type="Line2D" parent="World/Wagon/HorseTeam" unique_id=1196817422]
 points = PackedVector2Array(0, 30, 8, 8)
 width = 2.0
 default_color = Color(0.717647, 0.611765, 0.403922, 1)
 
-[node name="DustTrail" type="CPUParticles2D" parent="World/Wagon"]
+[node name="DustTrail" type="CPUParticles2D" parent="World/Wagon" unique_id=1637724448]
 unique_name_in_owner = true
 position = Vector2(0, 28)
 
-[node name="Camera" type="Camera2D" parent="World"]
+[node name="Camera" type="Camera2D" parent="World" unique_id=1055321517]
 unique_name_in_owner = true
 position = Vector2(0, -60)
-enabled = true
 
-[node name="MusicPlayer" type="AudioStreamPlayer" parent="."]
+[node name="MusicPlayer" type="AudioStreamPlayer" parent="." unique_id=926370908]
 unique_name_in_owner = true
 
-[node name="WagonLoopPlayer" type="AudioStreamPlayer" parent="."]
+[node name="WagonLoopPlayer" type="AudioStreamPlayer" parent="." unique_id=1278103680]
 unique_name_in_owner = true
 
-[node name="ImpactPlayer" type="AudioStreamPlayer" parent="."]
+[node name="ImpactPlayer" type="AudioStreamPlayer" parent="." unique_id=1681492523]
 unique_name_in_owner = true
 
-[node name="PotholeImpactPlayer" type="AudioStreamPlayer" parent="."]
+[node name="PotholeImpactPlayer" type="AudioStreamPlayer" parent="." unique_id=45311515]
 unique_name_in_owner = true
 
-[node name="RockImpactPlayer" type="AudioStreamPlayer" parent="."]
+[node name="RockImpactPlayer" type="AudioStreamPlayer" parent="." unique_id=1774152067]
 unique_name_in_owner = true
 
-[node name="TumbleweedImpactPlayer" type="AudioStreamPlayer" parent="."]
+[node name="TumbleweedImpactPlayer" type="AudioStreamPlayer" parent="." unique_id=1446223168]
 unique_name_in_owner = true
 
-[node name="WheelLooseAmbientPlayer" type="AudioStreamPlayer" parent="."]
+[node name="WheelLooseAmbientPlayer" type="AudioStreamPlayer" parent="." unique_id=444151193]
 unique_name_in_owner = true
 
-[node name="HorsePanicAmbientPlayer" type="AudioStreamPlayer" parent="."]
+[node name="HorsePanicAmbientPlayer" type="AudioStreamPlayer" parent="." unique_id=1568543067]
 unique_name_in_owner = true
 
-[node name="RecoveryStepPlayer" type="AudioStreamPlayer" parent="."]
+[node name="RecoveryStepPlayer" type="AudioStreamPlayer" parent="." unique_id=346250577]
 unique_name_in_owner = true
 
-[node name="RecoverySuccessPlayer" type="AudioStreamPlayer" parent="."]
+[node name="RecoverySuccessPlayer" type="AudioStreamPlayer" parent="." unique_id=2098813063]
 unique_name_in_owner = true
 
-[node name="RecoveryFailPlayer" type="AudioStreamPlayer" parent="."]
+[node name="RecoveryFailPlayer" type="AudioStreamPlayer" parent="." unique_id=401007673]
 unique_name_in_owner = true
 
-[node name="PauseTogglePlayer" type="AudioStreamPlayer" parent="."]
+[node name="PauseTogglePlayer" type="AudioStreamPlayer" parent="." unique_id=2071713895]
 unique_name_in_owner = true
 
-[node name="FailurePlayer" type="AudioStreamPlayer" parent="."]
+[node name="FailurePlayer" type="AudioStreamPlayer" parent="." unique_id=20840496]
 unique_name_in_owner = true
 
-[node name="ResultPlayer" type="AudioStreamPlayer" parent="."]
+[node name="ResultPlayer" type="AudioStreamPlayer" parent="." unique_id=1948014304]
 unique_name_in_owner = true
 
-[node name="UIClickPlayer" type="AudioStreamPlayer" parent="."]
+[node name="UIClickPlayer" type="AudioStreamPlayer" parent="." unique_id=200356434]
 unique_name_in_owner = true
 
-[node name="HUDLayer" type="CanvasLayer" parent="."]
+[node name="HUDLayer" type="CanvasLayer" parent="." unique_id=601465039]
 layer = 0
 
-[node name="HUDPanel" type="PanelContainer" parent="HUDLayer"]
+[node name="HUDPanel" type="PanelContainer" parent="HUDLayer" unique_id=175091047]
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 156.0
 offset_bottom = 92.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_hud_panel")
 
-[node name="MarginContainer" type="MarginContainer" parent="HUDLayer/HUDPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="HUDLayer/HUDPanel" unique_id=872501727]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 4
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer" unique_id=657966756]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="HealthRow" type="HBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
+[node name="HealthRow" type="HBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=1791364788]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="HealthTag" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow"]
+[node name="HealthTag" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow" unique_id=2006925341]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 theme_override_font_sizes/font_size = 12
 text = "HP"
 
-[node name="HealthBarMargin" type="MarginContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow"]
+[node name="HealthBarMargin" type="MarginContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow" unique_id=1456161133]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_top = 5
 
-[node name="HealthBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthBarMargin"]
+[node name="HealthBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthBarMargin" unique_id=1119674109]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 10)
 layout_mode = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
 theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
-max_value = 100.0
 value = 100.0
 show_percentage = false
 
-[node name="HealthLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow"]
+[node name="HealthLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow" unique_id=1851579451]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 theme_override_font_sizes/font_size = 14
 text = "--"
 
-[node name="DistanceRow" type="HBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
+[node name="DistanceRow" type="HBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=155814851]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="DistanceTag" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow"]
+[node name="DistanceTag" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow" unique_id=1472455674]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 theme_override_font_sizes/font_size = 12
 text = "DST"
 
-[node name="DistanceBarMargin" type="MarginContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow"]
+[node name="DistanceBarMargin" type="MarginContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow" unique_id=1179048258]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_top = 5
 
-[node name="DistanceBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin"]
+[node name="DistanceBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin" unique_id=590576366]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 10)
 layout_mode = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
 theme_override_styles/fill = SubResource("StyleBoxFlat_distance_fill")
-max_value = 100.0
 show_percentage = false
 
-[node name="CargoLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer"]
+[node name="CargoLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=1358233989]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 theme_override_font_sizes/font_size = 14
 text = "Cargo --"
 
-[node name="TouchLayer" type="CanvasLayer" parent="."]
+[node name="TouchLayer" type="CanvasLayer" parent="." unique_id=1837018594]
 unique_name_in_owner = true
-layer = 1
 
-[node name="TouchLeft" type="Button" parent="TouchLayer"]
+[node name="TouchLeft" type="Button" parent="TouchLayer" unique_id=1367813085]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 104)
 offset_left = 16.0
 offset_top = 240.0
 offset_right = 136.0
 offset_bottom = 344.0
 grow_vertical = 0
-custom_minimum_size = Vector2(120, 104)
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
 theme_override_font_sizes/font_size = 52
-flat = false
 text = "←"
 
-[node name="TouchRight" type="Button" parent="TouchLayer"]
+[node name="TouchRight" type="Button" parent="TouchLayer" unique_id=840373950]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 104)
 offset_left = 504.0
 offset_top = 240.0
 offset_right = 624.0
 offset_bottom = 344.0
 grow_horizontal = 2
 grow_vertical = 0
-custom_minimum_size = Vector2(120, 104)
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
 theme_override_font_sizes/font_size = 52
-flat = false
 text = "→"
 
-[node name="TouchPause" type="Button" parent="TouchLayer"]
+[node name="TouchPause" type="Button" parent="TouchLayer" unique_id=1122407603]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 72)
 offset_left = 552.0
 offset_top = 16.0
 offset_right = 624.0
 offset_bottom = 88.0
 grow_horizontal = 2
-custom_minimum_size = Vector2(72, 72)
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
 theme_override_font_sizes/font_size = 52
-flat = false
 text = "II"
 
-[node name="OnboardingLayer" type="CanvasLayer" parent="."]
+[node name="OnboardingLayer" type="CanvasLayer" parent="." unique_id=702338875]
 layer = 2
+visible = false
 
-[node name="OnboardingMargin" type="MarginContainer" parent="OnboardingLayer"]
+[node name="OnboardingMargin" type="MarginContainer" parent="OnboardingLayer" unique_id=1495918662]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -317,99 +311,101 @@ offset_bottom = 92.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="OnboardingPanel" type="PanelContainer" parent="OnboardingLayer/OnboardingMargin"]
+[node name="OnboardingPanel" type="PanelContainer" parent="OnboardingLayer/OnboardingMargin" unique_id=743698184]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 
-[node name="OnboardingPadding" type="MarginContainer" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel"]
+[node name="OnboardingPadding" type="MarginContainer" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel" unique_id=1537575059]
 layout_mode = 2
 theme_override_constants/margin_left = 22
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 22
 theme_override_constants/margin_bottom = 18
 
-[node name="OnboardingVBox" type="VBoxContainer" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding"]
+[node name="OnboardingVBox" type="VBoxContainer" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding" unique_id=1837576619]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="OnboardingTitle" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox"]
+[node name="OnboardingTitle" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox" unique_id=1459489785]
 unique_name_in_owner = true
 layout_mode = 2
-horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 theme_override_font_sizes/font_size = 24
 text = "Last Delivery to Dust Gulch"
+horizontal_alignment = 1
 
-[node name="OnboardingBody" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox"]
+[node name="OnboardingBody" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox" unique_id=1891234883]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
-autowrap_mode = 2
 text = "Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, and hold the wagon together until you reach Dust Gulch."
+autowrap_mode = 2
 
-[node name="OnboardingHint" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox"]
+[node name="OnboardingHint" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox" unique_id=476657273]
 unique_name_in_owner = true
 layout_mode = 2
-horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.933333, 0.85098, 0.662745, 1)
-autowrap_mode = 2
 text = "Press Left, Right, Enter, or click to begin the run."
+horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="RecoveryLayer" type="CanvasLayer" parent="."]
+[node name="RecoveryLayer" type="CanvasLayer" parent="." unique_id=1169480302]
 layer = 3
 
-[node name="RecoveryMargin" type="MarginContainer" parent="RecoveryLayer"]
-anchors_preset = 10
+[node name="RecoveryMargin" type="MarginContainer" parent="RecoveryLayer" unique_id=1410858914]
+anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -180.0
-offset_top = 212.0
-offset_right = 180.0
-offset_bottom = 344.0
+offset_left = -152.0
+offset_top = 145.0
+offset_right = 152.0
+offset_bottom = 293.0
 grow_horizontal = 2
 
-[node name="RecoveryPanel" type="PanelContainer" parent="RecoveryLayer/RecoveryMargin"]
+[node name="RecoveryPanel" type="PanelContainer" parent="RecoveryLayer/RecoveryMargin" unique_id=1024654356]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_recovery_panel")
 
-[node name="RecoveryPadding" type="MarginContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel"]
+[node name="RecoveryPadding" type="MarginContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel" unique_id=1404911132]
 layout_mode = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 14
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
 
-[node name="RecoveryVBox" type="VBoxContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding"]
+[node name="RecoveryVBox" type="VBoxContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding" unique_id=1976674278]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
-[node name="RecoveryTitle" type="Label" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox"]
+[node name="RecoveryTitle" type="Label" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=1023180444]
 unique_name_in_owner = true
 layout_mode = 2
-horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 18
 text = "Stabilize the Wagon"
-
-[node name="RecoveryHint" type="Label" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox"]
-unique_name_in_owner = true
-layout_mode = 2
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.933333, 0.85098, 0.662745, 1)
-autowrap_mode = 2
-text = "Follow the prompts left to right."
 
-[node name="RecoverySteps" type="HBoxContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox"]
+[node name="RecoveryHint" type="Label" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=1191415005]
 unique_name_in_owner = true
 layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 10
+theme_override_colors/font_color = Color(0.933333, 0.85098, 0.662745, 1)
+theme_override_font_sizes/font_size = 14
+text = "Follow the prompts left to right."
+horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="PauseLayer" type="CanvasLayer" parent="."]
+[node name="RecoverySteps" type="HBoxContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=708124048]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="PauseLayer" type="CanvasLayer" parent="." unique_id=1114754801]
 layer = 4
 
-[node name="PauseOverlay" type="Control" parent="PauseLayer"]
+[node name="PauseOverlay" type="Control" parent="PauseLayer" unique_id=357867026]
 unique_name_in_owner = true
 visible = false
 layout_mode = 3
@@ -418,19 +414,17 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 
-[node name="PauseBackdrop" type="ColorRect" parent="PauseLayer/PauseOverlay"]
+[node name="PauseBackdrop" type="ColorRect" parent="PauseLayer/PauseOverlay" unique_id=305216681]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 color = Color(0, 0, 0, 0.12)
 
-[node name="PauseCenter" type="CenterContainer" parent="PauseLayer/PauseOverlay"]
+[node name="PauseCenter" type="CenterContainer" parent="PauseLayer/PauseOverlay" unique_id=72403792]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -439,63 +433,64 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PausePanel" type="PanelContainer" parent="PauseLayer/PauseOverlay/PauseCenter"]
+[node name="PausePanel" type="PanelContainer" parent="PauseLayer/PauseOverlay/PauseCenter" unique_id=1688471581]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(320, 196)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 
-[node name="PausePadding" type="MarginContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel"]
+[node name="PausePadding" type="MarginContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel" unique_id=1022852917]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 18
 
-[node name="PauseVBox" type="VBoxContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding"]
+[node name="PauseVBox" type="VBoxContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding" unique_id=1652363556]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="PauseTitle" type="Label" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox"]
+[node name="PauseTitle" type="Label" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox" unique_id=2031204423]
 layout_mode = 2
-horizontal_alignment = 1
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 24
 text = "Paused"
-
-[node name="PauseSummary" type="Label" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox"]
-layout_mode = 2
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-autowrap_mode = 2
-text = "Catch your breath, then resume the run, restart, or return to title."
 
-[node name="PauseButtons" type="VBoxContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox"]
+[node name="PauseSummary" type="Label" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox" unique_id=1508923937]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "Catch your breath, then resume the run, restart, or return to title."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="PauseButtons" type="VBoxContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox" unique_id=216271012]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="PauseResumeButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons"]
+[node name="PauseResumeButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons" unique_id=681865122]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Resume"
 
-[node name="PauseRestartButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons"]
+[node name="PauseRestartButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons" unique_id=752603341]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Restart"
 
-[node name="PauseReturnButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons"]
+[node name="PauseReturnButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons" unique_id=2015358949]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Title"
 
-[node name="ResultLayer" type="CanvasLayer" parent="."]
+[node name="ResultLayer" type="CanvasLayer" parent="." unique_id=1131224537]
 layer = 5
+visible = false
 
-[node name="ResultMargin" type="MarginContainer" parent="ResultLayer"]
+[node name="ResultMargin" type="MarginContainer" parent="ResultLayer" unique_id=370495141]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -508,56 +503,56 @@ offset_bottom = 100.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ResultPanel" type="PanelContainer" parent="ResultLayer/ResultMargin"]
+[node name="ResultPanel" type="PanelContainer" parent="ResultLayer/ResultMargin" unique_id=70916264]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 
-[node name="ResultPadding" type="MarginContainer" parent="ResultLayer/ResultMargin/ResultPanel"]
+[node name="ResultPadding" type="MarginContainer" parent="ResultLayer/ResultMargin/ResultPanel" unique_id=1197715509]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 18
 
-[node name="ResultVBox" type="VBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding"]
+[node name="ResultVBox" type="VBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding" unique_id=601728710]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ResultTitle" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox"]
+[node name="ResultTitle" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=781382340]
 unique_name_in_owner = true
 layout_mode = 2
-horizontal_alignment = 1
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 24
 text = "Run Complete"
-
-[node name="ResultSummary" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox"]
-unique_name_in_owner = true
-layout_mode = 2
 horizontal_alignment = 1
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-autowrap_mode = 2
-text = "Summary"
 
-[node name="ResultStats" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox"]
+[node name="ResultSummary" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=750472307]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "Summary"
+horizontal_alignment = 1
 autowrap_mode = 2
-text = "Stats"
 
-[node name="ResultButtons" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox"]
+[node name="ResultStats" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=1184964185]
+unique_name_in_owner = true
 layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 12
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "Stats"
+autowrap_mode = 2
 
-[node name="ResultRestartButton" type="Button" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_name_in_owner=true]
+[node name="ResultButtons" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=697861436]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="ResultRestartButton" type="Button" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_id=1659100565]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Restart"
 
-[node name="ResultReturnButton" type="Button" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_name_in_owner=true]
+[node name="ResultReturnButton" type="Button" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_id=1757694312]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Title"

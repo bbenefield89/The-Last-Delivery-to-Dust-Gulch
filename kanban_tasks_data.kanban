@@ -11,12 +11,14 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
+				"de1bdeb5-f3cf-4bd7-aa5d-4b565cb58fad",
 				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
 				"97954889-ed96-474c-8b51-201bad60aa89",
 				"d4c22985-085e-437a-89a0-a19eb4210cff",
 				"677fbfae-de4a-4e95-891c-00ee0a7de59c",
 				"66be59e9-0f83-45e7-b735-73b9394d78dc",
 				"18282a78-c593-4d8b-bb37-bcf2350354f8",
+				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
 				"e0958d3a-e763-454c-a978-271443797d74",
 				"0ca1b626-31ec-4978-9352-36006543cbb9",
 				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6"
@@ -25,7 +27,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"e745d754-1f2a-4a6b-ae1e-ba88fe9dafd1"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -53,6 +57,46 @@
 		}
 	],
 	"tasks": [
+		{
+			"uuid": "e745d754-1f2a-4a6b-ae1e-ba88fe9dafd1",
+			"title": "DG-28",
+			"description": "Task: Fix mobile recovery overlay clipping and overlap.\n\nThe current recovery QTE view does not fit cleanly on the mobile and touch layout. In Scenes/RunScene/RunScene.tscn, the touch steering buttons sit in the lower band of the screen from roughly y=240 to y=344, while the recovery overlay is also anchored into that same lower band with RecoveryMargin spanning roughly y=212 to y=344. The recovery step cards themselves are also built at a fixed 120x88 size in Scenes/RunScene/run_scene.gd. On a landscape mobile-sized view, that causes the recovery panel to sit on top of the touch controls and cuts the prompt row off at the bottom, as shown in the screenshot.\n\nFix this as a layout bug, not as a redesign. The player must be able to see the full recovery title, hint, and prompt row while the touch controls remain usable. Keep the existing recovery flow, input mapping, and overall visual style. The fix should preserve desktop readability while making the touch layout safe on the 640x360 game canvas and common mobile landscape scaling.\n\nAffected files:\n- Scenes/RunScene/RunScene.tscn\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: the full recovery panel is visible during mobile and touch play, the prompt row is no longer clipped at the bottom, the touch buttons remain usable during recovery, desktop layout is not regressed, and automated tests cover the layout constraints.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Rework the recovery overlay layout so it no longer occupies the same bottom control band as the touch steering buttons. Adjust the RecoveryLayer anchors, panel sizing, and padding so the full recovery panel fits above the touch controls with visible breathing room on the 640x360 layout.\n\nDone when: the recovery title, hint, and prompt row are fully visible on the touch layout and the panel no longer collides with the bottom control area.",
+					"done": true
+				},
+				{
+					"details": "Make the recovery prompt presentation responsive enough for the touch layout without changing the recovery mechanic. If needed, reduce recovery panel padding, prompt card minimum size, or prompt font size while recovery is displayed on the touch layout, but keep the current desktop presentation readable.\n\nDone when: the prompt row fits fully inside the panel on the touch layout, the arrow prompts remain readable, and desktop presentation is not materially degraded.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for the recovery overlay layout during touch and mobile play. Assert that the recovery panel remains inside the viewport, the prompt row is visible, and the panel does not overlap the touch steering buttons in the active recovery state.\n\nDone when: the layout bug is covered by automated tests and the normal verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "de1bdeb5-f3cf-4bd7-aa5d-4b565cb58fad",
+			"title": "DG-29",
+			"description": "Task: Hide touch controls outside mobile and touch contexts.\n\nThe current touch steering and pause buttons in Scenes/RunScene/RunScene.tscn are shown whenever a run is active, regardless of device. That is correct for phones and other touch-first play, but it clutters the desktop experience and contributes to layout pressure when the game is running in a normal non-touch browser or desktop build.\n\nThis ticket should make touch controls context-aware. The buttons should remain available for native mobile builds and for web builds running on touch-capable mobile devices, including a browser on a phone. They should stay hidden on normal desktop builds and desktop browsers without touch input. Keep the current touch button behavior and input wiring once the controls are visible; this ticket is only about when the controls should appear.\n\nUse a runtime visibility rule instead of a separate scene. The touch layer should default to hidden unless the game determines it is in a mobile or touch-capable runtime. For native mobile exports, show the controls immediately. For web builds, show the controls when the runtime reports touch capability, and also allow a first real touch input to reveal them so mobile browsers that delay capability reporting still work. Do not require the player to open a settings menu just to enable touch buttons.\n\nAffected files:\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: touch controls are hidden on desktop and desktop-browser play, visible on native mobile and mobile-browser play, current touch input behavior remains unchanged once visible, and automated tests cover the visibility rules.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add a runtime touch-control visibility decision in run_scene.gd that distinguishes desktop play from mobile and touch-capable play. Native mobile builds should show the touch layer immediately. Web builds should show it when touch capability is available and should also be able to reveal it after the first real touch input.\n\nDone when: the touch layer no longer appears during normal desktop play but still appears automatically for the supported mobile and mobile-web cases.",
+					"done": false
+				},
+				{
+					"details": "Wire the existing touch-layer refresh flow to use that runtime visibility decision without changing the current touch button input mapping, pause behavior, or recovery-input behavior once the controls are visible.\n\nDone when: touch controls behave exactly as they do now after becoming visible, and only their visibility rules have changed.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for desktop-hidden behavior, native-mobile-visible behavior, and mobile-web reveal behavior after touch-capability detection or first touch input.\n\nDone when: the visibility rules are covered deterministically and the normal verification flow still passes.",
+					"done": false
+				}
+			]
+		},
 		{
 			"uuid": "d14b0000-0000-0000-0000-000000000014",
 			"title": "DG-14",
@@ -557,6 +601,26 @@
 				},
 				{
 					"details": "Add automated coverage for stat tracking and result-panel rendering.\n\nDone when: tests verify the counters and their display for representative win and loss cases.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
+			"title": "DG-30",
+			"description": "Task: Local high score and best run persistence.\n\nDG-22, DG-23, and DG-24 make score matter during a run, but the game still does not remember the player's best performance between runs. A fleshed-out arcade lane-runner should preserve at least one best run target so the player has a reason to come back and beat a previous score.\n\nKeep this ticket lightweight and local-only. Persist the best run on the player's machine and surface it in the existing frontend flow. Track exactly these persistent values:\n- Best Score\n- Best Grade\n\nDo not add online leaderboards, player profiles, cloud sync, multiple save slots, or a long history table in this ticket. The saved best values should update only when a completed run produces a better score than the stored best score. If the score ties, keep the existing best entry unchanged.\n\nShow the stored best run information in two places:\n- Title screen\n- Result screen\n\nOn the title screen, show a compact Best summary near the start controls. On the result screen, show whether the current run is a new best and display the stored best score and grade alongside the normal result summary.\n\nAffected files:\n- Scripts/RunState/run_state.gd\n- Scenes/RunScene/run_scene.gd\n- Scenes/TitleScreen/title_screen.gd\n- Tests/Unit/test_run_state.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: the game saves and reloads the local best score and grade across restarts, updates them only when a run beats the existing best score, shows the best summary on the title and result screens, and automated tests cover persistence and display behavior.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add a small local persistence path for best-run data that stores and reloads Best Score and Best Grade across app launches. Keep the stored shape minimal and local to the project.\n\nDone when: the game can load an existing best entry at startup and save a new one after a qualifying run.",
+					"done": false
+				},
+				{
+					"details": "Update the result flow so a completed run compares against the stored best score, marks a new best when appropriate, and writes the new best values only when the current score is higher than the saved score.\n\nDone when: better runs replace the saved best entry, tied scores do not overwrite it, and the result screen clearly communicates the current best state.",
+					"done": false
+				},
+				{
+					"details": "Show the stored best score and grade on the title screen and result screen, and add automated coverage for save and load behavior plus best-run display wiring.\n\nDone when: players can see their saved best run from both entry and post-run views, and tests cover persistence plus UI display deterministically.",
 					"done": false
 				}
 			]
