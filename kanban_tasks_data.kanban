@@ -69,7 +69,7 @@
 				},
 				{
 					"details": "Make the recovery prompt presentation responsive enough for the touch layout without changing the recovery mechanic. If needed, reduce recovery panel padding, prompt card minimum size, or prompt font size while recovery is displayed on the touch layout, but keep the current desktop presentation readable.\n\nDone when: the prompt row fits fully inside the panel on the touch layout, the arrow prompts remain readable, and desktop presentation is not materially degraded.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add automated coverage for the recovery overlay layout during touch and mobile play. Assert that the recovery panel remains inside the viewport, the prompt row is visible, and the panel does not overlap the touch steering buttons in the active recovery state.\n\nDone when: the layout bug is covered by automated tests and the normal verification flow still passes.",

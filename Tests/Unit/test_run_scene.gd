@@ -607,10 +607,40 @@ func test_recovery_prompt_steps_use_embedded_arrow_font() -> void:
 	scene._refresh_recovery_prompt()
 
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
+	var first_step := recovery_steps.get_child(0) as PanelContainer
 	var arrow_label := recovery_steps.get_child(0).get_child(0) as Label
 	assert_not_null(arrow_label)
+	assert_not_null(first_step)
 	assert_eq(arrow_label.get_theme_font("font"), scene.ARROW_FONT)
-	assert_eq(arrow_label.get_theme_font_size("font_size"), 52)
+	assert_eq(recovery_steps.custom_minimum_size.x, scene.RECOVERY_STEP_ROW_MAX_WIDTH)
+	assert_eq(arrow_label.get_theme_font_size("font_size"), scene._get_recovery_step_font_size())
+	assert_eq(first_step.custom_minimum_size, scene._get_recovery_step_minimum_size())
+
+
+func test_long_recovery_sequence_uses_same_row_width_with_smaller_prompt_chips() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	scene.setup(state)
+	state.start_recovery_sequence([
+		&"steer_left",
+		&"steer_right",
+		&"steer_left",
+		&"steer_right",
+		&"steer_left",
+		&"steer_right",
+	], 3.0)
+	scene._refresh_recovery_prompt()
+
+	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
+	var first_step := recovery_steps.get_child(0) as PanelContainer
+	var arrow_label := first_step.get_child(0) as Label
+	assert_eq(recovery_steps.custom_minimum_size.x, scene.RECOVERY_STEP_ROW_MAX_WIDTH)
+	assert_eq(first_step.custom_minimum_size, Vector2(36.0, scene.RECOVERY_STEP_HEIGHT))
+	assert_eq(arrow_label.get_theme_font_size("font_size"), scene.RECOVERY_STEP_MIN_FONT_SIZE)
 
 
 func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:

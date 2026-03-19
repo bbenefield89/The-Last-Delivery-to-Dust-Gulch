@@ -87,6 +87,15 @@ const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := 1.9
 const HORSE_PANIC_FAILURE_CARGO_LOSS := 14
 const HORSE_PANIC_FAILURE_SPEED_LOSS := 65.0
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := 2.2
+const RECOVERY_STEP_ROW_MAX_WIDTH := 240.0
+const RECOVERY_STEP_MIN_WIDTH := 36.0
+const RECOVERY_STEP_HEIGHT := 60.0
+const RECOVERY_STEP_MAX_WIDTH := 72.0
+const RECOVERY_STEP_FONT_SIZE_RATIO := 0.52
+const RECOVERY_STEP_MIN_FONT_SIZE := 24
+const RECOVERY_STEP_MAX_FONT_SIZE := 38
+const RECOVERY_STEP_SPACING := 4
+const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := 3
 const SCROLL_LOOP_HEIGHT := 960.0
 const ROADSIDE_DECOR_SPACING := 144.0
 const ROADSIDE_DECOR_COUNT := 8
@@ -456,6 +465,8 @@ func _refresh_recovery_prompt() -> void:
 
 	_recovery_title.text = _get_recovery_title(_run_state.active_failure)
 	_recovery_hint.text = _get_recovery_hint(_run_state.active_failure)
+	_recovery_steps.custom_minimum_size.x = RECOVERY_STEP_ROW_MAX_WIDTH
+	_recovery_steps.add_theme_constant_override("separation", RECOVERY_STEP_SPACING)
 
 	for i in range(_run_state.recovery_sequence.size()):
 		_recovery_steps.add_child(_build_recovery_step(i))
@@ -1135,9 +1146,35 @@ func _apply_recovery_failure_penalty() -> void:
 	_refresh_recovery_prompt()
 
 
+## Returns the chip size that keeps the full recovery row inside a fixed width budget.
+func _get_recovery_step_minimum_size() -> Vector2:
+	if _run_state == null:
+		return Vector2(RECOVERY_STEP_MAX_WIDTH, RECOVERY_STEP_HEIGHT)
+
+	var sequence_size: int = max(_run_state.recovery_sequence.size(), RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH)
+	var available_width: float = RECOVERY_STEP_ROW_MAX_WIDTH - ((sequence_size - 1) * RECOVERY_STEP_SPACING)
+	var step_width: float = clampf(
+		floor(available_width / float(sequence_size)),
+		RECOVERY_STEP_MIN_WIDTH,
+		RECOVERY_STEP_MAX_WIDTH
+	)
+	return Vector2(step_width, RECOVERY_STEP_HEIGHT)
+
+
+## Returns the prompt font size that matches the active recovery chip width.
+func _get_recovery_step_font_size() -> int:
+	var step_width := _get_recovery_step_minimum_size().x
+	return clampi(
+		int(floor(step_width * RECOVERY_STEP_FONT_SIZE_RATIO)),
+		RECOVERY_STEP_MIN_FONT_SIZE,
+		RECOVERY_STEP_MAX_FONT_SIZE
+	)
+
+
+## Builds one recovery-step chip using the current compactness rules for the active sequence.
 func _build_recovery_step(index: int) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(120.0, 88.0)
+	panel.custom_minimum_size = _get_recovery_step_minimum_size()
 	panel.modulate = _get_recovery_step_color(index)
 
 	var label := Label.new()
@@ -1146,7 +1183,7 @@ func _build_recovery_step(index: int) -> PanelContainer:
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	label.add_theme_font_size_override("font_size", 52)
+	label.add_theme_font_size_override("font_size", _get_recovery_step_font_size())
 	label.add_theme_font_override("font", ARROW_FONT)
 	panel.add_child(label)
 	return panel
