@@ -643,6 +643,68 @@ func test_long_recovery_sequence_uses_same_row_width_with_smaller_prompt_chips()
 	assert_eq(arrow_label.get_theme_font_size("font_size"), scene.RECOVERY_STEP_MIN_FONT_SIZE)
 
 
+func test_recovery_panel_stays_inside_viewport_during_touch_recovery() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	_setup_active_run(scene, state)
+	_start_seeded_recovery_sequence(scene, state, 10)
+	scene._refresh_recovery_prompt()
+	scene._refresh_touch_controls()
+	await wait_process_frames(1)
+
+	var viewport_rect := scene.get_viewport().get_visible_rect()
+	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
+	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
+	var panel_rect := recovery_panel.get_global_rect()
+	var steps_rect := recovery_steps.get_global_rect()
+
+	assert_true(recovery_panel.visible)
+	assert_true(panel_rect.position.x >= viewport_rect.position.x)
+	assert_true(panel_rect.position.y >= viewport_rect.position.y)
+	assert_true(panel_rect.end.x <= viewport_rect.end.x)
+	assert_true(panel_rect.end.y <= viewport_rect.end.y)
+	assert_true(steps_rect.position.y >= panel_rect.position.y)
+	assert_true(steps_rect.end.y <= panel_rect.end.y)
+
+
+func test_recovery_panel_does_not_overlap_touch_steering_buttons() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"horse_panic", &"tumbleweed")
+	_setup_active_run(scene, state)
+	state.start_recovery_sequence([
+		&"steer_left",
+		&"steer_right",
+		&"steer_left",
+		&"steer_right",
+		&"steer_left",
+		&"steer_right",
+	], 3.0)
+	scene._refresh_recovery_prompt()
+	scene._refresh_touch_controls()
+	await wait_process_frames(1)
+
+	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	var touch_right: Button = scene.get_node("%TouchRight")
+	var panel_rect := recovery_panel.get_global_rect()
+	var left_rect := touch_left.get_global_rect()
+	var right_rect := touch_right.get_global_rect()
+
+	assert_true(recovery_panel.visible)
+	assert_true(touch_left.visible)
+	assert_true(touch_right.visible)
+	assert_false(panel_rect.intersects(left_rect))
+	assert_false(panel_rect.intersects(right_rect))
+
+
 func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
