@@ -10,8 +10,12 @@ const DEFAULT_HAZARD_TYPE := &"pothole"
 const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Pothole/Pothole-32x32.png")
 const ROCK_TEXTURE := preload("res://Assets/Tilesets/Boulder/Boulder-32x32.png")
 const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Tumbleweed/Tumbleweed-32x32.png")
+const LIVESTOCK_SCENE := preload("res://Scenes/Hazards/LivestockHazard.tscn")
 const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const PRESSURE_PAIR_Y_OFFSET := 56.0
+const LIVESTOCK_CROSSING_TARGET_Y := 0.0
+const LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT := 0.75
+const HAZARD_SIDE_DESPAWN_X := 360.0
 const HAZARD_PROFILES := {
 	&"pothole": {
 		"texture": POTHOLE_TEXTURE,
@@ -30,6 +34,12 @@ const HAZARD_PROFILES := {
 		"damage": 6,
 		"cargo_damage": 3,
 		"size": Vector2(32.0, 32.0),
+	},
+	&"livestock": {
+		"scene": LIVESTOCK_SCENE,
+		"damage": 12,
+		"cargo_damage": 5,
+		"size": Vector2(48.0, 28.0),
 	},
 }
 
@@ -63,7 +73,8 @@ func advance(distance_delta: float, route_progress_ratio: float = 0.0) -> void:
 func _move_hazards(distance_delta: float) -> void:
 	for child in get_children():
 		if child is Node2D:
-			child.position.y += distance_delta
+			var hazard := child as Node2D
+			hazard.position += _get_hazard_motion(hazard, distance_delta)
 
 
 ## Consumes scroll distance to spawn one or more planned hazard groups.
@@ -111,7 +122,7 @@ func _spawn_current_plan() -> void:
 ## Adds one hazard node using the shared visual and metadata conventions.
 func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DEFAULT_SPAWN_Y) -> void:
 	var hazard := _build_hazard_visual(hazard_type)
-	hazard.position = Vector2(LANE_X_POSITIONS[lane_index], spawn_y)
+	hazard.position = _resolve_spawn_position(hazard, hazard_type, lane_index, spawn_y)
 	hazard.set_meta("hazard_type", hazard_type)
 	hazard.set_meta("lane_index", lane_index)
 	add_child(hazard)
@@ -150,11 +161,63 @@ func _get_pressure_lane_index(primary_lane_index: int) -> int:
 	return 1
 
 
-## Builds a readable sprite for the requested hazard type.
-func _build_hazard_visual(hazard_type: StringName) -> Sprite2D:
+## Builds a readable hazard node for the requested hazard type.
+func _build_hazard_visual(hazard_type: StringName) -> Node2D:
+	var profile := _get_hazard_profile(hazard_type)
+	if hazard_type == &"livestock":
+		return (profile["scene"] as PackedScene).instantiate() as Node2D
+
 	var hazard := Sprite2D.new()
-	hazard.texture = _get_hazard_profile(hazard_type)["texture"]
+	hazard.texture = profile["texture"]
 	return hazard
+
+
+## Returns the per-frame motion offset for one hazard, including livestock crossing drift.
+func _get_hazard_motion(hazard: Node2D, distance_delta: float) -> Vector2:
+	return Vector2(
+		float(hazard.get_meta("crossing_scroll_ratio_x", 0.0)) * distance_delta,
+		distance_delta
+	)
+
+
+## Resolves the spawn position for one hazard and configures any hazard-specific movement metadata.
+func _resolve_spawn_position(
+	hazard: Node2D,
+	hazard_type: StringName,
+	lane_index: int,
+	spawn_y: float
+) -> Vector2:
+	if hazard_type != &"livestock":
+		return Vector2(LANE_X_POSITIONS[lane_index], spawn_y)
+
+	return _configure_livestock_crossing(hazard, lane_index, spawn_y)
+
+
+## Assigns crossing metadata so livestock enters from a roadside edge and passes through a target lane.
+func _configure_livestock_crossing(hazard: Node2D, lane_index: int, spawn_y: float) -> Vector2:
+	var crossing_direction := _roll_livestock_crossing_direction()
+	hazard.scale.x = float(crossing_direction)
+	hazard.set_meta("crossing_direction", crossing_direction)
+	hazard.set_meta(
+		"crossing_scroll_ratio_x",
+		LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT * float(crossing_direction)
+	)
+	hazard.set_meta("target_lane_x", LANE_X_POSITIONS[lane_index])
+	return Vector2(
+		_get_livestock_spawn_x(lane_index, spawn_y, crossing_direction),
+		spawn_y
+	)
+
+
+## Rolls whether a livestock hazard crosses left-to-right or right-to-left.
+func _roll_livestock_crossing_direction() -> int:
+	return -1 if _rng.randi_range(0, 1) == 0 else 1
+
+
+## Places livestock far enough off-road that it reaches the target lane near the wagon line.
+func _get_livestock_spawn_x(lane_index: int, spawn_y: float, crossing_direction: int) -> float:
+	var crossing_distance := absf(spawn_y - LIVESTOCK_CROSSING_TARGET_Y) * LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT
+	return LANE_X_POSITIONS[lane_index] - (crossing_distance * float(crossing_direction))
 
 
 ## Resolves the shared gameplay profile for the requested hazard type.
@@ -165,8 +228,13 @@ func _get_hazard_profile(hazard_type: StringName) -> Dictionary:
 ## Frees hazards after they scroll past the visible play area.
 func _cleanup_hazards() -> void:
 	for child in get_children():
-		if child is Node2D and child.position.y > DEFAULT_DESPAWN_Y:
+		if child is Node2D and _should_despawn_hazard(child as Node2D):
 			child.queue_free()
+
+
+## Returns whether the hazard has left the playable area and should be freed.
+func _should_despawn_hazard(hazard: Node2D) -> bool:
+	return hazard.position.y > DEFAULT_DESPAWN_Y or absf(hazard.position.x) > HAZARD_SIDE_DESPAWN_X
 
 
 ## Collects all hazards whose current bounds overlap the wagon bounds.

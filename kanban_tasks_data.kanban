@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"97954889-ed96-474c-8b51-201bad60aa89",
 				"d4c22985-085e-437a-89a0-a19eb4210cff",
 				"677fbfae-de4a-4e95-891c-00ee0a7de59c",
 				"66be59e9-0f83-45e7-b735-73b9394d78dc",
@@ -25,7 +24,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"97954889-ed96-474c-8b51-201bad60aa89"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -512,7 +513,7 @@
 			"steps": [
 				{
 					"details": "Add one livestock hazard type to the spawner and hazard construction path. Give it a readable visual, collision shape, and horizontal crossing movement that carries it across the road before despawning.\n\nDone when: a livestock hazard can be spawned, moves across the road as expected, and cleans itself up without lingering off-screen.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Integrate livestock into the current spawn mix as a rare hazard and keep the existing downstream collision/failure flow intact. Do not introduce a livestock-specific failure state in this ticket.\n\nDone when: livestock appears rarely during normal runs and a collision still uses the current hazard-impact handling without requiring a new failure feature.",
