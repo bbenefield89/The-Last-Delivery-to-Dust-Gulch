@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"de1bdeb5-f3cf-4bd7-aa5d-4b565cb58fad",
 				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
 				"97954889-ed96-474c-8b51-201bad60aa89",
 				"d4c22985-085e-437a-89a0-a19eb4210cff",
@@ -33,6 +32,7 @@
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"de1bdeb5-f3cf-4bd7-aa5d-4b565cb58fad",
 				"e745d754-1f2a-4a6b-ae1e-ba88fe9dafd1",
 				"17a69553-9cd1-409a-8231-b9d6ce1c70f3",
 				"d17a0000-0000-0000-0000-000000000017",
@@ -84,15 +84,15 @@
 			"steps": [
 				{
 					"details": "Add a runtime touch-control visibility decision in run_scene.gd that distinguishes desktop play from mobile and touch-capable play. Native mobile builds should show the touch layer immediately. Web builds should show it when touch capability is available and should also be able to reveal it after the first real touch input.\n\nDone when: the touch layer no longer appears during normal desktop play but still appears automatically for the supported mobile and mobile-web cases.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Wire the existing touch-layer refresh flow to use that runtime visibility decision without changing the current touch button input mapping, pause behavior, or recovery-input behavior once the controls are visible.\n\nDone when: touch controls behave exactly as they do now after becoming visible, and only their visibility rules have changed.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add automated coverage for desktop-hidden behavior, native-mobile-visible behavior, and mobile-web reveal behavior after touch-capability detection or first touch input.\n\nDone when: the visibility rules are covered deterministically and the normal verification flow still passes.",
-					"done": false
+					"done": true
 				}
 			]
 		},

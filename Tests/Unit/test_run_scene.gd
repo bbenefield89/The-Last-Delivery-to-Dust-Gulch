@@ -17,6 +17,22 @@ func _setup_active_run(scene: Node, state: RunStateType) -> void:
 	_dismiss_onboarding(scene)
 
 
+## Forces touch controls on for tests that exercise the native mobile runtime path.
+func _enable_touch_controls_for_native_mobile(scene: Node) -> void:
+	scene._has_native_mobile_runtime_override = true
+	scene._native_mobile_runtime_override = true
+	scene._refresh_touch_controls()
+
+
+## Configures the test scene to behave like a mobile web runtime with controllable touch capability.
+func _configure_mobile_web_touch_runtime(scene: Node, touchscreen_available: bool) -> void:
+	scene._has_mobile_web_runtime_override = true
+	scene._mobile_web_runtime_override = true
+	scene._has_touchscreen_available_override = true
+	scene._touchscreen_available_override = touchscreen_available
+	scene._refresh_touch_controls()
+
+
 func _build_expected_recovery_sequence(scene: Node, progress: float, seed: int) -> Array[StringName]:
 	var generator := RecoverySequenceGeneratorType.new()
 	generator.set_seed(seed)
@@ -652,6 +668,7 @@ func test_recovery_panel_stays_inside_viewport_during_touch_recovery() -> void:
 	state.start_failure(&"horse_panic", &"tumbleweed")
 	_setup_active_run(scene, state)
 	_start_seeded_recovery_sequence(scene, state, 10)
+	_enable_touch_controls_for_native_mobile(scene)
 	scene._refresh_recovery_prompt()
 	scene._refresh_touch_controls()
 	await wait_process_frames(1)
@@ -687,6 +704,7 @@ func test_recovery_panel_does_not_overlap_touch_steering_buttons() -> void:
 		&"steer_left",
 		&"steer_right",
 	], 3.0)
+	_enable_touch_controls_for_native_mobile(scene)
 	scene._refresh_recovery_prompt()
 	scene._refresh_touch_controls()
 	await wait_process_frames(1)
@@ -976,6 +994,7 @@ func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() ->
 	assert_not_null(touch_left)
 	assert_not_null(touch_right)
 	assert_not_null(touch_pause)
+	assert_false(touch_layer.visible)
 	assert_false(touch_left.flat)
 	assert_false(touch_right.flat)
 	assert_false(touch_pause.flat)
@@ -998,6 +1017,100 @@ func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() ->
 	assert_not_null(touch_pause.get_theme_stylebox("normal"))
 
 
+func test_touch_controls_stay_hidden_and_disabled_on_desktop_runtime() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	var touch_right: Button = scene.get_node("%TouchRight")
+	var touch_pause: Button = scene.get_node("%TouchPause")
+
+	assert_false(touch_layer.visible)
+	assert_true(touch_left.disabled)
+	assert_true(touch_right.disabled)
+	assert_true(touch_pause.disabled)
+
+
+func test_touch_controls_show_immediately_on_native_mobile_runtime() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	_enable_touch_controls_for_native_mobile(scene)
+
+	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	var touch_right: Button = scene.get_node("%TouchRight")
+	var touch_pause: Button = scene.get_node("%TouchPause")
+
+	assert_true(touch_layer.visible)
+	assert_false(touch_left.disabled)
+	assert_false(touch_right.disabled)
+	assert_false(touch_pause.disabled)
+
+
+func test_touch_controls_show_on_mobile_web_after_touch_capability_detection() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	_configure_mobile_web_touch_runtime(scene, false)
+
+	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	assert_false(touch_layer.visible)
+
+	scene._touchscreen_available_override = true
+	scene._refresh_touch_controls()
+
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	var touch_right: Button = scene.get_node("%TouchRight")
+	var touch_pause: Button = scene.get_node("%TouchPause")
+
+	assert_true(touch_layer.visible)
+	assert_true(scene._touch_controls_enabled_for_runtime)
+	assert_false(touch_left.disabled)
+	assert_false(touch_right.disabled)
+	assert_false(touch_pause.disabled)
+
+
+func test_touch_controls_reveal_on_first_mobile_web_touch_when_capability_is_delayed() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	_configure_mobile_web_touch_runtime(scene, false)
+
+	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	assert_false(touch_layer.visible)
+
+	var touch_event := InputEventScreenTouch.new()
+	touch_event.pressed = true
+	touch_event.index = 0
+	touch_event.position = Vector2(320.0, 180.0)
+	scene._input(touch_event)
+
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	var touch_right: Button = scene.get_node("%TouchRight")
+	var touch_pause: Button = scene.get_node("%TouchPause")
+
+	assert_true(touch_layer.visible)
+	assert_true(scene._touch_controls_enabled_for_runtime)
+	assert_false(touch_left.disabled)
+	assert_false(touch_right.disabled)
+	assert_false(touch_pause.disabled)
+
+
 func test_touch_steering_buttons_hold_and_release_their_actions() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1005,6 +1118,7 @@ func test_touch_steering_buttons_hold_and_release_their_actions() -> void:
 
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
+	_enable_touch_controls_for_native_mobile(scene)
 
 	var touch_left: Button = scene.get_node("%TouchLeft")
 	touch_left.button_down.emit()
@@ -1018,6 +1132,23 @@ func test_touch_steering_buttons_hold_and_release_their_actions() -> void:
 	assert_false(Input.is_action_pressed("steer_left"))
 
 
+func test_hidden_touch_controls_do_not_press_steering_actions() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	touch_left.button_down.emit()
+	await wait_process_frames(1)
+	scene._process(0.5)
+
+	assert_false(Input.is_action_pressed("steer_left"))
+	assert_eq(state.lateral_position, 0.0)
+
+
 func test_touch_steering_counts_as_recovery_input() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1026,6 +1157,7 @@ func test_touch_steering_counts_as_recovery_input() -> void:
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
+	_enable_touch_controls_for_native_mobile(scene)
 	var expected_sequence := _start_seeded_recovery_sequence(scene, state, 10)
 
 	var touch_button: Button = (
@@ -1047,16 +1179,23 @@ func test_touch_pause_button_opens_pause_and_hides_touch_controls() -> void:
 
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
+	_enable_touch_controls_for_native_mobile(scene)
 
 	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
 	var touch_pause: Button = scene.get_node("%TouchPause")
 	assert_true(touch_layer.visible)
+
+	var touch_left: Button = scene.get_node("%TouchLeft")
+	touch_left.button_down.emit()
+	await wait_process_frames(1)
+	assert_true(Input.is_action_pressed("steer_left"))
 
 	touch_pause.pressed.emit()
 	await wait_process_frames(1)
 
 	assert_true(scene._pause_menu_open)
 	assert_false(touch_layer.visible)
+	assert_false(Input.is_action_pressed("steer_left"))
 
 
 func test_temporary_instability_resolves_back_to_normal_driving() -> void:

@@ -129,6 +129,13 @@ var _navigation_click_in_progress := false
 var _tumbleweed_impact_serial := 0
 var _pause_menu_open := false
 var _onboarding_active := false
+var _touch_controls_enabled_for_runtime := false
+var _has_native_mobile_runtime_override := false
+var _native_mobile_runtime_override := false
+var _has_mobile_web_runtime_override := false
+var _mobile_web_runtime_override := false
+var _has_touchscreen_available_override := false
+var _touchscreen_available_override := false
 var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGenerator.new()
 
 @onready var _backdrop: Sprite2D = $World/Backdrop
@@ -529,19 +536,127 @@ func _refresh_result_screen() -> void:
 	]
 
 
-## Shows touch controls only while the run is actively playable.
+## Shows touch controls only while the run is actively playable on a supported runtime.
 func _refresh_touch_controls() -> void:
 	if _touch_layer == null:
 		return
 
-	var is_visible := (
-		_run_state != null
+	_refresh_touch_controls_runtime_state()
+	var was_visible := _touch_layer.visible
+	var is_visible := _should_show_touch_controls()
+	if was_visible and not is_visible:
+		_release_touch_steer_actions()
+	_touch_layer.visible = is_visible
+	if _touch_left_button != null:
+		_touch_left_button.disabled = not is_visible
+	if _touch_right_button != null:
+		_touch_right_button.disabled = not is_visible
+	if _touch_pause_button != null:
+		_touch_pause_button.disabled = not is_visible
+
+
+## Enables touch controls automatically for native mobile and touch-capable mobile web runtimes.
+func _refresh_touch_controls_runtime_state() -> void:
+	if _touch_controls_enabled_for_runtime:
+		return
+	if _is_native_mobile_runtime():
+		_touch_controls_enabled_for_runtime = true
+		return
+	if _is_mobile_web_runtime() and _is_touchscreen_available():
+		_touch_controls_enabled_for_runtime = true
+
+
+## Returns whether the current runtime is a native Android or iOS build.
+func _is_native_mobile_runtime() -> bool:
+	if _has_native_mobile_runtime_override:
+		return _native_mobile_runtime_override
+	return OS.has_feature("android") or OS.has_feature("ios")
+
+
+## Returns whether the current runtime is a web export hosted on Android or iOS.
+func _is_mobile_web_runtime() -> bool:
+	if _has_mobile_web_runtime_override:
+		return _mobile_web_runtime_override
+	return OS.has_feature("web_android") or OS.has_feature("web_ios")
+
+
+## Returns whether the active runtime currently reports touchscreen capability.
+func _is_touchscreen_available() -> bool:
+	if _has_touchscreen_available_override:
+		return _touchscreen_available_override
+	return DisplayServer.is_touchscreen_available()
+
+
+## Returns whether the touch layer should currently be visible and interactive.
+func _should_show_touch_controls() -> bool:
+	return (
+		_touch_controls_enabled_for_runtime
+		and _run_state != null
 		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
 		and not _pause_menu_open
 	)
-	_touch_layer.visible = is_visible
 
 
+## Reveals touch controls after the first real touch on mobile web runtimes with delayed capability reporting.
+func _reveal_touch_controls_from_first_touch(event: InputEvent) -> void:
+	if event == null or _touch_controls_enabled_for_runtime:
+		return
+	if not _is_mobile_web_runtime():
+		return
+
+	var screen_touch_event := event as InputEventScreenTouch
+	if screen_touch_event != null and screen_touch_event.pressed:
+		_touch_controls_enabled_for_runtime = true
+		_refresh_touch_controls()
+		return
+
+	if event is InputEventScreenDrag:
+		_touch_controls_enabled_for_runtime = true
+		_refresh_touch_controls()
+
+
+## Routes pause, onboarding, and recovery input for the run scene.
+func _input(event: InputEvent) -> void:
+	_reveal_touch_controls_from_first_touch(event)
+	if _run_state == null:
+		return
+	if event != null and event.is_action_pressed(PAUSE_ACTION):
+		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
+			_set_pause_state(not _pause_menu_open)
+		return
+	if _pause_menu_open:
+		if _handle_pause_menu_click(event):
+			return
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			return
+	if _onboarding_active:
+		if _should_dismiss_onboarding(event):
+			_onboarding_active = false
+			_refresh_onboarding_prompt()
+		return
+	if not _run_state.has_active_recovery_sequence():
+		return
+
+	var action_name := _extract_recovery_action(event)
+	if action_name == &"":
+		return
+
+	var expected_action := _run_state.get_current_recovery_prompt()
+	if _run_state.advance_recovery_sequence(action_name):
+		if _recovery_step_player != null:
+			_recovery_step_player.play()
+		_run_state.resolve_recovery_success()
+		if _recovery_success_player != null:
+			_recovery_success_player.play()
+	elif action_name == expected_action:
+		if _recovery_step_player != null:
+			_recovery_step_player.play()
+
+	_refresh_status()
+	_refresh_recovery_prompt()
+
+
+## Updates the wagon position to match the current lateral run-state offset.
 func _update_wagon_visual() -> void:
 	if _wagon == null or _run_state == null:
 		return
@@ -549,6 +664,7 @@ func _update_wagon_visual() -> void:
 	_wagon.position = Vector2(_run_state.lateral_position, WAGON_BASE_Y)
 
 
+## Keeps the camera centered on the wagon while preserving the below-center framing offset.
 func _update_camera_framing() -> void:
 	if _camera == null or _wagon == null:
 		return
@@ -682,46 +798,6 @@ func _start_generated_recovery_sequence(duration: float) -> void:
 		RECOVERY_PROMPT_POOL
 	)
 	_run_state.start_recovery_sequence(recovery_sequence, duration)
-
-
-## Routes pause, onboarding, and recovery input for the run scene.
-func _input(event: InputEvent) -> void:
-	if _run_state == null:
-		return
-	if event != null and event.is_action_pressed(PAUSE_ACTION):
-		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
-			_set_pause_state(not _pause_menu_open)
-		return
-	if _pause_menu_open:
-		if _handle_pause_menu_click(event):
-			return
-		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-			return
-	if _onboarding_active:
-		if _should_dismiss_onboarding(event):
-			_onboarding_active = false
-			_refresh_onboarding_prompt()
-		return
-	if not _run_state.has_active_recovery_sequence():
-		return
-
-	var action_name := _extract_recovery_action(event)
-	if action_name == &"":
-		return
-
-	var expected_action := _run_state.get_current_recovery_prompt()
-	if _run_state.advance_recovery_sequence(action_name):
-		if _recovery_step_player != null:
-			_recovery_step_player.play()
-		_run_state.resolve_recovery_success()
-		if _recovery_success_player != null:
-			_recovery_success_player.play()
-	elif action_name == expected_action:
-		if _recovery_step_player != null:
-			_recovery_step_player.play()
-
-	_refresh_status()
-	_refresh_recovery_prompt()
 
 
 ## Updates the wagon flash, wobble, and shake presentation for the current run state.
@@ -1286,24 +1362,34 @@ func _on_pause_return_to_title_pressed() -> void:
 
 ## Presses the left steering action while the mobile left button is held.
 func _on_touch_left_button_down() -> void:
+	if not _should_show_touch_controls():
+		return
 	_parse_touch_action_event(STEER_ACTION_NEGATIVE, true)
 
 
 ## Releases the left steering action when the mobile left button is released.
 func _on_touch_left_button_up() -> void:
+	if not _touch_controls_enabled_for_runtime:
+		return
 	_parse_touch_action_event(STEER_ACTION_NEGATIVE, false)
 
 
 ## Presses the right steering action while the mobile right button is held.
 func _on_touch_right_button_down() -> void:
+	if not _should_show_touch_controls():
+		return
 	_parse_touch_action_event(STEER_ACTION_POSITIVE, true)
 
 
 ## Releases the right steering action when the mobile right button is released.
 func _on_touch_right_button_up() -> void:
+	if not _touch_controls_enabled_for_runtime:
+		return
 	_parse_touch_action_event(STEER_ACTION_POSITIVE, false)
 
 
 ## Opens the pause menu from the mobile pause button when gameplay is active.
 func _on_touch_pause_button_pressed() -> void:
+	if not _should_show_touch_controls():
+		return
 	_set_pause_state(true)
