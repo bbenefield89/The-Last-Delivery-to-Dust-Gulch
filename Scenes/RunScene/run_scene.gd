@@ -58,8 +58,12 @@ const HORSE_PANIC_DRIFT_SPEED := 150.0
 const HORSE_PANIC_DRIFT_FREQUENCY := 5.0
 const HORSE_PANIC_WOBBLE_DEGREES := 8.0
 const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
-const BAD_LUCK_INTERVAL_EARLY := 13.0
-const BAD_LUCK_INTERVAL_LATE := 8.0
+const BAD_LUCK_INTERVAL_EARLY_MIN := 12.0
+const BAD_LUCK_INTERVAL_EARLY_MAX := 14.0
+const BAD_LUCK_INTERVAL_MID_MIN := 9.5
+const BAD_LUCK_INTERVAL_MID_MAX := 11.5
+const BAD_LUCK_INTERVAL_LATE_MIN := 7.5
+const BAD_LUCK_INTERVAL_LATE_MAX := 9.0
 const RECOVERY_PROMPT_POOL: Array[StringName] = [
 	&"steer_left",
 	&"steer_right",
@@ -123,6 +127,9 @@ var _impact_wobble_remaining := 0.0
 var _impact_shake_remaining := 0.0
 var _impact_time := 0.0
 var _bad_luck_elapsed := 0.0
+var _scheduled_bad_luck_interval := BAD_LUCK_INTERVAL_EARLY_MIN
+var _pending_bad_luck_trigger := false
+var _bad_luck_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var _navigation_click_in_progress := false
@@ -201,6 +208,8 @@ func setup(run_state: RunStateType) -> void:
 	_onboarding_active = true
 	_pause_menu_open = false
 	_bad_luck_elapsed = 0.0
+	_pending_bad_luck_trigger = false
+	_schedule_next_bad_luck_interval()
 	_last_announced_failure = _run_state.active_failure
 	_last_announced_result = _run_state.result
 	_refresh_status()
@@ -215,6 +224,7 @@ func setup(run_state: RunStateType) -> void:
 ## Wires scene-local input, UI, visuals, and audio dependencies.
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_bad_luck_rng.randomize()
 	_ensure_input_actions()
 	_configure_environment_art()
 	_ensure_scroll_visuals()
@@ -430,7 +440,12 @@ func _process(delta: float) -> void:
 
 ## Refreshes the compact run HUD values from the bound run state.
 func _refresh_status() -> void:
-	if _health_bar == null or _health_label == null or _distance_bar == null or _cargo_label == null:
+	if (
+		_health_bar == null
+		or _health_label == null
+		or _distance_bar == null
+		or _cargo_label == null
+	):
 		return
 
 	if _run_state == null:
@@ -695,6 +710,7 @@ func _apply_hazard_collisions() -> void:
 		(collision["node"] as Node).queue_free()
 
 
+## Advances failure state timers and starts timer-driven bad luck when its scheduled roll matures.
 func _advance_failure_triggers(delta: float) -> void:
 	if _run_state == null:
 		return
@@ -707,17 +723,25 @@ func _advance_failure_triggers(delta: float) -> void:
 	if had_active_recovery_sequence and _run_state.tick_recovery_sequence(delta):
 		_apply_recovery_failure_penalty()
 		return
-	if _run_state.has_active_failure():
+
+	if _pending_bad_luck_trigger:
+		if _run_state.can_start_failure(&"horse_panic"):
+			_start_failure_and_reschedule_bad_luck(&"horse_panic", &"bad_luck")
 		return
 
 	_bad_luck_elapsed += delta
-	if _bad_luck_elapsed < _get_bad_luck_interval():
+	if _bad_luck_elapsed < _scheduled_bad_luck_interval:
 		return
 
-	_bad_luck_elapsed = 0.0
-	_run_state.start_failure(&"horse_panic", &"bad_luck")
+	if not _run_state.can_start_failure(&"horse_panic"):
+		_bad_luck_elapsed = 0.0
+		_pending_bad_luck_trigger = true
+		return
+
+	_start_failure_and_reschedule_bad_luck(&"horse_panic", &"bad_luck")
 
 
+## Attempts to start a hazard-specific failure when a collision resolves into a failure state.
 func _attempt_failure_trigger_from_collision(hazard_type: StringName) -> void:
 	if _run_state == null:
 		return
@@ -726,22 +750,43 @@ func _attempt_failure_trigger_from_collision(hazard_type: StringName) -> void:
 
 	match hazard_type:
 		&"rock", &"pothole":
-			if _run_state.start_failure(&"wheel_loose", hazard_type):
-				_bad_luck_elapsed = 0.0
+			_start_failure_and_reschedule_bad_luck(&"wheel_loose", hazard_type)
 		&"tumbleweed":
-			if _run_state.start_failure(&"horse_panic", hazard_type):
-				_bad_luck_elapsed = 0.0
+			_start_failure_and_reschedule_bad_luck(&"horse_panic", hazard_type)
 
 
-func _get_bad_luck_interval() -> float:
+## Returns the rolled bad-luck interval bounds for the supplied delivery progress ratio.
+func _get_bad_luck_interval_range(progress_ratio: float) -> Vector2:
+	if progress_ratio < 0.33:
+		return Vector2(BAD_LUCK_INTERVAL_EARLY_MIN, BAD_LUCK_INTERVAL_EARLY_MAX)
+	if progress_ratio < 0.66:
+		return Vector2(BAD_LUCK_INTERVAL_MID_MIN, BAD_LUCK_INTERVAL_MID_MAX)
+	return Vector2(BAD_LUCK_INTERVAL_LATE_MIN, BAD_LUCK_INTERVAL_LATE_MAX)
+
+
+## Rolls a fresh bad-luck interval from the current route-progress band.
+func _roll_bad_luck_interval() -> float:
+	var progress_ratio := 0.0 if _run_state == null else _run_state.get_delivery_progress_ratio()
+	var interval_range := _get_bad_luck_interval_range(progress_ratio)
+	return _bad_luck_rng.randf_range(interval_range.x, interval_range.y)
+
+
+## Schedules the next timer-driven bad-luck interval using the current route-progress band.
+func _schedule_next_bad_luck_interval() -> void:
+	_scheduled_bad_luck_interval = _roll_bad_luck_interval()
+
+
+## Starts a failure and pushes the next bad-luck roll forward when the failure begins successfully.
+func _start_failure_and_reschedule_bad_luck(failure_type: StringName, source_hazard: StringName) -> bool:
 	if _run_state == null:
-		return BAD_LUCK_INTERVAL_EARLY
+		return false
+	if not _run_state.start_failure(failure_type, source_hazard):
+		return false
 
-	return lerp(
-		BAD_LUCK_INTERVAL_EARLY,
-		BAD_LUCK_INTERVAL_LATE,
-		_run_state.get_delivery_progress_ratio()
-	)
+	_bad_luck_elapsed = 0.0
+	_pending_bad_luck_trigger = false
+	_schedule_next_bad_luck_interval()
+	return true
 
 
 func _check_for_success() -> void:

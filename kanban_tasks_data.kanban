@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
 				"97954889-ed96-474c-8b51-201bad60aa89",
 				"d4c22985-085e-437a-89a0-a19eb4210cff",
 				"677fbfae-de4a-4e95-891c-00ee0a7de59c",
@@ -32,6 +31,7 @@
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
 				"de1bdeb5-f3cf-4bd7-aa5d-4b565cb58fad",
 				"e745d754-1f2a-4a6b-ae1e-ba88fe9dafd1",
 				"17a69553-9cd1-409a-8231-b9d6ce1c70f3",
@@ -460,15 +460,15 @@
 			"steps": [
 				{
 					"details": "Replace the current linear bad-luck interval lookup in Scenes/RunScene/run_scene.gd with a scheduled interval system that rolls the next bad-luck delay from the current route-progress band. Use the defined early, mid, and late ranges, keep only one scheduled timer active at a time, and roll the first interval during run setup.\n\nDone when: bad-luck timing is driven by one rolled interval at a time instead of a continuous 13.0 to 8.0 lerp, and the rolled interval always comes from the correct progress band.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Reschedule the next bad-luck interval whenever a failure successfully starts, including both timer-driven bad luck and collision-triggered interruptions. Keep bad luck blocked during active interruptions and recovery cooldown. If the scheduled time matures while blocked, store a single pending bad-luck trigger and fire it on the first frame where the run is eligible to start a new interruption again. Timer-driven bad luck must continue to call RunState.start_failure(&\"horse_panic\", &\"bad_luck\") so presentation stays unchanged.\n\nDone when: collision-triggered interruptions and timer-driven interruptions both push the next bad-luck roll forward cleanly, blocked bad luck is deferred instead of silently discarded, and the timer-driven path still enters horse_panic from source bad_luck.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add deterministic automated coverage in Tests/Unit/test_run_scene.gd for the new scheduler behavior. Cover band-specific interval selection, first-roll setup behavior, rescheduling after a successful hazard-triggered failure, deferred pending bad luck through recovery cooldown, single-pending-trigger behavior, and continued use of the horse_panic/bad_luck path for timer-driven bad luck.\n\nDone when: the new bad-luck cadence rules are covered without flaking and the normal repo verification flow still passes.",
-					"done": false
+					"done": true
 				}
 			]
 		},

@@ -452,27 +452,55 @@ func test_bad_luck_timer_triggers_failure_when_no_active_failure_exists() -> voi
 
 	var state := RunStateType.new()
 	state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.2
+	scene._bad_luck_rng.seed = 7
 	scene.setup(state)
 
-	scene._advance_failure_triggers(13.0)
+	scene._advance_failure_triggers(scene._scheduled_bad_luck_interval)
 
 	assert_eq(state.active_failure, &"horse_panic")
 	assert_eq(state.current_failure.source_hazard, &"bad_luck")
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_false(scene._pending_bad_luck_trigger)
+	assert_true(scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_LATE_MIN)
+	assert_true(scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_LATE_MAX)
 
 
-func test_bad_luck_interval_uses_tuned_fairness_values() -> void:
+func test_bad_luck_interval_range_uses_progress_bands() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
+	assert_eq(
+		scene._get_bad_luck_interval_range(0.2),
+		Vector2(scene.BAD_LUCK_INTERVAL_EARLY_MIN, scene.BAD_LUCK_INTERVAL_EARLY_MAX)
+	)
+	assert_eq(
+		scene._get_bad_luck_interval_range(0.5),
+		Vector2(scene.BAD_LUCK_INTERVAL_MID_MIN, scene.BAD_LUCK_INTERVAL_MID_MAX)
+	)
+	assert_eq(
+		scene._get_bad_luck_interval_range(0.9),
+		Vector2(scene.BAD_LUCK_INTERVAL_LATE_MIN, scene.BAD_LUCK_INTERVAL_LATE_MAX)
+	)
+
+
+func test_setup_rolls_first_bad_luck_interval_from_current_progress_band() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	scene._bad_luck_rng.seed = 19
+
 	var early_state := RunStateType.new()
 	scene.setup(early_state)
-	assert_eq(scene._get_bad_luck_interval(), 13.0)
+	assert_true(scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_EARLY_MIN)
+	assert_true(scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_EARLY_MAX)
 
 	var late_state := RunStateType.new()
 	late_state.distance_remaining = late_state.route_distance * 0.1
 	scene.setup(late_state)
-	assert_eq(scene._get_bad_luck_interval(), 8.5)
+	assert_true(scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_LATE_MIN)
+	assert_true(scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_LATE_MAX)
 
 
 func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
@@ -488,6 +516,114 @@ func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
 
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
+
+
+func test_collision_trigger_reschedules_bad_luck_interval_when_failure_starts() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene._bad_luck_rng.seed = 31
+	_setup_active_run(scene, state)
+	scene._scheduled_bad_luck_interval = 99.0
+	scene._bad_luck_elapsed = 5.0
+	scene._pending_bad_luck_trigger = true
+
+	scene._attempt_failure_trigger_from_collision(&"rock")
+
+	assert_eq(state.active_failure, &"wheel_loose")
+	assert_eq(state.current_failure.source_hazard, &"rock")
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_false(scene._pending_bad_luck_trigger)
+	assert_true(scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_EARLY_MIN)
+	assert_true(scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_EARLY_MAX)
+
+
+func test_bad_luck_timer_arms_one_pending_trigger_during_recovery_cooldown() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	state.recovery_cooldown_remaining = 0.5
+	scene._scheduled_bad_luck_interval = 0.2
+	scene._bad_luck_elapsed = 0.0
+
+	scene._advance_failure_triggers(0.2)
+
+	assert_eq(state.active_failure, &"")
+	assert_true(scene._pending_bad_luck_trigger)
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+
+	scene._advance_failure_triggers(0.1)
+
+	assert_eq(state.active_failure, &"")
+	assert_true(scene._pending_bad_luck_trigger)
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+
+
+func test_bad_luck_timer_arms_one_pending_trigger_during_active_failure() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	state.start_failure(&"wheel_loose", &"rock")
+	scene._scheduled_bad_luck_interval = 0.2
+	scene._bad_luck_elapsed = 0.0
+
+	scene._advance_failure_triggers(0.2)
+
+	assert_eq(state.active_failure, &"wheel_loose")
+	assert_eq(state.current_failure.source_hazard, &"rock")
+	assert_true(scene._pending_bad_luck_trigger)
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+
+
+func test_pending_bad_luck_fires_on_first_frame_after_cooldown_clears() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene._bad_luck_rng.seed = 47
+	_setup_active_run(scene, state)
+	state.recovery_cooldown_remaining = 0.1
+	scene._scheduled_bad_luck_interval = 0.05
+
+	scene._advance_failure_triggers(0.05)
+	scene._advance_failure_triggers(0.05)
+
+	assert_eq(state.active_failure, &"horse_panic")
+	assert_eq(state.current_failure.source_hazard, &"bad_luck")
+	assert_false(scene._pending_bad_luck_trigger)
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+
+
+func test_pending_bad_luck_does_not_stack_or_reroll_while_blocked() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	state.recovery_cooldown_remaining = 0.6
+	scene._scheduled_bad_luck_interval = 0.2
+	scene._bad_luck_elapsed = 0.0
+
+	scene._advance_failure_triggers(0.2)
+	var scheduled_interval_after_pending: float = scene._scheduled_bad_luck_interval
+
+	scene._advance_failure_triggers(0.2)
+	scene._advance_failure_triggers(0.1)
+
+	assert_true(scene._pending_bad_luck_trigger)
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_eq(scene._scheduled_bad_luck_interval, scheduled_interval_after_pending)
+	assert_eq(state.active_failure, &"")
 
 
 func test_wheel_loose_reduces_steering_authority_without_one_side_lock() -> void:
