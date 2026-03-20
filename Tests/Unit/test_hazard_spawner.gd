@@ -27,6 +27,7 @@ func test_progress_bands_define_expected_spacing_ranges_and_weights() -> void:
 	assert_eq(early_band.weights.pothole, 6)
 	assert_eq(early_band.weights.rock, 2)
 	assert_eq(early_band.weights.tumbleweed, 4)
+	assert_eq(early_band.weights.livestock, 0)
 	assert_false(early_band.allows_pressure_pair)
 
 	spawner._route_progress_ratio = 0.5
@@ -36,6 +37,7 @@ func test_progress_bands_define_expected_spacing_ranges_and_weights() -> void:
 	assert_eq(mid_band.weights.pothole, 4)
 	assert_eq(mid_band.weights.rock, 3)
 	assert_eq(mid_band.weights.tumbleweed, 3)
+	assert_eq(mid_band.weights.livestock, 2)
 	assert_false(mid_band.allows_pressure_pair)
 
 	spawner._route_progress_ratio = 0.8
@@ -45,6 +47,7 @@ func test_progress_bands_define_expected_spacing_ranges_and_weights() -> void:
 	assert_eq(late_band.weights.pothole, 4)
 	assert_eq(late_band.weights.rock, 5)
 	assert_eq(late_band.weights.tumbleweed, 3)
+	assert_eq(late_band.weights.livestock, 2)
 	assert_true(late_band.allows_pressure_pair)
 
 

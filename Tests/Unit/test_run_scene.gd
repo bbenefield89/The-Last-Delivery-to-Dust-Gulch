@@ -1101,6 +1101,11 @@ func test_hud_panel_uses_compact_health_distance_and_cargo_layout() -> void:
 	var health_tag: Label = scene.get_node("HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthTag")
 	var health_bar: ProgressBar = scene.get_node("%HealthBar")
 	var distance_bar: ProgressBar = scene.get_node("%DistanceBar")
+	var distance_bar_overlay: Control = scene.get_node(
+		"HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay"
+	)
+	var band_marker_one: ColorRect = scene.get_node("%BandMarkerOne")
+	var band_marker_two: ColorRect = scene.get_node("%BandMarkerTwo")
 	var health_label: Label = scene.get_node("%HealthLabel")
 	var cargo_label: Label = scene.get_node("%CargoLabel")
 
@@ -1109,6 +1114,11 @@ func test_hud_panel_uses_compact_health_distance_and_cargo_layout() -> void:
 	assert_eq(health_tag.text, "HP")
 	assert_not_null(health_bar)
 	assert_not_null(distance_bar)
+	assert_not_null(distance_bar_overlay)
+	assert_almost_eq(band_marker_one.anchor_left, 0.333333, 0.00001)
+	assert_almost_eq(band_marker_one.anchor_right, 0.333333, 0.00001)
+	assert_almost_eq(band_marker_two.anchor_left, 0.666667, 0.00001)
+	assert_almost_eq(band_marker_two.anchor_right, 0.666667, 0.00001)
 	assert_not_null(health_label)
 	assert_not_null(cargo_label)
 	assert_false(scene.has_node("%SpeedLabel"))

@@ -131,21 +131,23 @@ func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DE
 ## Returns the current band definition for the active route progress.
 func _get_active_band() -> SpawnBand:
 	if _route_progress_ratio < 0.33:
-		return SpawnBand.new(520.0, 660.0, 6, 2, 4, false)
+		return SpawnBand.new(520.0, 660.0, 6, 2, 4, 0, false)
 	if _route_progress_ratio < 0.66:
-		return SpawnBand.new(420.0, 560.0, 4, 3, 3, false)
-	return SpawnBand.new(320.0, 460.0, 4, 5, 3, true)
+		return SpawnBand.new(420.0, 560.0, 4, 3, 3, 2, false)
+	return SpawnBand.new(320.0, 460.0, 4, 5, 3, 2, true)
 
 
 ## Rolls a hazard type from the current band's weights.
 func _roll_hazard_type(weights: HazardWeights) -> StringName:
-	var total_weight := weights.pothole + weights.rock + weights.tumbleweed
+	var total_weight := weights.pothole + weights.rock + weights.tumbleweed + weights.livestock
 	var roll := _rng.randi_range(1, total_weight)
 	if roll <= weights.pothole:
 		return &"pothole"
 	if roll <= weights.pothole + weights.rock:
 		return &"rock"
-	return &"tumbleweed"
+	if roll <= weights.pothole + weights.rock + weights.tumbleweed:
+		return &"tumbleweed"
+	return &"livestock"
 
 
 ## Rolls band-specific spacing for the next spawn.
@@ -283,28 +285,31 @@ class SpawnBand:
 		pothole_weight: int,
 		rock_weight: int,
 		tumbleweed_weight: int,
+		livestock_weight: int,
 		allows_pressure_pair_value: bool
 	) -> void:
 		spacing_min = spacing_min_value
 		spacing_max = spacing_max_value
-		weights = HazardWeights.new(pothole_weight, rock_weight, tumbleweed_weight)
+		weights = HazardWeights.new(pothole_weight, rock_weight, tumbleweed_weight, livestock_weight)
 		allows_pressure_pair = allows_pressure_pair_value
 
 
 class HazardWeights:
 	extends RefCounted
-	## Holds weighted odds for the three supported hazard types.
+	## Holds weighted odds for the currently supported hazard types.
 
 	var pothole: int
 	var rock: int
 	var tumbleweed: int
+	var livestock: int
 
 
 	## Stores weight values for hazard selection rolls.
-	func _init(pothole_weight: int, rock_weight: int, tumbleweed_weight: int) -> void:
+	func _init(pothole_weight: int, rock_weight: int, tumbleweed_weight: int, livestock_weight: int) -> void:
 		pothole = pothole_weight
 		rock = rock_weight
 		tumbleweed = tumbleweed_weight
+		livestock = livestock_weight
 
 
 class SpawnPlan:

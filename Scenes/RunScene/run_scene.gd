@@ -751,7 +751,7 @@ func _attempt_failure_trigger_from_collision(hazard_type: StringName) -> void:
 	match hazard_type:
 		&"rock", &"pothole":
 			_start_failure_and_reschedule_bad_luck(&"wheel_loose", hazard_type)
-		&"tumbleweed":
+		&"tumbleweed", &"livestock":
 			_start_failure_and_reschedule_bad_luck(&"horse_panic", hazard_type)
 
 

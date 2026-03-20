@@ -239,13 +239,50 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_top = 5
 
-[node name="DistanceBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin" unique_id=590576366]
+[node name="DistanceBarOverlay" type="Control" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin" unique_id=1339401107]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="DistanceBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=590576366]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 10)
 layout_mode = 2
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
 theme_override_styles/fill = SubResource("StyleBoxFlat_distance_fill")
 show_percentage = false
+
+[node name="BandMarkerOne" type="ColorRect" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=1734594783]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.333333
+anchor_top = 0.0
+anchor_right = 0.333333
+anchor_bottom = 1.0
+offset_left = -1.0
+offset_right = 1.0
+offset_bottom = 0.0
+mouse_filter = 2
+color = Color(0.945098, 0.882353, 0.709804, 0.9)
+
+[node name="BandMarkerTwo" type="ColorRect" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=816193522]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.666667
+anchor_top = 0.0
+anchor_right = 0.666667
+anchor_bottom = 1.0
+offset_left = -1.0
+offset_right = 1.0
+offset_bottom = 0.0
+mouse_filter = 2
+color = Color(0.945098, 0.882353, 0.709804, 0.9)
 
 [node name="CargoLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=1358233989]
 unique_name_in_owner = true
