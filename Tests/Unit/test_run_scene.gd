@@ -1445,7 +1445,8 @@ func test_result_panel_stays_hidden_during_active_run() -> void:
 	assert_false(result_panel.visible)
 
 
-func test_result_panel_includes_small_stats_summary() -> void:
+## Verifies the success result panel shows score and grade alongside the stat summary.
+func test_result_panel_includes_score_grade_and_small_stats_summary_for_success() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
@@ -1460,6 +1461,8 @@ func test_result_panel_includes_small_stats_summary() -> void:
 	scene._refresh_result_screen()
 
 	var result_stats: Label = scene.get_node("%ResultStats")
+	assert_string_contains(result_stats.text, "Score: 1565")
+	assert_string_contains(result_stats.text, "Delivery Grade: A")
 	assert_string_contains(result_stats.text, "Health: 41")
 	assert_string_contains(result_stats.text, "Cargo: 72")
 	assert_string_contains(result_stats.text, "Distance traveled: 500 / 500")
@@ -1469,6 +1472,30 @@ func test_result_panel_includes_small_stats_summary() -> void:
 	var return_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton")
 	assert_eq(restart_button.text, "Restart")
 	assert_eq(return_button.text, "Title")
+
+
+## Verifies the collapse result panel uses the same score and grade wiring.
+func test_result_panel_includes_score_and_grade_for_collapse() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_COLLAPSED
+	state.distance_remaining = 375.0
+	state.cargo_value = 10
+	state.wagon_health = 20
+	scene.setup(state)
+	scene._refresh_result_screen()
+
+	var result_title: Label = scene.get_node("%ResultTitle")
+	var result_stats: Label = scene.get_node("%ResultStats")
+	assert_eq(result_title.text, "Wagon Collapsed")
+	assert_string_contains(result_stats.text, "Score: 400")
+	assert_string_contains(result_stats.text, "Delivery Grade: F")
+	assert_string_contains(result_stats.text, "Health: 20")
+	assert_string_contains(result_stats.text, "Cargo: 10")
+	assert_string_contains(result_stats.text, "Distance traveled: 125 / 500")
 
 
 func test_result_panel_buttons_emit_restart_and_return_signals() -> void:

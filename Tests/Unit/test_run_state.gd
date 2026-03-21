@@ -52,6 +52,38 @@ func test_delivery_progress_ratio_tracks_route_completion() -> void:
 	assert_eq(state.get_delivery_progress_ratio(), 0.75)
 
 
+## Verifies the score formula uses progress, health, and cargo only.
+func test_score_when_run_stats_change_then_score_uses_completion_health_and_cargo() -> void:
+	var state := RunStateType.new()
+	state.distance_remaining = 125.0
+	state.wagon_health = 41
+	state.cargo_value = 72
+
+	assert_eq(state.get_completion_score(), 750)
+	assert_eq(state.get_health_score(), 205)
+	assert_eq(state.get_cargo_score(), 360)
+	assert_eq(state.get_score(), 1315)
+
+
+## Verifies representative thresholds map to the expected delivery grades.
+func test_delivery_grade_when_score_crosses_thresholds_then_expected_grade_is_returned() -> void:
+	var elite_state := RunStateType.new()
+	elite_state.distance_remaining = 0.0
+	assert_eq(elite_state.get_delivery_grade(), "S")
+
+	var strong_state := RunStateType.new()
+	strong_state.distance_remaining = 125.0
+	strong_state.wagon_health = 41
+	strong_state.cargo_value = 72
+	assert_eq(strong_state.get_delivery_grade(), "B")
+
+	var failed_state := RunStateType.new()
+	failed_state.distance_remaining = 375.0
+	failed_state.wagon_health = 20
+	failed_state.cargo_value = 10
+	assert_eq(failed_state.get_delivery_grade(), "F")
+
+
 func test_configure_route_distance_updates_starting_distance() -> void:
 	var state := RunStateType.new()
 

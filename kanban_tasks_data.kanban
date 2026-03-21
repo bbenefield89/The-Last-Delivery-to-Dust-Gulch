@@ -22,14 +22,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"677fbfae-de4a-4e95-891c-00ee0a7de59c"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"677fbfae-de4a-4e95-891c-00ee0a7de59c",
 				"d4c22985-085e-437a-89a0-a19eb4210cff",
 				"97954889-ed96-474c-8b51-201bad60aa89",
 				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
@@ -561,7 +560,7 @@
 				},
 				{
 					"details": "Add automated coverage for the score calculation and result-panel display wiring.\n\nDone when: tests verify the score and grade rules and the result panel reflects them correctly for representative run outcomes.",
-					"done": false
+					"done": true
 				}
 			]
 		},
