@@ -45,10 +45,11 @@ func _start_seeded_recovery_sequence(scene: Node, state: RunStateType, seed: int
 	return _build_expected_recovery_sequence(scene, state.get_delivery_progress_ratio(), seed)
 
 
-func _spawn_test_hazard(scene: Node, hazard_type: StringName, lane_index: int = 1) -> Sprite2D:
+## Spawns a hazard directly into the run scene and places it on the wagon line for deterministic assertions.
+func _spawn_test_hazard(scene: Node, hazard_type: StringName, lane_index: int = 1) -> Node2D:
 	var spawner = scene.get_node("%HazardSpawner")
 	spawner._spawn_hazard(hazard_type, lane_index)
-	var hazard: Sprite2D = spawner.get_child(spawner.get_child_count() - 1)
+	var hazard: Node2D = spawner.get_child(spawner.get_child_count() - 1)
 	hazard.position = Vector2(0.0, 0.0)
 	return hazard
 
@@ -231,6 +232,27 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	var fallback_impact_player: AudioStreamPlayer = scene.get_node("%ImpactPlayer")
 	assert_true(pothole_impact_player.playing)
 	assert_false(fallback_impact_player.playing)
+
+
+## Verifies a live livestock collision uses the existing damage and horse-panic failure flow.
+func test_livestock_collision_when_it_hits_the_wagon_then_existing_failure_flow_is_used() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	_spawn_test_hazard(scene, &"livestock")
+	await wait_process_frames(1)
+	scene._process(0.0)
+	await wait_process_frames(1)
+
+	assert_eq(state.wagon_health, 88)
+	assert_eq(state.cargo_value, 95)
+	assert_eq(state.last_hit_hazard, &"livestock")
+	assert_eq(state.active_failure, &"horse_panic")
+	assert_eq(state.current_failure.source_hazard, &"livestock")
 
 
 func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:

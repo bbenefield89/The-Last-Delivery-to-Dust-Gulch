@@ -113,6 +113,29 @@ func test_late_band_rolls_add_pressure_pairs_but_earlier_bands_do_not() -> void:
 		assert_ne(late_plan.pressure_pair_lane_index, late_plan.lane_index)
 
 
+## Confirms livestock remains absent from the opening band but can roll once the run advances.
+func test_spawn_plan_when_band_progress_advances_then_livestock_only_rolls_after_opening() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var early_rolls: Array[StringName] = []
+	var mid_found := false
+	var late_found := false
+
+	for roll_index in range(120):
+		early_rolls.append(_prime_seeded_plan(spawner, 800 + roll_index, 0.2).hazard_type)
+
+		if _prime_seeded_plan(spawner, 1000 + roll_index, 0.5).hazard_type == &"livestock":
+			mid_found = true
+
+		if _prime_seeded_plan(spawner, 1200 + roll_index, 0.85).hazard_type == &"livestock":
+			late_found = true
+
+	assert_false(early_rolls.has(&"livestock"))
+	assert_true(mid_found)
+	assert_true(late_found)
+
+
 func test_each_hazard_type_uses_a_distinct_readable_sprite() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -130,6 +153,30 @@ func test_each_hazard_type_uses_a_distinct_readable_sprite() -> void:
 	assert_ne(pothole.texture, rock.texture)
 	assert_ne(rock.texture, tumbleweed.texture)
 	assert_ne(pothole.texture, tumbleweed.texture)
+
+
+## Verifies livestock crosses toward the road and cleans itself up after leaving the playable area.
+func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	spawner._rng.seed = 77
+	spawner._spawn_hazard(&"livestock", 1)
+
+	var livestock := spawner.get_child(0) as Node2D
+	var starting_position := livestock.position
+	var target_lane_x := float(livestock.get_meta("target_lane_x"))
+
+	spawner._move_hazards(40.0)
+
+	assert_true(absf(livestock.position.x - target_lane_x) < absf(starting_position.x - target_lane_x))
+	assert_eq(livestock.position.y, starting_position.y + 40.0)
+
+	livestock.position.x = HazardSpawnerType.HAZARD_SIDE_DESPAWN_X + 1.0
+	spawner._cleanup_hazards()
+	await wait_process_frames(1)
+
+	assert_eq(spawner.get_child_count(), 0)
 
 
 func test_advance_removes_hazards_after_they_leave_the_screen() -> void:

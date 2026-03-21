@@ -24,14 +24,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"97954889-ed96-474c-8b51-201bad60aa89"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"97954889-ed96-474c-8b51-201bad60aa89",
 				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
 				"de1bdeb5-f3cf-4bd7-aa5d-4b565cb58fad",
 				"e745d754-1f2a-4a6b-ae1e-ba88fe9dafd1",
@@ -521,7 +520,7 @@
 				},
 				{
 					"details": "Add automated coverage for livestock spawning, movement/despawn behavior, and collision integration with the current run scene.\n\nDone when: tests cover the new hazard path without breaking existing hazard coverage.",
-					"done": false
+					"done": true
 				}
 			]
 		},
