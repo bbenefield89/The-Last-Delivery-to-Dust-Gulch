@@ -444,6 +444,7 @@ func _process(delta: float) -> void:
 	_hazard_spawner.advance(_run_state.current_speed * delta, _run_state.get_delivery_progress_ratio())
 	_update_hazard_near_miss_tracking()
 	_apply_hazard_collisions()
+	_record_completed_hazard_dodges()
 	_award_completed_near_misses()
 	_advance_failure_triggers(delta)
 	_check_for_loss()
@@ -588,13 +589,23 @@ func _refresh_result_screen() -> void:
 			_result_title.text = "Run Complete"
 			_result_summary.text = "Restart the route or return to title."
 
-	_result_stats.text = "Score: %d\nDelivery Grade: %s\nHealth: %d\nCargo: %d\nDistance traveled: %.0f / %.0f" % [
+	_result_stats.text = (
+		"Score: %d\n"
+		+ "Delivery Grade: %s\n"
+		+ "Health: %d\n"
+		+ "Cargo: %d\n"
+		+ "Distance traveled: %.0f / %.0f\n"
+		+ "Hazards Dodged: %d\n"
+		+ "Near Misses: %d"
+	) % [
 		_run_state.get_score(),
 		_run_state.get_delivery_grade(),
 		_run_state.wagon_health,
 		_run_state.cargo_value,
 		_run_state.get_distance_traveled(),
 		_run_state.route_distance,
+		_run_state.hazards_dodged,
+		_run_state.near_misses,
 	]
 
 
@@ -817,6 +828,27 @@ func _award_completed_near_misses() -> void:
 		hazard.set_meta("near_miss_awarded", true)
 		_run_state.award_near_miss_bonus()
 		_show_bonus_callout("NEAR MISS +%d" % RunStateType.NEAR_MISS_BONUS_SCORE)
+
+
+## Records each hazard once after it safely passes the wagon without a collision.
+func _record_completed_hazard_dodges() -> void:
+	if _hazard_spawner == null or _run_state == null:
+		return
+
+	for child in _hazard_spawner.get_children():
+		if not child is Node2D:
+			continue
+
+		var hazard: Node2D = child as Node2D
+		if bool(hazard.get_meta("was_hit", false)):
+			continue
+		if bool(hazard.get_meta("dodge_recorded", false)):
+			continue
+		if not _has_hazard_safely_passed_wagon(hazard):
+			continue
+
+		hazard.set_meta("dodge_recorded", true)
+		_run_state.record_hazard_dodged()
 
 
 ## Returns whether the hazard has moved fully below the wagon line and can no longer collide.

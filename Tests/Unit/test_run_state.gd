@@ -16,6 +16,8 @@ func test_defaults_match_expected_mvp_boot_values() -> void:
 	assert_null(state.current_failure)
 	assert_eq(state.last_hit_hazard, &"")
 	assert_eq(state.result, RunStateType.DEFAULT_RESULT)
+	assert_eq(state.hazards_dodged, RunStateType.DEFAULT_HAZARDS_DODGED)
+	assert_eq(state.near_misses, RunStateType.DEFAULT_NEAR_MISSES)
 
 
 func test_reset_for_new_run_restores_all_core_run_values() -> void:
@@ -29,6 +31,8 @@ func test_reset_for_new_run_restores_all_core_run_values() -> void:
 	state.result = RunStateType.RESULT_COLLAPSED
 	state.lateral_position = -150.0
 	state.last_hit_hazard = &"rock"
+	state.hazards_dodged = 3
+	state.near_misses = 2
 
 	state.reset_for_new_run()
 
@@ -42,6 +46,8 @@ func test_reset_for_new_run_restores_all_core_run_values() -> void:
 	assert_eq(state.result, RunStateType.DEFAULT_RESULT)
 	assert_eq(state.lateral_position, RunStateType.DEFAULT_LATERAL_POSITION)
 	assert_eq(state.last_hit_hazard, RunStateType.DEFAULT_LAST_HIT_HAZARD)
+	assert_eq(state.hazards_dodged, RunStateType.DEFAULT_HAZARDS_DODGED)
+	assert_eq(state.near_misses, RunStateType.DEFAULT_NEAR_MISSES)
 
 
 func test_delivery_progress_ratio_tracks_route_completion() -> void:
@@ -72,8 +78,21 @@ func test_near_miss_bonus_when_awarded_then_bonus_score_is_added_once_per_award(
 	state.award_near_miss_bonus()
 	state.award_near_miss_bonus()
 
+	assert_eq(state.near_misses, 2)
 	assert_eq(state.bonus_score, RunStateType.NEAR_MISS_BONUS_SCORE * 2)
 	assert_eq(state.get_score(), 1850)
+
+
+## Verifies completed hazard dodges are tracked independently from the near-miss subset.
+func test_hazard_dodged_when_recorded_then_dodge_counter_increments_without_affecting_score() -> void:
+	var state := RunStateType.new()
+
+	state.record_hazard_dodged()
+	state.record_hazard_dodged()
+
+	assert_eq(state.hazards_dodged, 2)
+	assert_eq(state.near_misses, 0)
+	assert_eq(state.bonus_score, 0)
 
 
 ## Verifies representative thresholds map to the expected delivery grades.

@@ -261,6 +261,8 @@ func test_near_miss_when_hazard_passes_close_without_collision_then_bonus_and_ca
 	var bonus_callout_center: Vector2 = bonus_callout_panel.get_global_rect().get_center()
 
 	assert_eq(state.bonus_score, RunStateType.NEAR_MISS_BONUS_SCORE)
+	assert_eq(state.hazards_dodged, 1)
+	assert_eq(state.near_misses, 1)
 	assert_eq(
 		state.get_score(),
 		state.get_completion_score() + state.get_health_score() + state.get_cargo_score() + RunStateType.NEAR_MISS_BONUS_SCORE
@@ -275,6 +277,25 @@ func test_near_miss_when_hazard_passes_close_without_collision_then_bonus_and_ca
 
 	assert_eq(state.bonus_score, RunStateType.NEAR_MISS_BONUS_SCORE)
 	assert_false(bonus_callout_panel.visible)
+
+
+func test_clean_dodge_when_hazard_passes_safely_then_only_hazards_dodged_increments() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	var hazard: Node2D = _spawn_test_hazard(scene, &"pothole")
+	hazard.position = Vector2(72.0, -120.0)
+	for _step in range(6):
+		scene._process(0.1)
+		await wait_process_frames(1)
+
+	assert_eq(state.hazards_dodged, 1)
+	assert_eq(state.near_misses, 0)
+	assert_eq(state.bonus_score, 0)
 
 
 func test_near_miss_bonus_is_not_awarded_for_a_real_collision() -> void:
@@ -1606,6 +1627,8 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 	state.cargo_value = 72
 	state.wagon_health = 41
 	state.current_speed = 0.0
+	state.hazards_dodged = 9
+	state.near_misses = 3
 	scene.setup(state)
 	scene._refresh_result_screen()
 
@@ -1615,6 +1638,8 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 	assert_string_contains(result_stats.text, "Health: 41")
 	assert_string_contains(result_stats.text, "Cargo: 72")
 	assert_string_contains(result_stats.text, "Distance traveled: 500 / 500")
+	assert_string_contains(result_stats.text, "Hazards Dodged: 9")
+	assert_string_contains(result_stats.text, "Near Misses: 3")
 	assert_false(result_stats.text.contains("Speed:"))
 
 	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
@@ -1634,6 +1659,8 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	state.distance_remaining = 375.0
 	state.cargo_value = 10
 	state.wagon_health = 20
+	state.hazards_dodged = 2
+	state.near_misses = 1
 	scene.setup(state)
 	scene._refresh_result_screen()
 
@@ -1645,6 +1672,8 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	assert_string_contains(result_stats.text, "Health: 20")
 	assert_string_contains(result_stats.text, "Cargo: 10")
 	assert_string_contains(result_stats.text, "Distance traveled: 125 / 500")
+	assert_string_contains(result_stats.text, "Hazards Dodged: 2")
+	assert_string_contains(result_stats.text, "Near Misses: 1")
 
 
 func test_result_panel_buttons_emit_restart_and_return_signals() -> void:

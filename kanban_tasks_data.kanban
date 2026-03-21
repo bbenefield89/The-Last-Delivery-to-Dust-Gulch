@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"18282a78-c593-4d8b-bb37-bcf2350354f8",
 				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
 				"e0958d3a-e763-454c-a978-271443797d74",
 				"0ca1b626-31ec-4978-9352-36006543cbb9",
@@ -21,7 +20,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"18282a78-c593-4d8b-bb37-bcf2350354f8"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -588,7 +589,7 @@
 			"steps": [
 				{
 					"details": "Add run-state tracking for `Hazards Dodged` and `Near Misses`, wire those values into the result flow, and write very thorough unit tests for the tracking rules.\n\nDone when: by playing the game, a run with clean dodges and close calls shows the expected `Hazards Dodged` and `Near Misses` counts on the result screen.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add run-state tracking for `Perfect Recoveries` and `Recovery Failures`, wire those values into the result flow, and write very thorough unit tests for clean and failed recovery cases.\n\nDone when: by playing the game, a run with one clean recovery and one failed recovery shows both counts correctly on the result screen.",

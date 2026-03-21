@@ -24,6 +24,8 @@ const DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING := 0.0
 const DEFAULT_LAST_RECOVERY_OUTCOME := &""
 const DEFAULT_RECOVERY_OUTCOME_DISPLAY_REMAINING := 0.0
 const DEFAULT_RECOVERY_COOLDOWN_REMAINING := 0.0
+const DEFAULT_HAZARDS_DODGED := 0
+const DEFAULT_NEAR_MISSES := 0
 const SCORE_COMPLETION_MAX := 1000
 const SCORE_HEALTH_POINT_VALUE := 5
 const SCORE_CARGO_POINT_VALUE := 5
@@ -56,6 +58,8 @@ var result: StringName = DEFAULT_RESULT
 var lateral_position: float = DEFAULT_LATERAL_POSITION
 var last_hit_hazard: StringName = DEFAULT_LAST_HIT_HAZARD
 var bonus_score: int = 0
+var hazards_dodged: int = DEFAULT_HAZARDS_DODGED
+var near_misses: int = DEFAULT_NEAR_MISSES
 
 
 func reset_for_new_run() -> void:
@@ -79,6 +83,8 @@ func reset_for_new_run() -> void:
 	lateral_position = DEFAULT_LATERAL_POSITION
 	last_hit_hazard = DEFAULT_LAST_HIT_HAZARD
 	bonus_score = 0
+	hazards_dodged = DEFAULT_HAZARDS_DODGED
+	near_misses = DEFAULT_NEAR_MISSES
 
 
 func get_distance_traveled() -> float:
@@ -114,12 +120,18 @@ func get_score() -> int:
 
 ## Awards one near-miss bonus into the shared run score bucket.
 func award_near_miss_bonus() -> void:
+	near_misses += 1
 	bonus_score += NEAR_MISS_BONUS_SCORE
 
 
 ## Awards one perfect-recovery bonus into the shared run score bucket.
 func award_perfect_recovery_bonus() -> void:
 	bonus_score += PERFECT_RECOVERY_BONUS_SCORE
+
+
+## Records one hazard as successfully dodged after it fully passes the wagon.
+func record_hazard_dodged() -> void:
+	hazards_dodged += 1
 
 
 ## Returns the delivery grade that corresponds to the current run score.
