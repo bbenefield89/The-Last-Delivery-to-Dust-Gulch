@@ -99,10 +99,11 @@ func _spawn_current_plan() -> void:
 
 ## Adds one hazard node using the shared visual and metadata conventions.
 func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DEFAULT_SPAWN_Y) -> void:
+	var resolved_lane_index := _resolve_lane_index(lane_index)
 	var hazard := _build_hazard_visual(hazard_type)
-	hazard.position = _resolve_spawn_position(hazard, hazard_type, lane_index, spawn_y)
+	hazard.position = _resolve_spawn_position(hazard, hazard_type, resolved_lane_index, spawn_y)
 	hazard.set_meta("hazard_type", hazard_type)
-	hazard.set_meta("lane_index", lane_index)
+	hazard.set_meta("lane_index", resolved_lane_index)
 	add_child(hazard)
 
 
@@ -138,6 +139,21 @@ func _roll_lane_index() -> int:
 	return _rng.randi_range(0, LANE_X_POSITIONS.size() - 1)
 
 
+## Clamps one lane selection to the valid 7-tile road grid.
+func _resolve_lane_index(lane_index: int) -> int:
+	return clampi(lane_index, 0, LANE_X_POSITIONS.size() - 1)
+
+
+## Returns the centered x position for one road-tile lane.
+func _get_lane_center_x(lane_index: int) -> float:
+	return LANE_X_POSITIONS[_resolve_lane_index(lane_index)]
+
+
+## Returns the centered world position for one road-tile lane at the supplied y.
+func _get_lane_center_position(lane_index: int, y_position: float) -> Vector2:
+	return Vector2(_get_lane_center_x(lane_index), y_position)
+
+
 ## Chooses a secondary lane from the same 7-tile grid while avoiding the primary lane.
 func _get_pressure_lane_index(primary_lane_index: int) -> int:
 	var pressure_lane_index := _roll_lane_index()
@@ -169,7 +185,7 @@ func _resolve_spawn_position(
 	spawn_y: float
 ) -> Vector2:
 	if hazard_type != &"livestock":
-		return Vector2(LANE_X_POSITIONS[lane_index], spawn_y)
+		return _get_lane_center_position(lane_index, spawn_y)
 
 	return _configure_livestock_crossing(hazard, lane_index, spawn_y)
 
@@ -183,7 +199,7 @@ func _configure_livestock_crossing(hazard: Node2D, lane_index: int, spawn_y: flo
 		"crossing_scroll_ratio_x",
 		LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT * float(crossing_direction)
 	)
-	hazard.set_meta("target_lane_x", LANE_X_POSITIONS[lane_index])
+	hazard.set_meta("target_lane_x", _get_lane_center_x(lane_index))
 	return Vector2(
 		_get_livestock_spawn_x(lane_index, spawn_y, crossing_direction),
 		spawn_y
@@ -198,7 +214,7 @@ func _roll_livestock_crossing_direction() -> int:
 ## Places livestock far enough off-road that it reaches the target lane near the wagon line.
 func _get_livestock_spawn_x(lane_index: int, spawn_y: float, crossing_direction: int) -> float:
 	var crossing_distance := absf(spawn_y - LIVESTOCK_CROSSING_TARGET_Y) * LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT
-	return LANE_X_POSITIONS[lane_index] - (crossing_distance * float(crossing_direction))
+	return _get_lane_center_x(lane_index) - (crossing_distance * float(crossing_direction))
 
 
 ## Resolves the shared gameplay profile for the requested hazard type.

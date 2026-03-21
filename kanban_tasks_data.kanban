@@ -537,7 +537,7 @@
 				},
 				{
 					"details": "Update hazard position resolution so hazards land on the center of a road tile instead of drifting onto tile edges. Keep current hazard types and movement behavior, but ensure any lane-targeted hazard, including livestock crossings, resolves to one of the 7 lane-center x positions when interacting with the road.\n\nDone when: static hazards spawn centered on a single road tile and livestock lane targeting also snaps to the same lane-center grid.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Rewrite automated coverage for lane placement so tests assert hazards only use the 7 allowed lane centers and never spawn at between-tile x positions. Update any run-scene expectations that assumed the old 3-lane model.\n\nDone when: tests prove the 7-lane placement model, lane-targeted hazards stay grid-aligned, and verification no longer depends on the previous lane positions.",
