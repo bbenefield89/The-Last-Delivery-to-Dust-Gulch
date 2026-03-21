@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://de6ppq0376jbi"
-path="res://.godot/imported/Boulder-32x32.png-81d5488e27efb4d2ec9444de16bdf3fb.ctex"
+uid="uid://bsmtbkgrqdt63"
+path="res://.godot/imported/Pothole-32x32.png-e73386d17bd1d6fe7eb07ebc252515e6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Tilesets/Boulder/Boulder-32x32.png"
-dest_files=["res://.godot/imported/Boulder-32x32.png-81d5488e27efb4d2ec9444de16bdf3fb.ctex"]
+source_file="res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png"
+dest_files=["res://.godot/imported/Pothole-32x32.png-e73386d17bd1d6fe7eb07ebc252515e6.ctex"]
 
 [params]
 

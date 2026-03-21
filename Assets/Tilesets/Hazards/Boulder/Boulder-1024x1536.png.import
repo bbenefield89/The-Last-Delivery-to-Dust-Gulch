@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dn27hmnrg7wsa"
-path="res://.godot/imported/Boulder-1024x1536.png-4e31d74ddd4e030a7109680f7d80d748.ctex"
+path="res://.godot/imported/Boulder-1024x1536.png-c678f1298dc4f608478481630f483711.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Tilesets/Boulder/Boulder-1024x1536.png"
-dest_files=["res://.godot/imported/Boulder-1024x1536.png-4e31d74ddd4e030a7109680f7d80d748.ctex"]
+source_file="res://Assets/Tilesets/Hazards/Boulder/Boulder-1024x1536.png"
+dest_files=["res://.godot/imported/Boulder-1024x1536.png-c678f1298dc4f608478481630f483711.ctex"]
 
 [params]
 

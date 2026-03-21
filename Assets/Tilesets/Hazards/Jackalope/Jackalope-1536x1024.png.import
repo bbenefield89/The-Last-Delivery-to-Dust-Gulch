@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://spm3i11sc8qw"
-path="res://.godot/imported/Pothole-1024x1536.png-27d66d63896c4e1dbf8f4c8f4c9ab5cc.ctex"
+uid="uid://bm4gk6qi71n7v"
+path="res://.godot/imported/Jackalope-1536x1024.png-127229bf97d5d648b89af565d08d6aca.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Tilesets/Pothole/Pothole-1024x1536.png"
-dest_files=["res://.godot/imported/Pothole-1024x1536.png-27d66d63896c4e1dbf8f4c8f4c9ab5cc.ctex"]
+source_file="res://Assets/Tilesets/Hazards/Jackalope/Jackalope-1536x1024.png"
+dest_files=["res://.godot/imported/Jackalope-1536x1024.png-127229bf97d5d648b89af565d08d6aca.ctex"]
 
 [params]
 

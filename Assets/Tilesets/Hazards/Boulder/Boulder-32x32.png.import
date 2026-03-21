@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bm4gk6qi71n7v"
-path="res://.godot/imported/Jackalope-1536x1024.png-5306f4278913698669a3f7b034a58f05.ctex"
+uid="uid://de6ppq0376jbi"
+path="res://.godot/imported/Boulder-32x32.png-589832e622bdd74ae485856adb3b5af0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Tilesets/Jackalope/Jackalope-1536x1024.png"
-dest_files=["res://.godot/imported/Jackalope-1536x1024.png-5306f4278913698669a3f7b034a58f05.ctex"]
+source_file="res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png"
+dest_files=["res://.godot/imported/Boulder-32x32.png-589832e622bdd74ae485856adb3b5af0.ctex"]
 
 [params]
 

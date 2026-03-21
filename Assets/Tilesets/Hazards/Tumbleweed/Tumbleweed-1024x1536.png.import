@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cdsip07mntb51"
-path="res://.godot/imported/Jackalope-32x32.png-732114887ee3735d63023f1b96a57c9a.ctex"
+uid="uid://lcxqgt4shi41"
+path="res://.godot/imported/Tumbleweed-1024x1536.png-2fb555d7562e5740a2a31aa36658e11c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Tilesets/Jackalope/Jackalope-32x32.png"
-dest_files=["res://.godot/imported/Jackalope-32x32.png-732114887ee3735d63023f1b96a57c9a.ctex"]
+source_file="res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-1024x1536.png"
+dest_files=["res://.godot/imported/Tumbleweed-1024x1536.png-2fb555d7562e5740a2a31aa36658e11c.ctex"]
 
 [params]
 

@@ -1,10 +1,18 @@
 extends GutTest
 
 const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
+const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png")
+const ROCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png")
+const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png")
+const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Jackalope/Jackalope-32x32.png")
 
 
 func _create_seeded_spawner() -> Node:
 	var spawner := HazardSpawnerType.new()
+	spawner.pothole_texture = POTHOLE_TEXTURE
+	spawner.rock_texture = ROCK_TEXTURE
+	spawner.tumbleweed_texture = TUMBLEWEED_TEXTURE
+	spawner.livestock_texture = LIVESTOCK_TEXTURE
 	add_child_autofree(spawner)
 	return spawner
 
@@ -85,21 +93,27 @@ func test_seeded_spawn_rolls_keep_spacing_inside_band_ranges() -> void:
 		assert_true(late_plan.spacing <= 460.0)
 
 
-func test_seeded_rolls_randomize_lane_selection_across_three_lanes() -> void:
+func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
 	var lane_indices: Dictionary = {}
-	for roll_index in range(18):
+	for roll_index in range(240):
 		var plan = _prime_seeded_plan(spawner, 400 + roll_index, 0.5)
 		lane_indices[plan.lane_index] = true
 
 	assert_eq(lane_indices.size(), HazardSpawnerType.LANE_X_POSITIONS.size())
+	assert_eq(
+		HazardSpawnerType.LANE_X_POSITIONS,
+		[-96.0, -64.0, -32.0, 0.0, 32.0, 64.0, 96.0]
+	)
 
 
 func test_late_band_rolls_add_pressure_pairs_but_earlier_bands_do_not() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
+
+	var pressure_pair_lane_indices: Dictionary = {}
 
 	for roll_index in range(12):
 		var early_plan = _prime_seeded_plan(spawner, 500 + roll_index, 0.2)
@@ -111,6 +125,9 @@ func test_late_band_rolls_add_pressure_pairs_but_earlier_bands_do_not() -> void:
 		var late_plan = _prime_seeded_plan(spawner, 700 + roll_index, 0.75)
 		assert_true(late_plan.has_pressure_pair())
 		assert_ne(late_plan.pressure_pair_lane_index, late_plan.lane_index)
+		pressure_pair_lane_indices[late_plan.pressure_pair_lane_index] = true
+
+	assert_true(pressure_pair_lane_indices.size() > 1)
 
 
 ## Confirms livestock remains absent from the opening band but can roll once the run advances.
@@ -147,9 +164,9 @@ func test_each_hazard_type_uses_a_distinct_readable_sprite() -> void:
 	autofree(rock)
 	autofree(tumbleweed)
 
-	assert_eq(pothole.texture, HazardSpawnerType.POTHOLE_TEXTURE)
-	assert_eq(rock.texture, HazardSpawnerType.ROCK_TEXTURE)
-	assert_eq(tumbleweed.texture, HazardSpawnerType.TUMBLEWEED_TEXTURE)
+	assert_eq(pothole.texture, POTHOLE_TEXTURE)
+	assert_eq(rock.texture, ROCK_TEXTURE)
+	assert_eq(tumbleweed.texture, TUMBLEWEED_TEXTURE)
 	assert_ne(pothole.texture, rock.texture)
 	assert_ne(rock.texture, tumbleweed.texture)
 	assert_ne(pothole.texture, tumbleweed.texture)
@@ -199,7 +216,9 @@ func test_collect_collisions_reports_profile_damage_for_intersecting_hazard() ->
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	spawner._spawn_hazard(&"pothole", 1)
+	var center_lane_index := HazardSpawnerType.LANE_X_POSITIONS.find(0.0)
+	assert_ne(center_lane_index, -1)
+	spawner._spawn_hazard(&"pothole", center_lane_index)
 
 	var collisions: Array[Dictionary] = spawner.collect_collisions(
 		Vector2(0.0, HazardSpawnerType.DEFAULT_SPAWN_Y),

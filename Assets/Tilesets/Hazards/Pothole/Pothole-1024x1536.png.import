@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bsmtbkgrqdt63"
-path="res://.godot/imported/Pothole-32x32.png-a51133b056863b12f29fe5d9394c3c46.ctex"
+uid="uid://spm3i11sc8qw"
+path="res://.godot/imported/Pothole-1024x1536.png-de64cf968893c5e0f0e25d25dd54cf8a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Tilesets/Pothole/Pothole-32x32.png"
-dest_files=["res://.godot/imported/Pothole-32x32.png-a51133b056863b12f29fe5d9394c3c46.ctex"]
+source_file="res://Assets/Tilesets/Hazards/Pothole/Pothole-1024x1536.png"
+dest_files=["res://.godot/imported/Pothole-1024x1536.png-de64cf968893c5e0f0e25d25dd54cf8a.ctex"]
 
 [params]
 

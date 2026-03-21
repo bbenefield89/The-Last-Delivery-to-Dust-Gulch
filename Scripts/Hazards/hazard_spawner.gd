@@ -3,45 +3,22 @@ extends Node2D
 
 ## Spawns readable hazard layouts with route-progress pacing and late-run pressure pairs.
 
-const LANE_X_POSITIONS := [-68.0, 0.0, 68.0]
+const LANE_X_POSITIONS := [-96.0, -64.0, -32.0, 0.0, 32.0, 64.0, 96.0]
 const DEFAULT_SPAWN_Y := -320.0
 const DEFAULT_DESPAWN_Y := 260.0
 const DEFAULT_HAZARD_TYPE := &"pothole"
-const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Pothole/Pothole-32x32.png")
-const ROCK_TEXTURE := preload("res://Assets/Tilesets/Boulder/Boulder-32x32.png")
-const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Tumbleweed/Tumbleweed-32x32.png")
-const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Jackalope/Jackalope-32x32.png")
 const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const PRESSURE_PAIR_Y_OFFSET := 56.0
 const LIVESTOCK_CROSSING_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT := 0.75
 const HAZARD_SIDE_DESPAWN_X := 360.0
-const HAZARD_PROFILES := {
-	&"pothole": {
-		"texture": POTHOLE_TEXTURE,
-		"damage": 10,
-		"cargo_damage": 4,
-		"size": Vector2(32.0, 24.0),
-	},
-	&"rock": {
-		"texture": ROCK_TEXTURE,
-		"damage": 15,
-		"cargo_damage": 7,
-		"size": Vector2(36.0, 36.0),
-	},
-	&"tumbleweed": {
-		"texture": TUMBLEWEED_TEXTURE,
-		"damage": 6,
-		"cargo_damage": 3,
-		"size": Vector2(32.0, 32.0),
-	},
-	&"livestock": {
-		"texture": LIVESTOCK_TEXTURE,
-		"damage": 12,
-		"cargo_damage": 5,
-		"size": Vector2(32.0, 32.0),
-	},
-}
+
+# Public Fields: Export
+
+@export var pothole_texture: Texture2D
+@export var rock_texture: Texture2D
+@export var tumbleweed_texture: Texture2D
+@export var livestock_texture: Texture2D
 
 # Private Fields
 
@@ -95,7 +72,7 @@ func _spawn_hazards(distance_delta: float) -> void:
 func _prime_next_spawn() -> void:
 	var band := _get_active_band()
 	var hazard_type := _roll_hazard_type(band.weights)
-	var lane_index := _rng.randi_range(0, LANE_X_POSITIONS.size() - 1)
+	var lane_index := _roll_lane_index()
 	var plan := SpawnPlan.new(hazard_type, lane_index, _roll_spacing(band))
 	if band.allows_pressure_pair and _route_progress_ratio >= PRESSURE_PAIR_PROGRESS_THRESHOLD:
 		var pressure_lane := _get_pressure_lane_index(lane_index)
@@ -156,12 +133,17 @@ func _roll_spacing(band: SpawnBand) -> float:
 	return _rng.randf_range(band.spacing_min, band.spacing_max)
 
 
-## Chooses a secondary lane that preserves the existing center-lane pressure behavior.
-func _get_pressure_lane_index(primary_lane_index: int) -> int:
-	if primary_lane_index == 1:
-		return 0 if _route_progress_ratio < 0.85 else 2
+## Rolls one lane index from the full 7-tile road grid.
+func _roll_lane_index() -> int:
+	return _rng.randi_range(0, LANE_X_POSITIONS.size() - 1)
 
-	return 1
+
+## Chooses a secondary lane from the same 7-tile grid while avoiding the primary lane.
+func _get_pressure_lane_index(primary_lane_index: int) -> int:
+	var pressure_lane_index := _roll_lane_index()
+	while pressure_lane_index == primary_lane_index:
+		pressure_lane_index = _roll_lane_index()
+	return pressure_lane_index
 
 ## Builds a readable hazard node for the requested hazard type.
 func _build_hazard_visual(hazard_type: StringName) -> Node2D:
@@ -221,7 +203,35 @@ func _get_livestock_spawn_x(lane_index: int, spawn_y: float, crossing_direction:
 
 ## Resolves the shared gameplay profile for the requested hazard type.
 func _get_hazard_profile(hazard_type: StringName) -> Dictionary:
-	return HAZARD_PROFILES.get(hazard_type, HAZARD_PROFILES[DEFAULT_HAZARD_TYPE])
+	match hazard_type:
+		&"rock":
+			return {
+				"texture": rock_texture,
+				"damage": 15,
+				"cargo_damage": 7,
+				"size": Vector2(36.0, 36.0),
+			}
+		&"tumbleweed":
+			return {
+				"texture": tumbleweed_texture,
+				"damage": 6,
+				"cargo_damage": 3,
+				"size": Vector2(32.0, 32.0),
+			}
+		&"livestock":
+			return {
+				"texture": livestock_texture,
+				"damage": 12,
+				"cargo_damage": 5,
+				"size": Vector2(32.0, 32.0),
+			}
+		_:
+			return {
+				"texture": pothole_texture,
+				"damage": 10,
+				"cargo_damage": 4,
+				"size": Vector2(32.0, 24.0),
+			}
 
 
 ## Frees hazards after they scroll past the visible play area.

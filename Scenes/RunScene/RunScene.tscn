@@ -4,6 +4,10 @@
 [ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Scripts/Hazards/hazard_spawner.gd" id="2_ok7u7"]
 [ext_resource type="Texture2D" uid="uid://c87jx435lsdui" path="res://Assets/Tilesets/Carriage/Carriage-32x64.png" id="3_qapb8"]
 [ext_resource type="Texture2D" uid="uid://bvfd5lxykfl45" path="res://Assets/Tilesets/Horse/Horse-16x48.png" id="4_rn5qx"]
+[ext_resource type="Texture2D" uid="uid://bsmtbkgrqdt63" path="res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png" id="5_vvclu"]
+[ext_resource type="Texture2D" uid="uid://de6ppq0376jbi" path="res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png" id="6_kd7yq"]
+[ext_resource type="Texture2D" uid="uid://bfo6dckq6e7jq" path="res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png" id="7_l2yxu"]
+[ext_resource type="Texture2D" uid="uid://cdsip07mntb51" path="res://Assets/Tilesets/Hazards/Jackalope/Jackalope-32x32.png" id="8_13xg3"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hud_panel"]
 bg_color = Color(0.235294, 0.180392, 0.117647, 0.88)
@@ -83,6 +87,10 @@ position = Vector2(0, -960)
 [node name="HazardSpawner" type="Node2D" parent="World" unique_id=234043959]
 unique_name_in_owner = true
 script = ExtResource("2_ok7u7")
+pothole_texture = ExtResource("5_vvclu")
+rock_texture = ExtResource("6_kd7yq")
+tumbleweed_texture = ExtResource("7_l2yxu")
+livestock_texture = ExtResource("8_13xg3")
 
 [node name="Wagon" type="Polygon2D" parent="World" unique_id=688295343]
 unique_name_in_owner = true
@@ -246,8 +254,7 @@ mouse_filter = 2
 [node name="DistanceBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=590576366]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 10)
-layout_mode = 2
-anchors_preset = 15
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -259,28 +266,24 @@ show_percentage = false
 [node name="BandMarkerOne" type="ColorRect" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=1734594783]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.333333
-anchor_top = 0.0
 anchor_right = 0.333333
 anchor_bottom = 1.0
 offset_left = -1.0
 offset_right = 1.0
-offset_bottom = 0.0
 mouse_filter = 2
 color = Color(0.945098, 0.882353, 0.709804, 0.9)
 
 [node name="BandMarkerTwo" type="ColorRect" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=816193522]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.666667
-anchor_top = 0.0
 anchor_right = 0.666667
 anchor_bottom = 1.0
 offset_left = -1.0
 offset_right = 1.0
-offset_bottom = 0.0
 mouse_filter = 2
 color = Color(0.945098, 0.882353, 0.709804, 0.9)
 
@@ -440,6 +443,7 @@ alignment = 1
 
 [node name="PauseLayer" type="CanvasLayer" parent="." unique_id=1114754801]
 layer = 4
+visible = false
 
 [node name="PauseOverlay" type="Control" parent="PauseLayer" unique_id=357867026]
 unique_name_in_owner = true
