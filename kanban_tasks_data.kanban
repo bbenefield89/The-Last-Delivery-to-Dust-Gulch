@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"677fbfae-de4a-4e95-891c-00ee0a7de59c",
 				"66be59e9-0f83-45e7-b735-73b9394d78dc",
 				"18282a78-c593-4d8b-bb37-bcf2350354f8",
 				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
@@ -23,7 +22,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"677fbfae-de4a-4e95-891c-00ee0a7de59c"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -552,7 +553,7 @@
 			"steps": [
 				{
 					"details": "Add a small deterministic score calculation using existing tracked run values: delivery completion, wagon health remaining, and cargo value remaining. Define one formula and one grade mapping for the result panel to use.\n\nDone when: score and grade can be calculated from current run state without introducing new persistence or progression systems.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Update the existing run result panel to display the new score and delivery grade for both success and collapse outcomes.\n\nDone when: the result UI shows the new score and grade cleanly without replacing the current end-of-run flow.",

@@ -24,6 +24,14 @@ const DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING := 0.0
 const DEFAULT_LAST_RECOVERY_OUTCOME := &""
 const DEFAULT_RECOVERY_OUTCOME_DISPLAY_REMAINING := 0.0
 const DEFAULT_RECOVERY_COOLDOWN_REMAINING := 0.0
+const SCORE_COMPLETION_MAX := 1000
+const SCORE_HEALTH_POINT_VALUE := 5
+const SCORE_CARGO_POINT_VALUE := 5
+const GRADE_S_MIN_SCORE := 1800
+const GRADE_A_MIN_SCORE := 1500
+const GRADE_B_MIN_SCORE := 1200
+const GRADE_C_MIN_SCORE := 900
+const GRADE_D_MIN_SCORE := 600
 
 var route_distance: float = DEFAULT_ROUTE_DISTANCE
 var distance_remaining: float = DEFAULT_DISTANCE_REMAINING
@@ -74,6 +82,42 @@ func get_delivery_progress_ratio() -> float:
 		return 1.0
 
 	return clamp(get_distance_traveled() / route_distance, 0.0, 1.0)
+
+
+## Returns the score contribution earned from route completion progress.
+func get_completion_score() -> int:
+	return int(round(get_delivery_progress_ratio() * float(SCORE_COMPLETION_MAX)))
+
+
+## Returns the score contribution earned from remaining wagon health.
+func get_health_score() -> int:
+	return max(0, wagon_health) * SCORE_HEALTH_POINT_VALUE
+
+
+## Returns the score contribution earned from remaining cargo value.
+func get_cargo_score() -> int:
+	return max(0, cargo_value) * SCORE_CARGO_POINT_VALUE
+
+
+## Returns the deterministic end-of-run score based on current delivery stats.
+func get_score() -> int:
+	return get_completion_score() + get_health_score() + get_cargo_score()
+
+
+## Returns the delivery grade that corresponds to the current run score.
+func get_delivery_grade() -> String:
+	var score := get_score()
+	if score >= GRADE_S_MIN_SCORE:
+		return "S"
+	if score >= GRADE_A_MIN_SCORE:
+		return "A"
+	if score >= GRADE_B_MIN_SCORE:
+		return "B"
+	if score >= GRADE_C_MIN_SCORE:
+		return "C"
+	if score >= GRADE_D_MIN_SCORE:
+		return "D"
+	return "F"
 
 
 func configure_route_distance(value: float) -> void:
