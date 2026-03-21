@@ -10,7 +10,8 @@ const DEFAULT_HAZARD_TYPE := &"pothole"
 const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Pothole/Pothole-32x32.png")
 const ROCK_TEXTURE := preload("res://Assets/Tilesets/Boulder/Boulder-32x32.png")
 const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Tumbleweed/Tumbleweed-32x32.png")
-const LIVESTOCK_SCENE := preload("res://Scenes/Hazards/LivestockHazard.tscn")
+const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Jackalope/Jackalope-32x32.png")
+const ROADSIDE_DEBRIS_TEXTURE := preload("res://Assets/Tilesets/Shrubs/Shrub-3-32x32.png")
 const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const PRESSURE_PAIR_Y_OFFSET := 56.0
 const LIVESTOCK_CROSSING_TARGET_Y := 0.0
@@ -36,10 +37,16 @@ const HAZARD_PROFILES := {
 		"size": Vector2(32.0, 32.0),
 	},
 	&"livestock": {
-		"scene": LIVESTOCK_SCENE,
+		"texture": LIVESTOCK_TEXTURE,
 		"damage": 12,
 		"cargo_damage": 5,
-		"size": Vector2(48.0, 28.0),
+		"size": Vector2(32.0, 32.0),
+	},
+	&"roadside_debris": {
+		"texture": ROADSIDE_DEBRIS_TEXTURE,
+		"damage": 13,
+		"cargo_damage": 6,
+		"size": Vector2(30.0, 30.0),
 	},
 }
 
@@ -166,7 +173,7 @@ func _get_pressure_lane_index(primary_lane_index: int) -> int:
 ## Builds a readable hazard node for the requested hazard type.
 func _build_hazard_visual(hazard_type: StringName) -> Node2D:
 	var profile := _get_hazard_profile(hazard_type)
-	if hazard_type == &"livestock":
+	if profile.has("scene"):
 		return (profile["scene"] as PackedScene).instantiate() as Node2D
 
 	var hazard := Sprite2D.new()
