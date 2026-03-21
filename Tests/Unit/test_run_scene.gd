@@ -1145,6 +1145,74 @@ func test_successful_recovery_sets_success_outcome_without_resource_penalty() ->
 	assert_false(state.has_temporary_control_instability())
 
 
+func test_perfect_recovery_when_sequence_is_clean_then_bonus_score_and_callout_are_awarded() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	_setup_active_run(scene, state)
+	_start_seeded_recovery_sequence(scene, state, 10)
+
+	for action_name in state.recovery_sequence:
+		var event := InputEventAction.new()
+		event.action = action_name
+		event.pressed = true
+		scene._input(event)
+
+	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
+	var bonus_callout_label: Label = scene.get_node("%BonusCalloutLabel")
+	assert_eq(state.bonus_score, RunStateType.PERFECT_RECOVERY_BONUS_SCORE)
+	assert_true(bonus_callout_panel.visible)
+	assert_eq(bonus_callout_label.text, "PERFECT RECOVERY +100")
+
+
+func test_perfect_recovery_bonus_is_not_awarded_after_wrong_input_then_clean_finish() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	_setup_active_run(scene, state)
+	var recovery_sequence := _start_seeded_recovery_sequence(scene, state, 10)
+
+	var wrong_event := InputEventAction.new()
+	wrong_event.action = &"steer_right" if recovery_sequence[0] == &"steer_left" else &"steer_left"
+	wrong_event.pressed = true
+	scene._input(wrong_event)
+
+	for action_name in state.recovery_sequence:
+		var event := InputEventAction.new()
+		event.action = action_name
+		event.pressed = true
+		scene._input(event)
+
+	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
+	assert_eq(state.last_recovery_outcome, &"success")
+	assert_eq(state.bonus_score, 0)
+	assert_false(bonus_callout_panel.visible)
+
+
+func test_perfect_recovery_bonus_is_not_awarded_after_timeout() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	scene.setup(state)
+
+	scene._advance_failure_triggers(0.0)
+	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+
+	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
+	assert_eq(state.last_recovery_outcome, &"failure")
+	assert_eq(state.bonus_score, 0)
+	assert_false(bonus_callout_panel.visible)
+
+
 func test_failed_recovery_causes_temporary_control_instability_after_failure_clears() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)

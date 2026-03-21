@@ -704,13 +704,20 @@ func _input(event: InputEvent) -> void:
 		return
 
 	var expected_action := _run_state.get_current_recovery_prompt()
+	if action_name != expected_action:
+		_run_state.record_recovery_wrong_input()
+		return
+
 	if _run_state.advance_recovery_sequence(action_name):
+		if _run_state.is_current_recovery_perfect():
+			_run_state.award_perfect_recovery_bonus()
+			_show_bonus_callout("PERFECT RECOVERY +%d" % RunStateType.PERFECT_RECOVERY_BONUS_SCORE)
 		if _recovery_step_player != null:
 			_recovery_step_player.play()
 		_run_state.resolve_recovery_success()
 		if _recovery_success_player != null:
 			_recovery_success_player.play()
-	elif action_name == expected_action:
+	else:
 		if _recovery_step_player != null:
 			_recovery_step_player.play()
 
@@ -849,6 +856,7 @@ func _advance_failure_triggers(delta: float) -> void:
 	var had_active_recovery_sequence := _run_state.has_active_recovery_sequence()
 	_sync_recovery_sequence()
 	if had_active_recovery_sequence and _run_state.tick_recovery_sequence(delta):
+		_run_state.record_recovery_timeout()
 		_apply_recovery_failure_penalty()
 		return
 

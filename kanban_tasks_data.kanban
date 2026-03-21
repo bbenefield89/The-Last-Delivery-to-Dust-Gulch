@@ -21,14 +21,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"66be59e9-0f83-45e7-b735-73b9394d78dc"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"66be59e9-0f83-45e7-b735-73b9394d78dc",
 				"677fbfae-de4a-4e95-891c-00ee0a7de59c",
 				"d4c22985-085e-437a-89a0-a19eb4210cff",
 				"97954889-ed96-474c-8b51-201bad60aa89",
@@ -577,7 +576,7 @@
 				},
 				{
 					"details": "Implement the Perfect Recovery bonus using the exact +100 value above, add the in-run bonus popup for it, and write very thorough unit tests for perfect-recovery success and failure cases.\n\nDone when: by playing the game, completing a recovery with no wrong input and no timeout produces a visible `PERFECT RECOVERY +100` popup and the finished run score reflects that bonus, while a recovery with a mistake or timeout does not award it.",
-					"done": false
+					"done": true
 				}
 			]
 		},

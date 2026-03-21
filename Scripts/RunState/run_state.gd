@@ -28,6 +28,7 @@ const SCORE_COMPLETION_MAX := 1000
 const SCORE_HEALTH_POINT_VALUE := 5
 const SCORE_CARGO_POINT_VALUE := 5
 const NEAR_MISS_BONUS_SCORE := 50
+const PERFECT_RECOVERY_BONUS_SCORE := 100
 const GRADE_S_MIN_SCORE := 1800
 const GRADE_A_MIN_SCORE := 1500
 const GRADE_B_MIN_SCORE := 1200
@@ -45,6 +46,8 @@ var current_failure: FailureStateType
 var recovery_sequence: Array[StringName] = DEFAULT_RECOVERY_SEQUENCE.duplicate()
 var recovery_prompt_index: int = DEFAULT_RECOVERY_PROMPT_INDEX
 var recovery_time_remaining: float = DEFAULT_RECOVERY_TIME_REMAINING
+var recovery_had_wrong_input: bool = false
+var recovery_timed_out: bool = false
 var temporary_control_instability_remaining: float = DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING
 var last_recovery_outcome: StringName = DEFAULT_LAST_RECOVERY_OUTCOME
 var recovery_outcome_display_remaining: float = DEFAULT_RECOVERY_OUTCOME_DISPLAY_REMAINING
@@ -66,6 +69,8 @@ func reset_for_new_run() -> void:
 	recovery_sequence = DEFAULT_RECOVERY_SEQUENCE.duplicate()
 	recovery_prompt_index = DEFAULT_RECOVERY_PROMPT_INDEX
 	recovery_time_remaining = DEFAULT_RECOVERY_TIME_REMAINING
+	recovery_had_wrong_input = false
+	recovery_timed_out = false
 	temporary_control_instability_remaining = DEFAULT_TEMPORARY_CONTROL_INSTABILITY_REMAINING
 	last_recovery_outcome = DEFAULT_LAST_RECOVERY_OUTCOME
 	recovery_outcome_display_remaining = DEFAULT_RECOVERY_OUTCOME_DISPLAY_REMAINING
@@ -110,6 +115,11 @@ func get_score() -> int:
 ## Awards one near-miss bonus into the shared run score bucket.
 func award_near_miss_bonus() -> void:
 	bonus_score += NEAR_MISS_BONUS_SCORE
+
+
+## Awards one perfect-recovery bonus into the shared run score bucket.
+func award_perfect_recovery_bonus() -> void:
+	bonus_score += PERFECT_RECOVERY_BONUS_SCORE
 
 
 ## Returns the delivery grade that corresponds to the current run score.
@@ -176,6 +186,8 @@ func start_recovery_sequence(sequence: Array[StringName], duration: float = 0.0)
 	recovery_sequence = sequence.duplicate()
 	recovery_prompt_index = 0 if not recovery_sequence.is_empty() else DEFAULT_RECOVERY_PROMPT_INDEX
 	recovery_time_remaining = max(0.0, duration)
+	recovery_had_wrong_input = false
+	recovery_timed_out = false
 
 
 func has_active_recovery_sequence() -> bool:
@@ -201,6 +213,21 @@ func advance_recovery_sequence(input_action: StringName) -> bool:
 		return true
 
 	return false
+
+
+## Marks the active recovery as imperfect after any wrong input attempt.
+func record_recovery_wrong_input() -> void:
+	recovery_had_wrong_input = true
+
+
+## Marks the active recovery as imperfect after it expires on time.
+func record_recovery_timeout() -> void:
+	recovery_timed_out = true
+
+
+## Returns whether the current recovery remained clean enough to award the perfect bonus.
+func is_current_recovery_perfect() -> bool:
+	return not recovery_had_wrong_input and not recovery_timed_out
 
 
 func tick_recovery_sequence(delta: float) -> bool:

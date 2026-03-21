@@ -155,6 +155,14 @@ func test_recovery_sequence_tracks_prompt_progress_and_completion() -> void:
 	assert_false(state.has_active_recovery_sequence())
 
 
+func test_perfect_recovery_bonus_when_awarded_then_bonus_score_is_added() -> void:
+	var state := RunStateType.new()
+
+	state.award_perfect_recovery_bonus()
+
+	assert_eq(state.bonus_score, RunStateType.PERFECT_RECOVERY_BONUS_SCORE)
+
+
 func test_recovery_sequence_timeout_counts_down_and_triggers_expiry() -> void:
 	var state := RunStateType.new()
 	state.start_recovery_sequence([&"steer_left"], 1.0)
@@ -163,6 +171,19 @@ func test_recovery_sequence_timeout_counts_down_and_triggers_expiry() -> void:
 	assert_eq(state.recovery_time_remaining, 0.6)
 	assert_true(state.tick_recovery_sequence(0.7))
 	assert_eq(state.recovery_time_remaining, 0.0)
+
+
+func test_current_recovery_perfect_when_wrong_input_or_timeout_then_bonus_eligibility_is_lost() -> void:
+	var state := RunStateType.new()
+	state.start_recovery_sequence([&"steer_left"], 1.0)
+
+	assert_true(state.is_current_recovery_perfect())
+	state.record_recovery_wrong_input()
+	assert_false(state.is_current_recovery_perfect())
+
+	state.start_recovery_sequence([&"steer_left"], 1.0)
+	state.record_recovery_timeout()
+	assert_false(state.is_current_recovery_perfect())
 
 
 func test_recovery_failure_penalty_applies_resource_losses_and_instability() -> void:
