@@ -42,7 +42,7 @@ You are a stagecoach driver making one desperate final delivery to Dust Gulch. T
 
 1. Start a delivery run.
 2. Drive along a scrolling desert road toward Dust Gulch.
-3. Dodge hazards such as potholes, rocks, tumbleweeds, livestock, and debris.
+3. Dodge hazards such as potholes, rocks, tumbleweeds, and livestock.
 4. Take damage or trigger a failure when the wagon hits hazards or scripted bad-luck events occur.
 5. Complete a short recovery sequence to get moving again.
 6. Repeat until the player reaches Dust Gulch or the wagon collapses.
@@ -99,7 +99,6 @@ Initial hazard set:
 - potholes
 - rocks
 - tumbleweeds
-- cacti or roadside debris
 - livestock crossing the road
 
 Hazards should be visually exaggerated for readability. Each one should be understandable at a glance.
@@ -281,7 +280,7 @@ Bandits may appear only as flavor or simple environmental pressure if they can b
 Recommended gameplay data concepts:
 
 - `RunState`: distance remaining, wagon health, cargo value, current speed, active failure, result
-- `HazardType`: pothole, rock, tumbleweed, livestock, debris
+- `HazardType`: pothole, rock, tumbleweed, livestock
 - `FailureType`: wheel_loose, horse_panic, cargo_spill, axle_jam
 - `RecoverySequence`: input pattern, time limit, success effect, fail penalty
 - `RoadChunkConfig`: hazard mix and intensity settings

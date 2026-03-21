@@ -19,7 +19,7 @@ The core loop is:
 
 1. Start a delivery run
 2. Drive along a scrolling desert road toward Dust Gulch
-3. Dodge hazards (potholes, rocks, tumbleweeds, livestock, debris)
+3. Dodge hazards (potholes, rocks, tumbleweeds, livestock)
 4. Take damage or trigger a failure on collision or bad-luck events
 5. Complete a short recovery sequence to get moving again
 6. Repeat until Dust Gulch is reached or the wagon collapses

@@ -11,7 +11,6 @@ const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Pothole/Pothole-32x32.pn
 const ROCK_TEXTURE := preload("res://Assets/Tilesets/Boulder/Boulder-32x32.png")
 const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Tumbleweed/Tumbleweed-32x32.png")
 const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Jackalope/Jackalope-32x32.png")
-const ROADSIDE_DEBRIS_TEXTURE := preload("res://Assets/Tilesets/Shrubs/Shrub-3-32x32.png")
 const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const PRESSURE_PAIR_Y_OFFSET := 56.0
 const LIVESTOCK_CROSSING_TARGET_Y := 0.0
@@ -41,12 +40,6 @@ const HAZARD_PROFILES := {
 		"damage": 12,
 		"cargo_damage": 5,
 		"size": Vector2(32.0, 32.0),
-	},
-	&"roadside_debris": {
-		"texture": ROADSIDE_DEBRIS_TEXTURE,
-		"damage": 13,
-		"cargo_damage": 6,
-		"size": Vector2(30.0, 30.0),
 	},
 }
 
@@ -101,8 +94,9 @@ func _spawn_hazards(distance_delta: float) -> void:
 ## Rolls the next spawn plan from the active route-progress band.
 func _prime_next_spawn() -> void:
 	var band := _get_active_band()
+	var hazard_type := _roll_hazard_type(band.weights)
 	var lane_index := _rng.randi_range(0, LANE_X_POSITIONS.size() - 1)
-	var plan := SpawnPlan.new(_roll_hazard_type(band.weights), lane_index, _roll_spacing(band))
+	var plan := SpawnPlan.new(hazard_type, lane_index, _roll_spacing(band))
 	if band.allows_pressure_pair and _route_progress_ratio >= PRESSURE_PAIR_PROGRESS_THRESHOLD:
 		var pressure_lane := _get_pressure_lane_index(lane_index)
 		if pressure_lane != lane_index:
@@ -169,13 +163,9 @@ func _get_pressure_lane_index(primary_lane_index: int) -> int:
 
 	return 1
 
-
 ## Builds a readable hazard node for the requested hazard type.
 func _build_hazard_visual(hazard_type: StringName) -> Node2D:
 	var profile := _get_hazard_profile(hazard_type)
-	if profile.has("scene"):
-		return (profile["scene"] as PackedScene).instantiate() as Node2D
-
 	var hazard := Sprite2D.new()
 	hazard.texture = profile["texture"]
 	return hazard
@@ -312,7 +302,12 @@ class HazardWeights:
 
 
 	## Stores weight values for hazard selection rolls.
-	func _init(pothole_weight: int, rock_weight: int, tumbleweed_weight: int, livestock_weight: int) -> void:
+	func _init(
+		pothole_weight: int,
+		rock_weight: int,
+		tumbleweed_weight: int,
+		livestock_weight: int
+	) -> void:
 		pothole = pothole_weight
 		rock = rock_weight
 		tumbleweed = tumbleweed_weight
