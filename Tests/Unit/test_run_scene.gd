@@ -46,8 +46,10 @@ func _start_seeded_recovery_sequence(scene: Node, state: RunStateType, seed: int
 
 
 ## Spawns a hazard directly into the run scene and places it on the wagon line for deterministic assertions.
-func _spawn_test_hazard(scene: Node, hazard_type: StringName, lane_index: int = 1) -> Node2D:
+func _spawn_test_hazard(scene: Node, hazard_type: StringName, lane_index: int = -1) -> Node2D:
 	var spawner = scene.get_node("%HazardSpawner")
+	if lane_index < 0:
+		lane_index = spawner.LANE_X_POSITIONS.find(0.0)
 	spawner._spawn_hazard(hazard_type, lane_index)
 	var hazard: Node2D = spawner.get_child(spawner.get_child_count() - 1)
 	hazard.position = Vector2(0.0, 0.0)

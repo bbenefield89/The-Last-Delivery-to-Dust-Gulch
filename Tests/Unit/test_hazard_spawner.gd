@@ -72,6 +72,7 @@ func test_seeded_spawn_plan_advance_uses_rolled_lane_and_type_metadata() -> void
 	assert_eq(hazard.get_meta("hazard_type"), plan.hazard_type)
 	assert_eq(hazard.get_meta("lane_index"), plan.lane_index)
 	assert_eq(hazard.position.x, HazardSpawnerType.LANE_X_POSITIONS[plan.lane_index])
+	assert_has(HazardSpawnerType.LANE_X_POSITIONS, hazard.position.x)
 	assert_eq(hazard.texture, spawner._get_hazard_profile(plan.hazard_type)["texture"])
 
 
@@ -114,6 +115,7 @@ func test_late_band_rolls_add_pressure_pairs_but_earlier_bands_do_not() -> void:
 	await wait_process_frames(1)
 
 	var pressure_pair_lane_indices: Dictionary = {}
+	var lane_centers: Array = HazardSpawnerType.LANE_X_POSITIONS
 
 	for roll_index in range(12):
 		var early_plan = _prime_seeded_plan(spawner, 500 + roll_index, 0.2)
@@ -125,9 +127,22 @@ func test_late_band_rolls_add_pressure_pairs_but_earlier_bands_do_not() -> void:
 		var late_plan = _prime_seeded_plan(spawner, 700 + roll_index, 0.75)
 		assert_true(late_plan.has_pressure_pair())
 		assert_ne(late_plan.pressure_pair_lane_index, late_plan.lane_index)
+		assert_has(lane_centers, HazardSpawnerType.LANE_X_POSITIONS[late_plan.lane_index])
+		assert_has(lane_centers, HazardSpawnerType.LANE_X_POSITIONS[late_plan.pressure_pair_lane_index])
 		pressure_pair_lane_indices[late_plan.pressure_pair_lane_index] = true
 
 	assert_true(pressure_pair_lane_indices.size() > 1)
+
+
+func test_spawned_static_hazards_only_use_allowed_lane_center_x_positions() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	for lane_index in range(HazardSpawnerType.LANE_X_POSITIONS.size()):
+		spawner._spawn_hazard(&"rock", lane_index)
+		var hazard := spawner.get_child(spawner.get_child_count() - 1) as Node2D
+		assert_has(HazardSpawnerType.LANE_X_POSITIONS, hazard.position.x)
+		assert_eq(hazard.position.x, HazardSpawnerType.LANE_X_POSITIONS[lane_index])
 
 
 ## Confirms livestock remains absent from the opening band but can roll once the run advances.
@@ -184,6 +199,7 @@ func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen
 	var starting_position := livestock.position
 	var target_lane_x := float(livestock.get_meta("target_lane_x"))
 
+	assert_has(HazardSpawnerType.LANE_X_POSITIONS, target_lane_x)
 	spawner._move_hazards(40.0)
 
 	assert_true(absf(livestock.position.x - target_lane_x) < absf(starting_position.x - target_lane_x))

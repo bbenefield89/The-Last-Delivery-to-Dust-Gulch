@@ -23,14 +23,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"d4c22985-085e-437a-89a0-a19eb4210cff"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"d4c22985-085e-437a-89a0-a19eb4210cff",
 				"97954889-ed96-474c-8b51-201bad60aa89",
 				"9ff0a204-c8bd-4e0b-972f-8a32eb242000",
 				"de1bdeb5-f3cf-4bd7-aa5d-4b565cb58fad",
@@ -541,7 +540,7 @@
 				},
 				{
 					"details": "Rewrite automated coverage for lane placement so tests assert hazards only use the 7 allowed lane centers and never spawn at between-tile x positions. Update any run-scene expectations that assumed the old 3-lane model.\n\nDone when: tests prove the 7-lane placement model, lane-targeted hazards stay grid-aligned, and verification no longer depends on the previous lane positions.",
-					"done": false
+					"done": true
 				}
 			]
 		},
