@@ -65,6 +65,17 @@ func test_score_when_run_stats_change_then_score_uses_completion_health_and_carg
 	assert_eq(state.get_score(), 1315)
 
 
+## Verifies near-miss bonuses add into the shared deterministic run score.
+func test_near_miss_bonus_when_awarded_then_bonus_score_is_added_once_per_award() -> void:
+	var state := RunStateType.new()
+	state.distance_remaining = 125.0
+	state.award_near_miss_bonus()
+	state.award_near_miss_bonus()
+
+	assert_eq(state.bonus_score, RunStateType.NEAR_MISS_BONUS_SCORE * 2)
+	assert_eq(state.get_score(), 1850)
+
+
 ## Verifies representative thresholds map to the expected delivery grades.
 func test_delivery_grade_when_score_crosses_thresholds_then_expected_grade_is_returned() -> void:
 	var elite_state := RunStateType.new()

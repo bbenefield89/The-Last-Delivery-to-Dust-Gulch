@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"66be59e9-0f83-45e7-b735-73b9394d78dc",
 				"18282a78-c593-4d8b-bb37-bcf2350354f8",
 				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
 				"e0958d3a-e763-454c-a978-271443797d74",
@@ -22,7 +21,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"66be59e9-0f83-45e7-b735-73b9394d78dc"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -572,7 +573,7 @@
 			"steps": [
 				{
 					"details": "Implement the Near Miss bonus using the exact +50 value above, add the in-run bonus popup for it, and write very thorough unit tests for near-miss detection and score application.\n\nDone when: by playing the game, narrowly passing a hazard without collision produces a visible `NEAR MISS +50` popup during the run and the finished run score reflects that bonus.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Implement the Perfect Recovery bonus using the exact +100 value above, add the in-run bonus popup for it, and write very thorough unit tests for perfect-recovery success and failure cases.\n\nDone when: by playing the game, completing a recovery with no wrong input and no timeout produces a visible `PERFECT RECOVERY +100` popup and the finished run score reflects that bonus, while a recovery with a mistake or timeout does not award it.",

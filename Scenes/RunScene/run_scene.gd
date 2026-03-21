@@ -91,6 +91,10 @@ const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := 1.9
 const HORSE_PANIC_FAILURE_CARGO_LOSS := 14
 const HORSE_PANIC_FAILURE_SPEED_LOSS := 65.0
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := 2.2
+const NEAR_MISS_MAX_HORIZONTAL_CLEARANCE := 12.0
+const BONUS_CALLOUT_DURATION := 1.1
+const BONUS_CALLOUT_START_OFFSET := Vector2(0.0, -64.0)
+const BONUS_CALLOUT_END_OFFSET := Vector2(0.0, -82.0)
 const RECOVERY_STEP_ROW_MAX_WIDTH := 240.0
 const RECOVERY_STEP_MIN_WIDTH := 36.0
 const RECOVERY_STEP_HEIGHT := 60.0
@@ -136,6 +140,9 @@ var _navigation_click_in_progress := false
 var _tumbleweed_impact_serial := 0
 var _pause_menu_open := false
 var _onboarding_active := false
+var _bonus_callout_text := ""
+var _bonus_callout_remaining := 0.0
+var _bonus_callout_anchor_world_position := Vector2.ZERO
 var _touch_controls_enabled_for_runtime := false
 var _has_native_mobile_runtime_override := false
 var _native_mobile_runtime_override := false
@@ -162,6 +169,8 @@ var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGe
 @onready var _health_label: Label = %HealthLabel
 @onready var _distance_bar: ProgressBar = %DistanceBar
 @onready var _cargo_label: Label = %CargoLabel
+@onready var _bonus_callout_panel: Control = %BonusCalloutPanel
+@onready var _bonus_callout_label: Label = %BonusCalloutLabel
 @onready var _touch_layer: CanvasLayer = %TouchLayer
 @onready var _touch_left_button: Button = %TouchLeft
 @onready var _touch_right_button: Button = %TouchRight
@@ -207,6 +216,9 @@ func setup(run_state: RunStateType) -> void:
 	_run_state = run_state
 	_onboarding_active = true
 	_pause_menu_open = false
+	_bonus_callout_text = ""
+	_bonus_callout_remaining = 0.0
+	_bonus_callout_anchor_world_position = Vector2.ZERO
 	_bad_luck_elapsed = 0.0
 	_pending_bad_luck_trigger = false
 	_schedule_next_bad_luck_interval()
@@ -214,6 +226,7 @@ func setup(run_state: RunStateType) -> void:
 	_last_announced_result = _run_state.result
 	_refresh_status()
 	_refresh_onboarding_prompt()
+	_refresh_bonus_callout()
 	_refresh_recovery_prompt()
 	_refresh_pause_menu()
 	_refresh_result_screen()
@@ -248,6 +261,7 @@ func _ready() -> void:
 	_update_camera_framing()
 	_refresh_status()
 	_refresh_onboarding_prompt()
+	_refresh_bonus_callout()
 	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
@@ -360,20 +374,24 @@ func _exit_tree() -> void:
 ## Advances runtime presentation and gameplay according to the current run phase.
 func _process(delta: float) -> void:
 	if _run_state == null:
+		_refresh_bonus_callout()
 		return
 	if _pause_menu_open:
 		_refresh_onboarding_prompt()
+		_refresh_bonus_callout()
 		_refresh_pause_menu()
 		_refresh_result_screen()
 		_refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		_tick_bonus_callout(delta)
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
 		_update_camera_framing()
 		_refresh_status()
 		_refresh_onboarding_prompt()
+		_refresh_bonus_callout()
 		_refresh_pause_menu()
 		_refresh_recovery_prompt()
 		_refresh_result_screen()
@@ -381,6 +399,7 @@ func _process(delta: float) -> void:
 		_refresh_audio_presentation()
 		return
 	if _onboarding_active:
+		_tick_bonus_callout(delta)
 		_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
@@ -388,6 +407,7 @@ func _process(delta: float) -> void:
 		_update_camera_framing()
 		_refresh_status()
 		_refresh_onboarding_prompt()
+		_refresh_bonus_callout()
 		_refresh_pause_menu()
 		_refresh_recovery_prompt()
 		_refresh_result_screen()
@@ -422,16 +442,20 @@ func _process(delta: float) -> void:
 	)
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 	_hazard_spawner.advance(_run_state.current_speed * delta, _run_state.get_delivery_progress_ratio())
+	_update_hazard_near_miss_tracking()
 	_apply_hazard_collisions()
+	_award_completed_near_misses()
 	_advance_failure_triggers(delta)
 	_check_for_loss()
 	_check_for_success()
+	_tick_bonus_callout(delta)
 	_update_impact_feedback(delta)
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
 	_refresh_status()
 	_refresh_onboarding_prompt()
+	_refresh_bonus_callout()
 	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
@@ -461,6 +485,27 @@ func _refresh_status() -> void:
 	_distance_bar.max_value = 100.0
 	_distance_bar.value = _run_state.get_delivery_progress_ratio() * 100.0
 	_cargo_label.text = "Cargo %d" % _run_state.cargo_value
+
+
+## Shows a short in-run score callout while a bonus announcement is active.
+func _refresh_bonus_callout() -> void:
+	if _bonus_callout_panel == null or _bonus_callout_label == null:
+		return
+
+	var is_visible := _bonus_callout_remaining > 0.0 and _bonus_callout_text != ""
+	_bonus_callout_panel.visible = is_visible
+	if not is_visible:
+		_bonus_callout_label.text = ""
+		_bonus_callout_panel.self_modulate = Color(1, 1, 1, 1)
+		return
+
+	_bonus_callout_label.text = _bonus_callout_text
+	var progress_ratio: float = 1.0 - (_bonus_callout_remaining / BONUS_CALLOUT_DURATION)
+	var canvas_position: Vector2 = get_viewport().get_canvas_transform() * _bonus_callout_anchor_world_position
+	var flyout_offset: Vector2 = BONUS_CALLOUT_START_OFFSET.lerp(BONUS_CALLOUT_END_OFFSET, progress_ratio)
+	var panel_size: Vector2 = _bonus_callout_panel.size
+	_bonus_callout_panel.position = canvas_position + flyout_offset - (panel_size * 0.5)
+	_bonus_callout_panel.self_modulate = Color(1, 1, 1, 1.0 - progress_ratio)
 
 
 ## Shows only the active recovery sequence prompt when gameplay allows it.
@@ -703,6 +748,7 @@ func _apply_hazard_collisions() -> void:
 
 	var collisions := _hazard_spawner.collect_collisions(_wagon.position, WAGON_COLLISION_SIZE)
 	for collision in collisions:
+		(collision["node"] as Node).set_meta("was_hit", true)
 		_run_state.wagon_health = max(0, _run_state.wagon_health - collision["damage"])
 		_run_state.cargo_value = max(0, _run_state.cargo_value - collision.get("cargo_damage", 0))
 		_run_state.last_hit_hazard = collision["type"]
@@ -710,6 +756,86 @@ func _apply_hazard_collisions() -> void:
 		_trigger_impact_feedback()
 		_play_hazard_impact(collision["type"])
 		(collision["node"] as Node).queue_free()
+
+
+## Tracks whether a hazard was ever head-on threatening and records the tightest clean dodge gap.
+func _update_hazard_near_miss_tracking() -> void:
+	if _hazard_spawner == null or _wagon == null:
+		return
+
+	for child in _hazard_spawner.get_children():
+		if not child is Node2D:
+			continue
+
+		var hazard: Node2D = child as Node2D
+		var hazard_size: Vector2 = _hazard_spawner._get_hazard_size(hazard.get_meta("hazard_type", &""))
+		if _is_hazard_ahead_of_wagon(hazard.position, hazard_size):
+			if _get_horizontal_clearance_to_wagon(hazard.position, hazard_size) <= 0.0:
+				hazard.set_meta("was_head_on_threat", true)
+		if not _has_vertical_overlap_with_wagon(hazard.position, hazard_size):
+			continue
+
+		var horizontal_clearance: float = _get_horizontal_clearance_to_wagon(hazard.position, hazard_size)
+		if horizontal_clearance <= 0.0:
+			continue
+
+		var closest_horizontal_clearance: float = min(
+			float(hazard.get_meta("closest_horizontal_clearance_to_wagon", INF)),
+			horizontal_clearance
+		)
+		hazard.set_meta("closest_horizontal_clearance_to_wagon", closest_horizontal_clearance)
+
+
+## Awards one near-miss bonus after a hazard safely passes through the wagon threat band without colliding.
+func _award_completed_near_misses() -> void:
+	if _hazard_spawner == null or _run_state == null or _wagon == null:
+		return
+
+	for child in _hazard_spawner.get_children():
+		if not child is Node2D:
+			continue
+
+		var hazard: Node2D = child as Node2D
+		if bool(hazard.get_meta("near_miss_awarded", false)):
+			continue
+		if bool(hazard.get_meta("was_hit", false)):
+			continue
+		if not bool(hazard.get_meta("was_head_on_threat", false)):
+			continue
+		if not _has_hazard_safely_passed_wagon(hazard):
+			continue
+		if float(hazard.get_meta("closest_horizontal_clearance_to_wagon", INF)) > NEAR_MISS_MAX_HORIZONTAL_CLEARANCE:
+			continue
+
+		hazard.set_meta("near_miss_awarded", true)
+		_run_state.award_near_miss_bonus()
+		_show_bonus_callout("NEAR MISS +%d" % RunStateType.NEAR_MISS_BONUS_SCORE)
+
+
+## Returns whether the hazard has moved fully below the wagon line and can no longer collide.
+func _has_hazard_safely_passed_wagon(hazard: Node2D) -> bool:
+	var hazard_size: Vector2 = _hazard_spawner._get_hazard_size(hazard.get_meta("hazard_type", &""))
+	var wagon_bottom_y: float = _wagon.position.y + (WAGON_COLLISION_SIZE.y * 0.5)
+	var hazard_top_y: float = hazard.position.y - (hazard_size.y * 0.5)
+	return hazard_top_y > wagon_bottom_y
+
+
+## Returns whether one hazard overlaps the wagon's vertical danger band.
+func _has_vertical_overlap_with_wagon(hazard_position: Vector2, hazard_size: Vector2) -> bool:
+	var combined_half_height: float = (WAGON_COLLISION_SIZE.y + hazard_size.y) * 0.5
+	return absf(hazard_position.y - _wagon.position.y) < combined_half_height
+
+
+## Returns whether the hazard is still approaching from ahead of the wagon.
+func _is_hazard_ahead_of_wagon(hazard_position: Vector2, hazard_size: Vector2) -> bool:
+	var hazard_bottom_y: float = hazard_position.y + (hazard_size.y * 0.5)
+	return hazard_bottom_y < _wagon.position.y
+
+
+## Returns the non-colliding horizontal gap between one hazard and the wagon bounds.
+func _get_horizontal_clearance_to_wagon(hazard_position: Vector2, hazard_size: Vector2) -> float:
+	var combined_half_width: float = (WAGON_COLLISION_SIZE.x + hazard_size.x) * 0.5
+	return absf(hazard_position.x - _wagon.position.x) - combined_half_width
 
 
 ## Advances failure state timers and starts timer-driven bad luck when its scheduled roll matures.
@@ -1328,6 +1454,25 @@ func _format_recovery_action(action_name: StringName) -> String:
 			return char(0xE022)
 		_:
 			return String(action_name).to_upper()
+
+
+## Starts or refreshes the short-lived in-run bonus callout text.
+func _show_bonus_callout(text: String) -> void:
+	_bonus_callout_text = text
+	_bonus_callout_remaining = BONUS_CALLOUT_DURATION
+	_bonus_callout_anchor_world_position = Vector2.ZERO if _wagon == null else _wagon.global_position
+	_refresh_bonus_callout()
+
+
+## Counts down the active bonus callout and hides it after the display window expires.
+func _tick_bonus_callout(delta: float) -> void:
+	if _bonus_callout_remaining <= 0.0:
+		return
+
+	_bonus_callout_remaining = max(0.0, _bonus_callout_remaining - max(0.0, delta))
+	if _bonus_callout_remaining == 0.0:
+		_bonus_callout_text = ""
+	_refresh_bonus_callout()
 
 
 ## Plays the shared menu click cue for pause and result buttons.

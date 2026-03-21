@@ -236,6 +236,87 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	assert_false(fallback_impact_player.playing)
 
 
+func test_near_miss_when_hazard_passes_close_without_collision_then_bonus_and_callout_are_awarded_once() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	var hazard: Node2D = _spawn_test_hazard(scene, &"pothole")
+	hazard.position = Vector2(0.0, -120.0)
+	scene._process(0.1)
+	await wait_process_frames(1)
+	state.lateral_position = 44.0
+	scene._update_wagon_visual()
+	for _step in range(5):
+		scene._process(0.1)
+		await wait_process_frames(1)
+
+	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
+	var bonus_callout_label: Label = scene.get_node("%BonusCalloutLabel")
+	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon_canvas_position: Vector2 = scene.get_viewport().get_canvas_transform() * wagon.global_position
+	var bonus_callout_center: Vector2 = bonus_callout_panel.get_global_rect().get_center()
+
+	assert_eq(state.bonus_score, RunStateType.NEAR_MISS_BONUS_SCORE)
+	assert_eq(
+		state.get_score(),
+		state.get_completion_score() + state.get_health_score() + state.get_cargo_score() + RunStateType.NEAR_MISS_BONUS_SCORE
+	)
+	assert_true(bonus_callout_panel.visible)
+	assert_eq(bonus_callout_label.text, "NEAR MISS +50")
+	assert_true(absf(bonus_callout_center.x - wagon_canvas_position.x) <= 4.0)
+	assert_true(bonus_callout_center.y < wagon_canvas_position.y - 32.0)
+
+	scene._process(0.6)
+	scene._process(0.6)
+
+	assert_eq(state.bonus_score, RunStateType.NEAR_MISS_BONUS_SCORE)
+	assert_false(bonus_callout_panel.visible)
+
+
+func test_near_miss_bonus_is_not_awarded_for_a_real_collision() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	_spawn_test_hazard(scene, &"pothole")
+	await wait_process_frames(1)
+	scene._process(0.0)
+
+	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
+	assert_eq(state.bonus_score, 0)
+	assert_false(bonus_callout_panel.visible)
+
+
+func test_near_miss_bonus_is_not_awarded_for_side_pass_then_late_swerve_toward_hazard() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	var hazard: Node2D = _spawn_test_hazard(scene, &"pothole")
+	hazard.position = Vector2(72.0, -120.0)
+	scene._process(0.2)
+	await wait_process_frames(1)
+	state.lateral_position = 44.0
+	scene._update_wagon_visual()
+	for _step in range(4):
+		scene._process(0.1)
+		await wait_process_frames(1)
+
+	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
+	assert_eq(state.bonus_score, 0)
+	assert_false(bonus_callout_panel.visible)
+
+
 ## Verifies a live livestock collision uses the existing damage and horse-panic failure flow.
 func test_livestock_collision_when_it_hits_the_wagon_then_existing_failure_flow_is_used() -> void:
 	var scene = RUN_SCENE.instantiate()

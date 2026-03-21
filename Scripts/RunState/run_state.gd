@@ -27,6 +27,7 @@ const DEFAULT_RECOVERY_COOLDOWN_REMAINING := 0.0
 const SCORE_COMPLETION_MAX := 1000
 const SCORE_HEALTH_POINT_VALUE := 5
 const SCORE_CARGO_POINT_VALUE := 5
+const NEAR_MISS_BONUS_SCORE := 50
 const GRADE_S_MIN_SCORE := 1800
 const GRADE_A_MIN_SCORE := 1500
 const GRADE_B_MIN_SCORE := 1200
@@ -51,6 +52,7 @@ var recovery_cooldown_remaining: float = DEFAULT_RECOVERY_COOLDOWN_REMAINING
 var result: StringName = DEFAULT_RESULT
 var lateral_position: float = DEFAULT_LATERAL_POSITION
 var last_hit_hazard: StringName = DEFAULT_LAST_HIT_HAZARD
+var bonus_score: int = 0
 
 
 func reset_for_new_run() -> void:
@@ -71,6 +73,7 @@ func reset_for_new_run() -> void:
 	result = DEFAULT_RESULT
 	lateral_position = DEFAULT_LATERAL_POSITION
 	last_hit_hazard = DEFAULT_LAST_HIT_HAZARD
+	bonus_score = 0
 
 
 func get_distance_traveled() -> float:
@@ -101,7 +104,12 @@ func get_cargo_score() -> int:
 
 ## Returns the deterministic end-of-run score based on current delivery stats.
 func get_score() -> int:
-	return get_completion_score() + get_health_score() + get_cargo_score()
+	return get_completion_score() + get_health_score() + get_cargo_score() + bonus_score
+
+
+## Awards one near-miss bonus into the shared run score bucket.
+func award_near_miss_bonus() -> void:
+	bonus_score += NEAR_MISS_BONUS_SCORE
 
 
 ## Returns the delivery grade that corresponds to the current run score.
