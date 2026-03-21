@@ -557,7 +557,7 @@
 				},
 				{
 					"details": "Update the existing run result panel to display the new score and delivery grade for both success and collapse outcomes.\n\nDone when: the result UI shows the new score and grade cleanly without replacing the current end-of-run flow.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add automated coverage for the score calculation and result-panel display wiring.\n\nDone when: tests verify the score and grade rules and the result panel reflects them correctly for representative run outcomes.",
