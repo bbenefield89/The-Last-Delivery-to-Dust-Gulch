@@ -103,8 +103,7 @@ z_index = -2
 position = Vector2(0, 5)
 texture = ExtResource("3_qapb8")
 
-[node name="CarriageSprite" type="Sprite2D" parent="World/Wagon" unique_id=355649902]
-texture = ExtResource("3_qapb8")
+[node name="CarriageSprite" type="AnimatedSprite2D" parent="World/Wagon" unique_id=355649902]
 
 [node name="HorseTeam" type="Node2D" parent="World/Wagon" unique_id=1666748263]
 position = Vector2(0, -54)

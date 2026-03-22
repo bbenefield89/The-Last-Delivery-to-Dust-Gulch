@@ -17,6 +17,7 @@
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
+				"037b4f73-bbb7-4e50-a02e-168e0499b67b"
 			]
 		},
 		{
@@ -699,6 +700,26 @@
 				{
 					"details": "Add keyboard navigation and default focus to the result and post-run flow, then verify the full start-to-finish loop remains mouse-free and write very thorough unit or UI tests for the final flow behavior.\n\nDone when: by completing or failing a run with only the keyboard, the player can use the result screen actions with the keyboard and return to the next intended state without needing pointer input anywhere in the full game loop.",
 					"done": true
+				}
+			]
+		},
+		{
+			"uuid": "037b4f73-bbb7-4e50-a02e-168e0499b67b",
+			"title": "DG-32",
+			"description": "Task: Replace the current static carriage art with the animated carriage sprite exported from Aseprite.\n\nThe run scene currently uses a single static carriage texture for the wagon presentation. The carriage art now has an animation sheet, and the game should use that animated asset during normal play instead of the static image. This is an art-integration ticket, not a gameplay redesign. Keep the current topdown scale, positioning, collision footprint, steering, damage feedback, and existing wagon/horse gameplay behavior the same.\n\nUse the animated carriage sheet in the current wagon rig so the carriage visibly animates during a run, survives restart and return flows, and still works with the existing visual effects such as tinting, wobble, and other run-state presentation already applied to the wagon setup. Keep the implementation scoped to the carriage presentation only unless a small supporting scene or script update is required to make that animation play correctly.\n\nAffected files:\n- Assets/Tilesets/Carriage/*\n- Scenes/RunScene/RunScene.tscn\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: by launching the game and playing a run, the carriage is visibly animated instead of static during gameplay, its placement still matches the existing wagon rig, restart and return flows do not break the animation, and the rest of the run presentation still behaves normally.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add the exported animated carriage asset to the carriage tileset folder, import it cleanly into Godot, and update the run-scene carriage presentation so the game can use frame-based carriage art instead of the single static texture. Keep the carriage aligned to the existing wagon rig and write very thorough unit or scene tests for the animation resource wiring.\n\nDone when: by starting a run, the carriage appears in the correct place and plays its animation instead of showing a single still frame.",
+					"done": true
+				},
+				{
+					"details": "Wire the animated carriage node into the existing wagon presentation flow so normal gameplay, restart flow, return-to-title flow, and current wagon visual effects still work with the animated art. If the current shadow or related carriage presentation needs a small update to stay visually coherent with the animated carriage, include that here, and write very thorough unit or scene tests for the affected behavior.\n\nDone when: by playing, restarting, and returning to the title, the carriage animation keeps working through the normal game flow and the wagon still shows the expected hit, failure, and run-state presentation without obvious visual breakage.",
+					"done": false
+				},
+				{
+					"details": "Tune the carriage animation playback for the shipped topdown view so it loops at an intentional speed and reads cleanly at gameplay scale without distracting jitter, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by driving a normal run, the carriage animation loops smoothly at game scale and looks like part of the existing wagon presentation rather than a mismatched overlay.",
+					"done": false
 				}
 			]
 		}

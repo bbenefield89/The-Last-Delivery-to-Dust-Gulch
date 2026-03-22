@@ -7,6 +7,12 @@ const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const CARRIAGE_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64.png")
+const CARRIAGE_SHEET_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png")
+const CARRIAGE_SHEET_FRAMES: Array[Rect2i] = [
+	Rect2i(0, 0, 32, 64),
+	Rect2i(32, 0, 32, 64),
+]
+const CARRIAGE_ANIMATION_FPS := 6.0
 const HORSE_TEXTURE := preload("res://Assets/Tilesets/Horse/Horse-16x48.png")
 const DESERT_TEXTURE := preload("res://Assets/Tilesets/Desert/Desert-3-32x32.png")
 const ROAD_TEXTURE := preload("res://Assets/Tilesets/Road/Road-4-tiled-32x32.png")
@@ -189,7 +195,7 @@ var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGe
 @onready var _scroll_segment_b: Node2D = %ScrollSegmentB
 @onready var _wagon: Polygon2D = %Wagon
 @onready var _wagon_shadow: Sprite2D = $World/Wagon/Shadow
-@onready var _wagon_sprite: Sprite2D = $World/Wagon/CarriageSprite
+@onready var _wagon_sprite: AnimatedSprite2D = $World/Wagon/CarriageSprite
 @onready var _horse_left_sprite: Sprite2D = $World/Wagon/HorseTeam/HorseLeft
 @onready var _horse_right_sprite: Sprite2D = $World/Wagon/HorseTeam/HorseRight
 @onready var _dust_trail: CPUParticles2D = %DustTrail
@@ -321,11 +327,34 @@ func _configure_vehicle_sprites() -> void:
 	if _wagon_shadow != null:
 		_wagon_shadow.texture = CARRIAGE_TEXTURE
 	if _wagon_sprite != null:
-		_wagon_sprite.texture = CARRIAGE_TEXTURE
+		_wagon_sprite.sprite_frames = _build_carriage_sprite_frames()
+		_wagon_sprite.animation = &"default"
+		_wagon_sprite.frame = 0
+		_wagon_sprite.play()
 	if _horse_left_sprite != null:
 		_horse_left_sprite.texture = HORSE_TEXTURE
 	if _horse_right_sprite != null:
 		_horse_right_sprite.texture = HORSE_TEXTURE
+
+
+## Builds the animated carriage frame set from the exported sheet texture.
+func _build_carriage_sprite_frames() -> SpriteFrames:
+	var sprite_frames := SpriteFrames.new()
+	sprite_frames.set_animation_loop(&"default", true)
+	sprite_frames.set_animation_speed(&"default", CARRIAGE_ANIMATION_FPS)
+
+	for frame_region in CARRIAGE_SHEET_FRAMES:
+		sprite_frames.add_frame(&"default", _make_carriage_sheet_frame(frame_region))
+
+	return sprite_frames
+
+
+## Creates a single atlas frame that slices the carriage sheet to one animation cell.
+func _make_carriage_sheet_frame(region: Rect2i) -> AtlasTexture:
+	var atlas_texture := AtlasTexture.new()
+	atlas_texture.atlas = CARRIAGE_SHEET_TEXTURE
+	atlas_texture.region = region
+	return atlas_texture
 
 
 ## Applies the tiled road and desert art to the world background nodes.

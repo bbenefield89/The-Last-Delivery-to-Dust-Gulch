@@ -2805,18 +2805,47 @@ func test_step3_cohesion_nodes_exist_on_wagon() -> void:
 	assert_true(scene.has_node("World/Wagon/HorseTeam/HorseRight"))
 
 
+## Confirms the animated carriage sprite is wired to sheet slices from the exported asset.
+func test_step1_carriage_sprite_uses_animated_sheet_frames() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
+	assert_not_null(carriage_sprite)
+	assert_not_null(carriage_sprite.sprite_frames)
+	assert_true(carriage_sprite.sprite_frames.has_animation("default"))
+	assert_eq(carriage_sprite.sprite_frames.get_frame_count("default"), 2)
+	assert_gt(carriage_sprite.sprite_frames.get_animation_speed("default"), 0.0)
+	assert_eq(carriage_sprite.position, Vector2.ZERO)
+
+	var frame_0 := carriage_sprite.sprite_frames.get_frame_texture("default", 0) as AtlasTexture
+	var frame_1 := carriage_sprite.sprite_frames.get_frame_texture("default", 1) as AtlasTexture
+
+	assert_not_null(frame_0)
+	assert_not_null(frame_1)
+	assert_eq(frame_0.atlas, scene.CARRIAGE_SHEET_TEXTURE)
+	assert_eq(frame_1.atlas, scene.CARRIAGE_SHEET_TEXTURE)
+	assert_eq(frame_0.get_size(), Vector2(32, 64))
+	assert_eq(frame_1.get_size(), Vector2(32, 64))
+	assert_true(carriage_sprite.is_playing())
+	assert_gt(carriage_sprite.get_playing_speed(), 0.0)
+
+
+## Confirms the wagon rig still applies the existing presentation state while the carriage animates.
 func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
-	var carriage_sprite: Sprite2D = scene.get_node("World/Wagon/CarriageSprite")
+	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
 	var horse_left: Sprite2D = scene.get_node("World/Wagon/HorseTeam/HorseLeft")
 	var horse_right: Sprite2D = scene.get_node("World/Wagon/HorseTeam/HorseRight")
 
 	assert_eq(wagon.color.a, 0.0)
-	assert_eq(carriage_sprite.texture, scene.CARRIAGE_TEXTURE)
+	assert_not_null(carriage_sprite)
+	assert_true(carriage_sprite.is_playing())
 	assert_eq(horse_left.texture, scene.HORSE_TEXTURE)
 	assert_eq(horse_right.texture, scene.HORSE_TEXTURE)
 
