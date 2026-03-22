@@ -97,11 +97,10 @@ unique_name_in_owner = true
 color = Color(1, 1, 1, 0)
 polygon = PackedVector2Array(-16, -28, 16, -28, 14, 32, -14, 32)
 
-[node name="Shadow" type="Sprite2D" parent="World/Wagon" unique_id=710484652]
+[node name="Shadow" type="AnimatedSprite2D" parent="World/Wagon" unique_id=710484652]
 modulate = Color(0, 0, 0, 0.2)
 z_index = -2
 position = Vector2(0, 5)
-texture = ExtResource("3_qapb8")
 
 [node name="CarriageSprite" type="AnimatedSprite2D" parent="World/Wagon" unique_id=355649902]
 

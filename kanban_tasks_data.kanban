@@ -715,7 +715,7 @@
 				},
 				{
 					"details": "Wire the animated carriage node into the existing wagon presentation flow so normal gameplay, restart flow, return-to-title flow, and current wagon visual effects still work with the animated art. If the current shadow or related carriage presentation needs a small update to stay visually coherent with the animated carriage, include that here, and write very thorough unit or scene tests for the affected behavior.\n\nDone when: by playing, restarting, and returning to the title, the carriage animation keeps working through the normal game flow and the wagon still shows the expected hit, failure, and run-state presentation without obvious visual breakage.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Tune the carriage animation playback for the shipped topdown view so it loops at an intentional speed and reads cleanly at gameplay scale without distracting jitter, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by driving a normal run, the carriage animation loops smoothly at game scale and looks like part of the existing wagon presentation rather than a mismatched overlay.",

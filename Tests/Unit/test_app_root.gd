@@ -72,6 +72,21 @@ func test_app_root_restart_rebuilds_run_state_for_completed_run() -> void:
 	assert_eq(app_root.run_state.result, &"in_progress")
 	assert_eq(app_root.run_state.route_distance, app_root.starting_distance)
 	assert_true(app_root.run_state.distance_remaining <= app_root.starting_distance)
+	assert_true(app_root._run_scene.has_node("World/Wagon/CarriageSprite"))
+	var carriage_sprite := app_root._run_scene.get_node(
+		"World/Wagon/CarriageSprite"
+	) as AnimatedSprite2D
+	var shadow_sprite := app_root._run_scene.get_node(
+		"World/Wagon/Shadow"
+	) as AnimatedSprite2D
+	assert_not_null(carriage_sprite)
+	assert_not_null(shadow_sprite)
+	assert_not_null(carriage_sprite.sprite_frames)
+	assert_not_null(shadow_sprite.sprite_frames)
+	assert_true(carriage_sprite.sprite_frames.has_animation("default"))
+	assert_true(shadow_sprite.sprite_frames.has_animation("default"))
+	assert_true(carriage_sprite.is_playing())
+	assert_true(shadow_sprite.is_playing())
 
 
 func test_app_root_quit_request_is_wired_from_title_screen() -> void:
@@ -159,6 +174,39 @@ func test_app_root_return_to_title_rebuilds_title_after_success() -> void:
 	assert_not_null(app_root._title_screen)
 	assert_null(app_root.run_state)
 	assert_null(app_root._run_scene)
+
+
+## Verifies a new run started after returning to title still wires the animated carriage rig.
+func test_app_root_when_returning_to_title_then_starting_again_keeps_animated_carriage_rig() -> void:
+	var app_root = APP_ROOT_SCENE.instantiate()
+	app_root.allow_quit = false
+	add_child_autofree(app_root)
+	await wait_process_frames(1)
+	await app_root._title_screen._on_play_pressed()
+	await wait_process_frames(1)
+
+	app_root.run_state.result = &"success"
+	await app_root._run_scene._on_result_return_to_title_pressed()
+	await wait_process_frames(1)
+
+	await app_root._title_screen._on_play_pressed()
+	await wait_process_frames(1)
+
+	assert_not_null(app_root._run_scene)
+	var carriage_sprite := app_root._run_scene.get_node(
+		"World/Wagon/CarriageSprite"
+	) as AnimatedSprite2D
+	var shadow_sprite := app_root._run_scene.get_node(
+		"World/Wagon/Shadow"
+	) as AnimatedSprite2D
+	assert_not_null(carriage_sprite)
+	assert_not_null(shadow_sprite)
+	assert_not_null(carriage_sprite.sprite_frames)
+	assert_not_null(shadow_sprite.sprite_frames)
+	assert_true(carriage_sprite.sprite_frames.has_animation("default"))
+	assert_true(shadow_sprite.sprite_frames.has_animation("default"))
+	assert_true(carriage_sprite.is_playing())
+	assert_true(shadow_sprite.is_playing())
 
 
 func test_app_root_clears_tree_pause_when_restarting_or_returning_to_title() -> void:

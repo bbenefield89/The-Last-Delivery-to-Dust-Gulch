@@ -6,7 +6,6 @@ signal return_to_title_requested
 const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
-const CARRIAGE_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64.png")
 const CARRIAGE_SHEET_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png")
 const CARRIAGE_SHEET_FRAMES: Array[Rect2i] = [
 	Rect2i(0, 0, 32, 64),
@@ -194,7 +193,7 @@ var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGe
 @onready var _scroll_segment_a: Node2D = %ScrollSegmentA
 @onready var _scroll_segment_b: Node2D = %ScrollSegmentB
 @onready var _wagon: Polygon2D = %Wagon
-@onready var _wagon_shadow: Sprite2D = $World/Wagon/Shadow
+@onready var _wagon_shadow: AnimatedSprite2D = $World/Wagon/Shadow
 @onready var _wagon_sprite: AnimatedSprite2D = $World/Wagon/CarriageSprite
 @onready var _horse_left_sprite: Sprite2D = $World/Wagon/HorseTeam/HorseLeft
 @onready var _horse_right_sprite: Sprite2D = $World/Wagon/HorseTeam/HorseRight
@@ -319,15 +318,19 @@ func _ready() -> void:
 	_refresh_audio_presentation()
 
 
-## Applies the imported carriage and horse art to the existing wagon rig nodes.
+## Applies the imported carriage, shadow, and horse art to the existing wagon rig nodes.
 func _configure_vehicle_sprites() -> void:
 	if _wagon != null:
 		_wagon.color = Color(1, 1, 1, 0)
 		_wagon.modulate = WAGON_BASE_COLOR
+	var carriage_sprite_frames := _build_carriage_sprite_frames()
 	if _wagon_shadow != null:
-		_wagon_shadow.texture = CARRIAGE_TEXTURE
+		_wagon_shadow.sprite_frames = carriage_sprite_frames
+		_wagon_shadow.animation = &"default"
+		_wagon_shadow.frame = 0
+		_wagon_shadow.play()
 	if _wagon_sprite != null:
-		_wagon_sprite.sprite_frames = _build_carriage_sprite_frames()
+		_wagon_sprite.sprite_frames = carriage_sprite_frames
 		_wagon_sprite.animation = &"default"
 		_wagon_sprite.frame = 0
 		_wagon_sprite.play()

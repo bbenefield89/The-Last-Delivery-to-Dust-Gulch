@@ -715,10 +715,14 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	scene._process(0.05)
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
 	var camera: Camera2D = scene.get_node("%Camera")
 
 	assert_eq(wagon.modulate, scene.WAGON_HIT_COLOR)
+	assert_not_null(carriage_sprite)
+	assert_eq(carriage_sprite.modulate, scene.WAGON_HIT_COLOR)
 	assert_ne(wagon.rotation, 0.0)
+	assert_eq(carriage_sprite.global_rotation, wagon.global_rotation)
 	assert_ne(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
 
@@ -737,10 +741,14 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 	scene._process(0.4)
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
 	var camera: Camera2D = scene.get_node("%Camera")
 
 	assert_eq(wagon.modulate, scene.WAGON_BASE_COLOR)
+	assert_not_null(carriage_sprite)
+	assert_eq(carriage_sprite.modulate, scene.WAGON_BASE_COLOR)
 	assert_eq(wagon.rotation, 0.0)
+	assert_eq(carriage_sprite.global_rotation, wagon.global_rotation)
 	assert_eq(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
 
@@ -2839,12 +2847,24 @@ func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	await wait_process_frames(1)
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var shadow := scene.get_node("World/Wagon/Shadow") as AnimatedSprite2D
 	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
 	var horse_left: Sprite2D = scene.get_node("World/Wagon/HorseTeam/HorseLeft")
 	var horse_right: Sprite2D = scene.get_node("World/Wagon/HorseTeam/HorseRight")
 
 	assert_eq(wagon.color.a, 0.0)
+	assert_not_null(shadow)
 	assert_not_null(carriage_sprite)
+	assert_not_null(shadow.sprite_frames)
+	assert_true(shadow.sprite_frames.has_animation("default"))
+	assert_not_null(carriage_sprite.sprite_frames)
+	assert_eq(
+		shadow.sprite_frames.get_frame_count("default"),
+		carriage_sprite.sprite_frames.get_frame_count("default")
+	)
+	assert_eq(shadow.modulate, Color(0.0, 0.0, 0.0, 0.2))
+	assert_eq(shadow.position, Vector2(0.0, 5.0))
+	assert_true(shadow.is_playing())
 	assert_true(carriage_sprite.is_playing())
 	assert_eq(horse_left.texture, scene.HORSE_TEXTURE)
 	assert_eq(horse_right.texture, scene.HORSE_TEXTURE)
