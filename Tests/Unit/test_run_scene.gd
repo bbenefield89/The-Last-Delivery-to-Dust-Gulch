@@ -1102,6 +1102,26 @@ func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
 	assert_false(state.has_active_recovery_sequence())
 
 
+func test_perfect_recovery_counter_when_recovery_finishes_clean_then_result_stat_increments() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	_setup_active_run(scene, state)
+	_start_seeded_recovery_sequence(scene, state, 10)
+
+	for action_name in state.recovery_sequence:
+		var event := InputEventAction.new()
+		event.action = action_name
+		event.pressed = true
+		scene._input(event)
+
+	assert_eq(state.perfect_recoveries, 1)
+	assert_eq(state.recovery_failures, 0)
+
+
 func test_wheel_loose_recovery_timeout_applies_health_and_speed_penalty() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1116,6 +1136,8 @@ func test_wheel_loose_recovery_timeout_applies_health_and_speed_penalty() -> voi
 	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
 
 	assert_eq(state.active_failure, &"")
+	assert_eq(state.perfect_recoveries, 0)
+	assert_eq(state.recovery_failures, 1)
 	assert_eq(state.last_recovery_outcome, &"failure")
 	assert_eq(state.wagon_health, RunStateType.DEFAULT_WAGON_HEALTH - scene.WHEEL_LOOSE_FAILURE_HEALTH_LOSS)
 	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE - scene.WHEEL_LOOSE_FAILURE_CARGO_LOSS)
@@ -1138,6 +1160,8 @@ func test_horse_panic_recovery_timeout_applies_cargo_and_speed_penalty() -> void
 	scene._advance_failure_triggers(scene.HORSE_PANIC_RECOVERY_DURATION)
 
 	assert_eq(state.active_failure, &"")
+	assert_eq(state.perfect_recoveries, 0)
+	assert_eq(state.recovery_failures, 1)
 	assert_eq(state.last_recovery_outcome, &"failure")
 	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE - scene.HORSE_PANIC_FAILURE_CARGO_LOSS)
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED - scene.HORSE_PANIC_FAILURE_SPEED_LOSS)
@@ -1160,6 +1184,8 @@ func test_successful_recovery_sets_success_outcome_without_resource_penalty() ->
 		event.pressed = true
 		scene._input(event)
 
+	assert_eq(state.perfect_recoveries, 1)
+	assert_eq(state.recovery_failures, 0)
 	assert_eq(state.last_recovery_outcome, &"success")
 	assert_eq(state.wagon_health, RunStateType.DEFAULT_WAGON_HEALTH)
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
@@ -1185,6 +1211,8 @@ func test_perfect_recovery_when_sequence_is_clean_then_bonus_score_and_callout_a
 	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
 	var bonus_callout_label: Label = scene.get_node("%BonusCalloutLabel")
 	assert_eq(state.bonus_score, RunStateType.PERFECT_RECOVERY_BONUS_SCORE)
+	assert_eq(state.perfect_recoveries, 1)
+	assert_eq(state.recovery_failures, 0)
 	assert_true(bonus_callout_panel.visible)
 	assert_eq(bonus_callout_label.text, "PERFECT RECOVERY +100")
 
@@ -1213,6 +1241,8 @@ func test_perfect_recovery_bonus_is_not_awarded_after_wrong_input_then_clean_fin
 	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
 	assert_eq(state.last_recovery_outcome, &"success")
 	assert_eq(state.bonus_score, 0)
+	assert_eq(state.perfect_recoveries, 0)
+	assert_eq(state.recovery_failures, 0)
 	assert_false(bonus_callout_panel.visible)
 
 
@@ -1231,6 +1261,8 @@ func test_perfect_recovery_bonus_is_not_awarded_after_timeout() -> void:
 	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
 	assert_eq(state.last_recovery_outcome, &"failure")
 	assert_eq(state.bonus_score, 0)
+	assert_eq(state.perfect_recoveries, 0)
+	assert_eq(state.recovery_failures, 1)
 	assert_false(bonus_callout_panel.visible)
 
 
@@ -1629,6 +1661,8 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 	state.current_speed = 0.0
 	state.hazards_dodged = 9
 	state.near_misses = 3
+	state.perfect_recoveries = 2
+	state.recovery_failures = 1
 	scene.setup(state)
 	scene._refresh_result_screen()
 
@@ -1640,6 +1674,8 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 	assert_string_contains(result_stats.text, "Distance traveled: 500 / 500")
 	assert_string_contains(result_stats.text, "Hazards Dodged: 9")
 	assert_string_contains(result_stats.text, "Near Misses: 3")
+	assert_string_contains(result_stats.text, "Perfect Recoveries: 2")
+	assert_string_contains(result_stats.text, "Recovery Failures: 1")
 	assert_false(result_stats.text.contains("Speed:"))
 
 	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
@@ -1661,6 +1697,8 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	state.wagon_health = 20
 	state.hazards_dodged = 2
 	state.near_misses = 1
+	state.perfect_recoveries = 0
+	state.recovery_failures = 3
 	scene.setup(state)
 	scene._refresh_result_screen()
 
@@ -1674,6 +1712,8 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	assert_string_contains(result_stats.text, "Distance traveled: 125 / 500")
 	assert_string_contains(result_stats.text, "Hazards Dodged: 2")
 	assert_string_contains(result_stats.text, "Near Misses: 1")
+	assert_string_contains(result_stats.text, "Perfect Recoveries: 0")
+	assert_string_contains(result_stats.text, "Recovery Failures: 3")
 
 
 func test_result_panel_buttons_emit_restart_and_return_signals() -> void:

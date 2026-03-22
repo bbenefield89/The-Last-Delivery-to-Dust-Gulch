@@ -575,19 +575,19 @@ func _refresh_result_screen() -> void:
 		return
 	if _run_state == null or _run_state.result == RunStateType.RESULT_IN_PROGRESS:
 		_result_panel.visible = false
+		_result_summary.visible = false
 		return
 
 	_result_panel.visible = true
+	_result_summary.text = ""
+	_result_summary.visible = false
 	match _run_state.result:
 		RunStateType.RESULT_SUCCESS:
 			_result_title.text = "Delivered to Dust Gulch"
-			_result_summary.text = "You made it in one piece. Restart the route or return to title."
 		RunStateType.RESULT_COLLAPSED:
 			_result_title.text = "Wagon Collapsed"
-			_result_summary.text = "The delivery failed. Restart the route or return to title."
 		_:
 			_result_title.text = "Run Complete"
-			_result_summary.text = "Restart the route or return to title."
 
 	_result_stats.text = (
 		"Score: %d\n"
@@ -596,7 +596,9 @@ func _refresh_result_screen() -> void:
 		+ "Cargo: %d\n"
 		+ "Distance traveled: %.0f / %.0f\n"
 		+ "Hazards Dodged: %d\n"
-		+ "Near Misses: %d"
+		+ "Near Misses: %d\n"
+		+ "Perfect Recoveries: %d\n"
+		+ "Recovery Failures: %d"
 	) % [
 		_run_state.get_score(),
 		_run_state.get_delivery_grade(),
@@ -606,6 +608,8 @@ func _refresh_result_screen() -> void:
 		_run_state.route_distance,
 		_run_state.hazards_dodged,
 		_run_state.near_misses,
+		_run_state.perfect_recoveries,
+		_run_state.recovery_failures,
 	]
 
 

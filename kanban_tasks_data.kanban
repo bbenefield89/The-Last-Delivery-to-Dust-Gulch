@@ -593,7 +593,7 @@
 				},
 				{
 					"details": "Add run-state tracking for `Perfect Recoveries` and `Recovery Failures`, wire those values into the result flow, and write very thorough unit tests for clean and failed recovery cases.\n\nDone when: by playing the game, a run with one clean recovery and one failed recovery shows both counts correctly on the result screen.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Lay out all four mastery stats on the existing result panel for both success and collapse outcomes, and write very thorough unit and UI coverage for the final display.\n\nDone when: by finishing one successful run and one failed run, the player can read all four mastery stats clearly on the normal result screen without opening any extra menu.",

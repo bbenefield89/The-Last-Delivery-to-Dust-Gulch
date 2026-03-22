@@ -18,6 +18,8 @@ func test_defaults_match_expected_mvp_boot_values() -> void:
 	assert_eq(state.result, RunStateType.DEFAULT_RESULT)
 	assert_eq(state.hazards_dodged, RunStateType.DEFAULT_HAZARDS_DODGED)
 	assert_eq(state.near_misses, RunStateType.DEFAULT_NEAR_MISSES)
+	assert_eq(state.perfect_recoveries, RunStateType.DEFAULT_PERFECT_RECOVERIES)
+	assert_eq(state.recovery_failures, RunStateType.DEFAULT_RECOVERY_FAILURES)
 
 
 func test_reset_for_new_run_restores_all_core_run_values() -> void:
@@ -33,6 +35,8 @@ func test_reset_for_new_run_restores_all_core_run_values() -> void:
 	state.last_hit_hazard = &"rock"
 	state.hazards_dodged = 3
 	state.near_misses = 2
+	state.perfect_recoveries = 1
+	state.recovery_failures = 4
 
 	state.reset_for_new_run()
 
@@ -48,6 +52,8 @@ func test_reset_for_new_run_restores_all_core_run_values() -> void:
 	assert_eq(state.last_hit_hazard, RunStateType.DEFAULT_LAST_HIT_HAZARD)
 	assert_eq(state.hazards_dodged, RunStateType.DEFAULT_HAZARDS_DODGED)
 	assert_eq(state.near_misses, RunStateType.DEFAULT_NEAR_MISSES)
+	assert_eq(state.perfect_recoveries, RunStateType.DEFAULT_PERFECT_RECOVERIES)
+	assert_eq(state.recovery_failures, RunStateType.DEFAULT_RECOVERY_FAILURES)
 
 
 func test_delivery_progress_ratio_tracks_route_completion() -> void:
@@ -179,6 +185,7 @@ func test_perfect_recovery_bonus_when_awarded_then_bonus_score_is_added() -> voi
 
 	state.award_perfect_recovery_bonus()
 
+	assert_eq(state.perfect_recoveries, 1)
 	assert_eq(state.bonus_score, RunStateType.PERFECT_RECOVERY_BONUS_SCORE)
 
 
@@ -215,6 +222,7 @@ func test_recovery_failure_penalty_applies_resource_losses_and_instability() -> 
 	assert_eq(state.wagon_health, 88)
 	assert_eq(state.cargo_value, 82)
 	assert_eq(state.current_speed, 190.0)
+	assert_eq(state.recovery_failures, 1)
 	assert_eq(state.last_recovery_outcome, &"failure")
 	assert_true(state.has_temporary_control_instability())
 	assert_eq(state.temporary_control_instability_remaining, 2.5)
@@ -228,12 +236,26 @@ func test_recovery_success_clears_failure_without_penalty() -> void:
 
 	state.resolve_recovery_success()
 
+	assert_eq(state.perfect_recoveries, 0)
+	assert_eq(state.recovery_failures, 0)
 	assert_eq(state.last_recovery_outcome, &"success")
 	assert_eq(state.wagon_health, RunStateType.DEFAULT_WAGON_HEALTH)
 	assert_eq(state.cargo_value, RunStateType.DEFAULT_CARGO_VALUE)
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
 	assert_false(state.has_active_failure())
 	assert_false(state.has_active_recovery_sequence())
+
+
+## Verifies only explicitly awarded perfect recoveries are counted.
+func test_recovery_success_when_bonus_not_awarded_then_perfect_recovery_count_does_not_change() -> void:
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	state.start_recovery_sequence([&"steer_left"], 1.0)
+
+	state.resolve_recovery_success()
+
+	assert_eq(state.perfect_recoveries, 0)
+	assert_eq(state.recovery_failures, 0)
 
 
 func test_recover_speed_restores_forward_speed_over_time() -> void:

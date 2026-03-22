@@ -26,6 +26,8 @@ const DEFAULT_RECOVERY_OUTCOME_DISPLAY_REMAINING := 0.0
 const DEFAULT_RECOVERY_COOLDOWN_REMAINING := 0.0
 const DEFAULT_HAZARDS_DODGED := 0
 const DEFAULT_NEAR_MISSES := 0
+const DEFAULT_PERFECT_RECOVERIES := 0
+const DEFAULT_RECOVERY_FAILURES := 0
 const SCORE_COMPLETION_MAX := 1000
 const SCORE_HEALTH_POINT_VALUE := 5
 const SCORE_CARGO_POINT_VALUE := 5
@@ -60,6 +62,8 @@ var last_hit_hazard: StringName = DEFAULT_LAST_HIT_HAZARD
 var bonus_score: int = 0
 var hazards_dodged: int = DEFAULT_HAZARDS_DODGED
 var near_misses: int = DEFAULT_NEAR_MISSES
+var perfect_recoveries: int = DEFAULT_PERFECT_RECOVERIES
+var recovery_failures: int = DEFAULT_RECOVERY_FAILURES
 
 
 func reset_for_new_run() -> void:
@@ -85,6 +89,8 @@ func reset_for_new_run() -> void:
 	bonus_score = 0
 	hazards_dodged = DEFAULT_HAZARDS_DODGED
 	near_misses = DEFAULT_NEAR_MISSES
+	perfect_recoveries = DEFAULT_PERFECT_RECOVERIES
+	recovery_failures = DEFAULT_RECOVERY_FAILURES
 
 
 func get_distance_traveled() -> float:
@@ -126,6 +132,7 @@ func award_near_miss_bonus() -> void:
 
 ## Awards one perfect-recovery bonus into the shared run score bucket.
 func award_perfect_recovery_bonus() -> void:
+	perfect_recoveries += 1
 	bonus_score += PERFECT_RECOVERY_BONUS_SCORE
 
 
@@ -298,6 +305,7 @@ func apply_recovery_failure_penalty(
 		temporary_control_instability_remaining,
 		max(0.0, instability_duration)
 	)
+	recovery_failures += 1
 	last_recovery_outcome = &"failure"
 	recovery_outcome_display_remaining = 1.5
 	recovery_cooldown_remaining = max(1.0, instability_duration * 0.5)
