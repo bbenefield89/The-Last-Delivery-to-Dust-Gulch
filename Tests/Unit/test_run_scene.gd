@@ -2824,7 +2824,7 @@ func test_step1_carriage_sprite_uses_animated_sheet_frames() -> void:
 	assert_not_null(carriage_sprite.sprite_frames)
 	assert_true(carriage_sprite.sprite_frames.has_animation("default"))
 	assert_eq(carriage_sprite.sprite_frames.get_frame_count("default"), 2)
-	assert_gt(carriage_sprite.sprite_frames.get_animation_speed("default"), 0.0)
+	assert_eq(carriage_sprite.sprite_frames.get_animation_speed("default"), scene.CARRIAGE_ANIMATION_FPS)
 	assert_eq(carriage_sprite.position, Vector2.ZERO)
 
 	var frame_0 := carriage_sprite.sprite_frames.get_frame_texture("default", 0) as AtlasTexture
@@ -2837,7 +2837,7 @@ func test_step1_carriage_sprite_uses_animated_sheet_frames() -> void:
 	assert_eq(frame_0.get_size(), Vector2(32, 64))
 	assert_eq(frame_1.get_size(), Vector2(32, 64))
 	assert_true(carriage_sprite.is_playing())
-	assert_gt(carriage_sprite.get_playing_speed(), 0.0)
+	assert_eq(carriage_sprite.speed_scale, 1.0)
 
 
 ## Confirms the wagon rig still applies the existing presentation state while the carriage animates.
@@ -2858,6 +2858,11 @@ func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	assert_not_null(shadow.sprite_frames)
 	assert_true(shadow.sprite_frames.has_animation("default"))
 	assert_not_null(carriage_sprite.sprite_frames)
+	assert_eq(shadow.sprite_frames.get_animation_speed("default"), scene.CARRIAGE_ANIMATION_FPS)
+	assert_eq(
+		carriage_sprite.sprite_frames.get_animation_speed("default"),
+		scene.CARRIAGE_ANIMATION_FPS
+	)
 	assert_eq(
 		shadow.sprite_frames.get_frame_count("default"),
 		carriage_sprite.sprite_frames.get_frame_count("default")
@@ -2865,7 +2870,9 @@ func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	assert_eq(shadow.modulate, Color(0.0, 0.0, 0.0, 0.2))
 	assert_eq(shadow.position, Vector2(0.0, 5.0))
 	assert_true(shadow.is_playing())
+	assert_eq(shadow.speed_scale, 1.0)
 	assert_true(carriage_sprite.is_playing())
+	assert_eq(carriage_sprite.speed_scale, 1.0)
 	assert_eq(horse_left.texture, scene.HORSE_TEXTURE)
 	assert_eq(horse_right.texture, scene.HORSE_TEXTURE)
 

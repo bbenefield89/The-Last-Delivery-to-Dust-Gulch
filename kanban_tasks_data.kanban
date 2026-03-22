@@ -11,19 +11,20 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
+				"16467d80-07e9-4a7c-8693-453bd6eb1804"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
-				"037b4f73-bbb7-4e50-a02e-168e0499b67b"
 			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"037b4f73-bbb7-4e50-a02e-168e0499b67b",
 				"4ff4b0c3-f6cc-4f2d-adba-302a991e4da7",
 				"0ca1b626-31ec-4978-9352-36006543cbb9",
 				"e0958d3a-e763-454c-a978-271443797d74",
@@ -719,6 +720,26 @@
 				},
 				{
 					"details": "Tune the carriage animation playback for the shipped topdown view so it loops at an intentional speed and reads cleanly at gameplay scale without distracting jitter, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by driving a normal run, the carriage animation loops smoothly at game scale and looks like part of the existing wagon presentation rather than a mismatched overlay.",
+					"done": true
+				}
+			]
+		},
+		{
+			"uuid": "16467d80-07e9-4a7c-8693-453bd6eb1804",
+			"title": "DG-33",
+			"description": "Task: Replace the current static horse art with a 4-frame animated horse presentation in the run scene.\n\nThe run scene currently uses one static horse texture for both horses in the carriage team. The horse art now needs a simple 4-frame running or pulling loop so the team reads as alive and in motion during normal gameplay. This should match the existing topdown north-facing view and remain appropriate for horses pulling the carriage, not a loose free-running animal. Keep the current horse placement, harness alignment, collision footprint, gameplay behavior, and wagon handling unchanged.\n\nUse the animated horse sheet in the current wagon rig so both horses visibly animate during a run instead of appearing static. Keep the implementation focused on the horse presentation only unless a small supporting scene or script change is required to make the animation play correctly. The two horse sprites should continue to work with the existing wagon visual effects, restart flow, and return-to-title flow.\n\nAffected files:\n- Assets/Tilesets/Horse/*\n- Scenes/RunScene/RunScene.tscn\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: by launching the game and playing a run, both horses visibly play the new 4-frame animation instead of remaining static, their placement still matches the existing carriage rig and harness setup, restart and return flows do not break the animation, and the rest of the run presentation still behaves normally.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add the exported 4-frame horse animation asset to the horse tileset folder, import it cleanly into Godot, and update the run-scene horse presentation so both horses can use frame-based horse art instead of the single static texture. Keep the horses aligned to the existing wagon rig and harness setup, and write very thorough unit or scene tests for the animation resource wiring.\n\nDone when: by starting a run, both horses appear in the correct place and play the 4-frame animation instead of showing a single still image.",
+					"done": false
+				},
+				{
+					"details": "Wire the animated horse nodes into the existing wagon presentation flow so normal gameplay, restart flow, return-to-title flow, and current wagon visual effects still work with the animated horse art. Keep both horses visually consistent with each other and write very thorough unit or scene tests for the affected behavior.\n\nDone when: by playing, restarting, and returning to the title, both horse animations keep working through the normal game flow and the wagon team still shows the expected hit, failure, and run-state presentation without obvious visual breakage.",
+					"done": false
+				},
+				{
+					"details": "Tune the horse animation playback for the shipped topdown view so the 4-frame loop reads like a pulling or running carriage team at gameplay scale without distracting jitter or over-animation, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by driving a normal run, both horses loop smoothly at game scale and look like part of the existing carriage team presentation rather than two static or mismatched sprites.",
 					"done": false
 				}
 			]

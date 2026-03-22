@@ -11,7 +11,7 @@ const CARRIAGE_SHEET_FRAMES: Array[Rect2i] = [
 	Rect2i(0, 0, 32, 64),
 	Rect2i(32, 0, 32, 64),
 ]
-const CARRIAGE_ANIMATION_FPS := 6.0
+const CARRIAGE_ANIMATION_FPS := 4.0
 const HORSE_TEXTURE := preload("res://Assets/Tilesets/Horse/Horse-16x48.png")
 const DESERT_TEXTURE := preload("res://Assets/Tilesets/Desert/Desert-3-32x32.png")
 const ROAD_TEXTURE := preload("res://Assets/Tilesets/Road/Road-4-tiled-32x32.png")
