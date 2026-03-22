@@ -27,6 +27,9 @@ const ROUTE_PHASE_FIRST_TROUBLE_END := 0.45
 const ROUTE_PHASE_CROSSING_BEAT_END := 0.60
 const ROUTE_PHASE_CLUTTER_BEAT_END := 0.80
 const ROUTE_PHASE_RESET_BEFORE_FINALE_END := 0.88
+const WARM_UP_LANE_INDICES: Array[int] = [2, 3, 4]
+const FIRST_TROUBLE_LANE_INDICES: Array[int] = [1, 2, 3, 4, 5]
+const FULL_ROAD_LANE_INDICES: Array[int] = [0, 1, 2, 3, 4, 5, 6]
 
 # Public Fields: Export
 
@@ -89,10 +92,10 @@ func _spawn_hazards(distance_delta: float) -> void:
 func _prime_next_spawn() -> void:
 	var band := _get_active_band()
 	var hazard_type := _roll_hazard_type(band.weights)
-	var lane_index := _roll_lane_index()
+	var lane_index := _roll_lane_index(band.lane_indices)
 	var plan := SpawnPlan.new(hazard_type, lane_index, _roll_spacing(band))
 	if band.allows_pressure_pair:
-		var pressure_lane := _get_pressure_lane_index(lane_index)
+		var pressure_lane := _get_pressure_lane_index(lane_index, band.lane_indices)
 		if pressure_lane != lane_index:
 			plan.pressure_pair_type = _roll_pressure_pair_type(hazard_type, band.weights)
 			plan.pressure_pair_lane_index = pressure_lane
@@ -128,15 +131,15 @@ func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DE
 func _get_active_band() -> SpawnBand:
 	match _get_route_phase(_route_progress_ratio):
 		ROUTE_PHASE_WARM_UP:
-			return SpawnBand.new(520.0, 660.0, 10, 2, 0, 0, false)
+			return SpawnBand.new(280.0, 360.0, 9, 2, 0, 0, false, WARM_UP_LANE_INDICES)
 		ROUTE_PHASE_FIRST_TROUBLE:
-			return SpawnBand.new(440.0, 560.0, 6, 2, 2, 0, false)
+			return SpawnBand.new(220.0, 320.0, 4, 3, 3, 0, false, FIRST_TROUBLE_LANE_INDICES)
 		ROUTE_PHASE_CROSSING_BEAT:
-			return SpawnBand.new(340.0, 450.0, 2, 1, 4, 4, true)
+			return SpawnBand.new(230.0, 320.0, 1, 1, 5, 4, true, FULL_ROAD_LANE_INDICES)
 		ROUTE_PHASE_CLUTTER_BEAT:
-			return SpawnBand.new(300.0, 400.0, 5, 4, 1, 0, true)
+			return SpawnBand.new(210.0, 290.0, 3, 6, 1, 0, true, FULL_ROAD_LANE_INDICES)
 		_:
-			return SpawnBand.new(480.0, 620.0, 6, 2, 1, 0, false)
+			return SpawnBand.new(320.0, 420.0, 5, 4, 1, 0, false, FULL_ROAD_LANE_INDICES)
 
 
 ## Returns the current authored phase for one route-progress ratio.
@@ -179,9 +182,13 @@ func _roll_spacing(band: SpawnBand) -> float:
 	return _rng.randf_range(band.spacing_min, band.spacing_max)
 
 
-## Rolls one lane index from the full 7-tile road grid.
-func _roll_lane_index() -> int:
-	return _rng.randi_range(0, LANE_X_POSITIONS.size() - 1)
+## Rolls one lane index from the supplied road subset.
+func _roll_lane_index(allowed_lane_indices: Array[int] = FULL_ROAD_LANE_INDICES) -> int:
+	if allowed_lane_indices.is_empty():
+		return _rng.randi_range(0, LANE_X_POSITIONS.size() - 1)
+
+	var resolved_roll_index := _rng.randi_range(0, allowed_lane_indices.size() - 1)
+	return _resolve_lane_index(allowed_lane_indices[resolved_roll_index])
 
 
 ## Clamps one lane selection to the valid 7-tile road grid.
@@ -199,11 +206,11 @@ func _get_lane_center_position(lane_index: int, y_position: float) -> Vector2:
 	return Vector2(_get_lane_center_x(lane_index), y_position)
 
 
-## Chooses a secondary lane from the same 7-tile grid while avoiding the primary lane.
-func _get_pressure_lane_index(primary_lane_index: int) -> int:
-	var pressure_lane_index := _roll_lane_index()
+## Chooses a secondary lane from the allowed subset while avoiding the primary lane.
+func _get_pressure_lane_index(primary_lane_index: int, allowed_lane_indices: Array[int]) -> int:
+	var pressure_lane_index := _roll_lane_index(allowed_lane_indices)
 	while pressure_lane_index == primary_lane_index:
-		pressure_lane_index = _roll_lane_index()
+		pressure_lane_index = _roll_lane_index(allowed_lane_indices)
 	return pressure_lane_index
 
 
@@ -413,6 +420,7 @@ class SpawnBand:
 	var spacing_max: float
 	var weights: HazardWeights
 	var allows_pressure_pair: bool
+	var lane_indices: Array[int]
 
 
 	## Stores spacing bounds, type weights, and late-pressure eligibility.
@@ -423,12 +431,14 @@ class SpawnBand:
 		rock_weight: int,
 		tumbleweed_weight: int,
 		livestock_weight: int,
-		allows_pressure_pair_value: bool
+		allows_pressure_pair_value: bool,
+		lane_indices_value: Array[int]
 	) -> void:
 		spacing_min = spacing_min_value
 		spacing_max = spacing_max_value
 		weights = HazardWeights.new(pothole_weight, rock_weight, tumbleweed_weight, livestock_weight)
 		allows_pressure_pair = allows_pressure_pair_value
+		lane_indices = lane_indices_value.duplicate()
 
 
 class HazardWeights:

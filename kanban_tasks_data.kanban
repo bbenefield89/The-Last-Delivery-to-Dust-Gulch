@@ -18,14 +18,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"0ca1b626-31ec-4978-9352-36006543cbb9"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"0ca1b626-31ec-4978-9352-36006543cbb9",
 				"e0958d3a-e763-454c-a978-271443797d74",
 				"18282a78-c593-4d8b-bb37-bcf2350354f8",
 				"66be59e9-0f83-45e7-b735-73b9394d78dc",
@@ -658,7 +657,7 @@
 				},
 				{
 					"details": "Tune the phase profiles so `Warm-Up`, `Crossing Beat`, `Clutter Beat`, and `Reset Before Finale` are visibly different in live play, and write very thorough unit tests for the final tuned behavior.\n\nDone when: by playing through a full run, the early section feels lighter, the crossing beat favors moving hazards, the clutter beat favors tighter static reads, and the reset phase briefly eases pressure before the finale.",
-					"done": false
+					"done": true
 				}
 			]
 		},

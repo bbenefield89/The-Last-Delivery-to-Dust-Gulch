@@ -35,7 +35,8 @@ func _assert_route_phase_band(
 	rock_weight: int,
 	tumbleweed_weight: int,
 	livestock_weight: int,
-	allows_pressure_pair: bool
+	allows_pressure_pair: bool,
+	expected_lane_indices: Array[int]
 ) -> void:
 	spawner._route_progress_ratio = progress_ratio
 	var route_phase: StringName = spawner._get_route_phase(progress_ratio)
@@ -49,6 +50,7 @@ func _assert_route_phase_band(
 	assert_eq(band.weights.tumbleweed, tumbleweed_weight)
 	assert_eq(band.weights.livestock, livestock_weight)
 	assert_eq(band.allows_pressure_pair, allows_pressure_pair)
+	assert_eq(band.lane_indices, expected_lane_indices)
 
 
 ## Verifies the literal DG-26 phase windows switch to the authored spawn profiles.
@@ -56,17 +58,149 @@ func test_route_phase_profiles_define_expected_spacing_ranges_and_weights() -> v
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	_assert_route_phase_band(spawner, 0.0, spawner.ROUTE_PHASE_WARM_UP, 520.0, 660.0, 10, 2, 0, 0, false)
-	_assert_route_phase_band(spawner, 0.199, spawner.ROUTE_PHASE_WARM_UP, 520.0, 660.0, 10, 2, 0, 0, false)
-	_assert_route_phase_band(spawner, 0.2, spawner.ROUTE_PHASE_FIRST_TROUBLE, 440.0, 560.0, 6, 2, 2, 0, false)
-	_assert_route_phase_band(spawner, 0.449, spawner.ROUTE_PHASE_FIRST_TROUBLE, 440.0, 560.0, 6, 2, 2, 0, false)
-	_assert_route_phase_band(spawner, 0.45, spawner.ROUTE_PHASE_CROSSING_BEAT, 340.0, 450.0, 2, 1, 4, 4, true)
-	_assert_route_phase_band(spawner, 0.599, spawner.ROUTE_PHASE_CROSSING_BEAT, 340.0, 450.0, 2, 1, 4, 4, true)
-	_assert_route_phase_band(spawner, 0.6, spawner.ROUTE_PHASE_CLUTTER_BEAT, 300.0, 400.0, 5, 4, 1, 0, true)
-	_assert_route_phase_band(spawner, 0.799, spawner.ROUTE_PHASE_CLUTTER_BEAT, 300.0, 400.0, 5, 4, 1, 0, true)
-	_assert_route_phase_band(spawner, 0.8, spawner.ROUTE_PHASE_RESET_BEFORE_FINALE, 480.0, 620.0, 6, 2, 1, 0, false)
-	_assert_route_phase_band(spawner, 0.879, spawner.ROUTE_PHASE_RESET_BEFORE_FINALE, 480.0, 620.0, 6, 2, 1, 0, false)
-	_assert_route_phase_band(spawner, 0.88, spawner.ROUTE_PHASE_RESET_BEFORE_FINALE, 480.0, 620.0, 6, 2, 1, 0, false)
+	_assert_route_phase_band(
+		spawner,
+		0.0,
+		spawner.ROUTE_PHASE_WARM_UP,
+		280.0,
+		360.0,
+		9,
+		2,
+		0,
+		0,
+		false,
+		spawner.WARM_UP_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.199,
+		spawner.ROUTE_PHASE_WARM_UP,
+		280.0,
+		360.0,
+		9,
+		2,
+		0,
+		0,
+		false,
+		spawner.WARM_UP_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.2,
+		spawner.ROUTE_PHASE_FIRST_TROUBLE,
+		220.0,
+		320.0,
+		4,
+		3,
+		3,
+		0,
+		false,
+		spawner.FIRST_TROUBLE_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.449,
+		spawner.ROUTE_PHASE_FIRST_TROUBLE,
+		220.0,
+		320.0,
+		4,
+		3,
+		3,
+		0,
+		false,
+		spawner.FIRST_TROUBLE_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.45,
+		spawner.ROUTE_PHASE_CROSSING_BEAT,
+		230.0,
+		320.0,
+		1,
+		1,
+		5,
+		4,
+		true,
+		spawner.FULL_ROAD_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.599,
+		spawner.ROUTE_PHASE_CROSSING_BEAT,
+		230.0,
+		320.0,
+		1,
+		1,
+		5,
+		4,
+		true,
+		spawner.FULL_ROAD_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.6,
+		spawner.ROUTE_PHASE_CLUTTER_BEAT,
+		210.0,
+		290.0,
+		3,
+		6,
+		1,
+		0,
+		true,
+		spawner.FULL_ROAD_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.799,
+		spawner.ROUTE_PHASE_CLUTTER_BEAT,
+		210.0,
+		290.0,
+		3,
+		6,
+		1,
+		0,
+		true,
+		spawner.FULL_ROAD_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.8,
+		spawner.ROUTE_PHASE_RESET_BEFORE_FINALE,
+		320.0,
+		420.0,
+		5,
+		4,
+		1,
+		0,
+		false,
+		spawner.FULL_ROAD_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.879,
+		spawner.ROUTE_PHASE_RESET_BEFORE_FINALE,
+		320.0,
+		420.0,
+		5,
+		4,
+		1,
+		0,
+		false,
+		spawner.FULL_ROAD_LANE_INDICES
+	)
+	_assert_route_phase_band(
+		spawner,
+		0.88,
+		spawner.ROUTE_PHASE_RESET_BEFORE_FINALE,
+		320.0,
+		420.0,
+		5,
+		4,
+		1,
+		0,
+		false,
+		spawner.FULL_ROAD_LANE_INDICES
+	)
 
 
 func test_seeded_spawn_plan_advance_uses_rolled_lane_and_type_metadata() -> void:
@@ -92,16 +226,16 @@ func test_seeded_spawn_rolls_keep_spacing_inside_band_ranges() -> void:
 
 	for roll_index in range(12):
 		var early_plan = _prime_seeded_plan(spawner, 100 + roll_index, 0.1)
-		assert_true(early_plan.spacing >= 520.0)
-		assert_true(early_plan.spacing <= 660.0)
+		assert_true(early_plan.spacing >= 280.0)
+		assert_true(early_plan.spacing <= 360.0)
 
 		var mid_plan = _prime_seeded_plan(spawner, 200 + roll_index, 0.5)
-		assert_true(mid_plan.spacing >= 340.0)
-		assert_true(mid_plan.spacing <= 450.0)
+		assert_true(mid_plan.spacing >= 230.0)
+		assert_true(mid_plan.spacing <= 320.0)
 
 		var late_plan = _prime_seeded_plan(spawner, 300 + roll_index, 0.9)
-		assert_true(late_plan.spacing >= 480.0)
-		assert_true(late_plan.spacing <= 620.0)
+		assert_true(late_plan.spacing >= 320.0)
+		assert_true(late_plan.spacing <= 420.0)
 
 
 func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
@@ -118,6 +252,28 @@ func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
 		HazardSpawnerType.LANE_X_POSITIONS,
 		[-96.0, -64.0, -32.0, 0.0, 32.0, 64.0, 96.0]
 	)
+
+
+## Verifies the opener phases bias hazards toward the center lanes so idle center play is taught to dodge.
+func test_opening_phases_when_sampled_then_lane_selection_stays_center_biased() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var warm_up_lane_indices: Dictionary = {}
+	var first_trouble_lane_indices: Dictionary = {}
+	for roll_index in range(240):
+		var warm_up_plan = _prime_seeded_plan(spawner, 1400 + roll_index, 0.1)
+		var first_trouble_plan = _prime_seeded_plan(spawner, 1800 + roll_index, 0.3)
+		warm_up_lane_indices[warm_up_plan.lane_index] = true
+		first_trouble_lane_indices[first_trouble_plan.lane_index] = true
+
+	var warm_up_lane_keys: Array = warm_up_lane_indices.keys()
+	var first_trouble_lane_keys: Array = first_trouble_lane_indices.keys()
+	warm_up_lane_keys.sort()
+	first_trouble_lane_keys.sort()
+
+	assert_eq(warm_up_lane_keys, spawner.WARM_UP_LANE_INDICES)
+	assert_eq(first_trouble_lane_keys, spawner.FIRST_TROUBLE_LANE_INDICES)
 
 
 ## Verifies pressure pairs only appear in the phases that author them.
@@ -191,12 +347,14 @@ func test_route_phase_when_sampled_then_moving_hazards_start_after_warm_up() -> 
 
 	assert_eq(warm_up_counts[&"tumbleweed"], 0)
 	assert_eq(warm_up_counts[&"livestock"], 0)
+	assert_true(warm_up_counts[&"pothole"] > warm_up_counts[&"rock"])
 	assert_true(first_trouble_counts[&"tumbleweed"] > 0)
 	assert_eq(first_trouble_counts[&"livestock"], 0)
-	assert_true(crossing_counts[&"tumbleweed"] > 0)
-	assert_true(crossing_counts[&"livestock"] > 0)
-	assert_true(clutter_counts[&"pothole"] > clutter_counts[&"tumbleweed"])
-	assert_true(clutter_counts[&"rock"] > clutter_counts[&"livestock"])
+	assert_true(first_trouble_counts[&"pothole"] > first_trouble_counts[&"rock"])
+	assert_true(crossing_counts[&"tumbleweed"] > crossing_counts[&"pothole"])
+	assert_true(crossing_counts[&"livestock"] > crossing_counts[&"rock"])
+	assert_true(clutter_counts[&"rock"] > clutter_counts[&"pothole"])
+	assert_true(clutter_counts[&"rock"] > clutter_counts[&"tumbleweed"])
 	assert_true(reset_counts[&"pothole"] > reset_counts[&"rock"])
 	assert_true(reset_counts[&"tumbleweed"] > 0)
 
@@ -391,6 +549,17 @@ func test_spawn_bands_when_sampled_many_times_then_potholes_outnumber_rocks() ->
 		assert_true(pothole_count > rock_count)
 
 
+## Verifies the clutter beat makes rocks the dominant blocker instead of a rarity.
+func test_clutter_beat_when_sampled_many_times_then_rocks_outnumber_potholes() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var clutter_counts := _sample_primary_hazard_counts(spawner, 0.7, 600, 9000)
+
+	assert_true(clutter_counts[&"rock"] > clutter_counts[&"pothole"])
+	assert_true(clutter_counts[&"rock"] > clutter_counts[&"tumbleweed"])
+
+
 ## Verifies each authored route phase produces the intended hazard mix.
 func test_spawn_usage_when_sampled_across_route_phases_then_roles_follow_the_intended_mix() -> void:
 	var spawner := _create_seeded_spawner()
@@ -407,6 +576,7 @@ func test_spawn_usage_when_sampled_across_route_phases_then_roles_follow_the_int
 	assert_true(warm_up_counts[&"pothole"] > warm_up_counts[&"rock"])
 
 	assert_true(first_trouble_counts[&"pothole"] > first_trouble_counts[&"rock"])
+	assert_true(first_trouble_counts[&"rock"] > 0)
 	assert_true(first_trouble_counts[&"tumbleweed"] > 0)
 	assert_eq(first_trouble_counts[&"livestock"], 0)
 
@@ -417,7 +587,7 @@ func test_spawn_usage_when_sampled_across_route_phases_then_roles_follow_the_int
 			> crossing_counts[&"pothole"] + crossing_counts[&"rock"]
 	)
 
-	assert_true(clutter_counts[&"pothole"] > clutter_counts[&"tumbleweed"])
+	assert_true(clutter_counts[&"rock"] > clutter_counts[&"pothole"])
 	assert_true(clutter_counts[&"rock"] > clutter_counts[&"livestock"])
 	assert_true(
 		clutter_counts[&"pothole"] + clutter_counts[&"rock"]
