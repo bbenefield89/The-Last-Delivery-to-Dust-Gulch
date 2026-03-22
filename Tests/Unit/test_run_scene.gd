@@ -2813,6 +2813,51 @@ func test_step3_cohesion_nodes_exist_on_wagon() -> void:
 	assert_true(scene.has_node("World/Wagon/HorseTeam/HorseRight"))
 
 
+## Confirms the animated horse sprites are wired to the exported sheet slices.
+func test_step1_horse_sprites_use_animated_sheet_frames() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
+	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
+
+	assert_not_null(horse_left)
+	assert_not_null(horse_right)
+	assert_not_null(horse_left.sprite_frames)
+	assert_not_null(horse_right.sprite_frames)
+	assert_true(horse_left.sprite_frames.has_animation("default"))
+	assert_true(horse_right.sprite_frames.has_animation("default"))
+	assert_eq(horse_left.sprite_frames.get_frame_count("default"), 4)
+	assert_eq(horse_right.sprite_frames.get_frame_count("default"), 4)
+	assert_eq(horse_left.sprite_frames.get_animation_speed("default"), scene.HORSE_ANIMATION_FPS)
+	assert_eq(horse_right.sprite_frames.get_animation_speed("default"), scene.HORSE_ANIMATION_FPS)
+	assert_eq(horse_left.sprite_frames.get_animation_loop("default"), true)
+	assert_eq(horse_right.sprite_frames.get_animation_loop("default"), true)
+
+	var left_frame_0 := horse_left.sprite_frames.get_frame_texture("default", 0) as AtlasTexture
+	var left_frame_3 := horse_left.sprite_frames.get_frame_texture("default", 3) as AtlasTexture
+	var right_frame_0 := horse_right.sprite_frames.get_frame_texture("default", 0) as AtlasTexture
+	var right_frame_3 := horse_right.sprite_frames.get_frame_texture("default", 3) as AtlasTexture
+
+	assert_not_null(left_frame_0)
+	assert_not_null(left_frame_3)
+	assert_not_null(right_frame_0)
+	assert_not_null(right_frame_3)
+	assert_eq(left_frame_0.atlas, scene.HORSE_SHEET_TEXTURE)
+	assert_eq(left_frame_3.atlas, scene.HORSE_SHEET_TEXTURE)
+	assert_eq(right_frame_0.atlas, scene.HORSE_SHEET_TEXTURE)
+	assert_eq(right_frame_3.atlas, scene.HORSE_SHEET_TEXTURE)
+	assert_eq(left_frame_0.get_size(), Vector2(16, 48))
+	assert_eq(left_frame_3.get_size(), Vector2(16, 48))
+	assert_eq(right_frame_0.get_size(), Vector2(16, 48))
+	assert_eq(right_frame_3.get_size(), Vector2(16, 48))
+	assert_true(horse_left.is_playing())
+	assert_true(horse_right.is_playing())
+	assert_eq(horse_left.position, Vector2(-8.0, 0.0))
+	assert_eq(horse_right.position, Vector2(8.0, 0.0))
+
+
 ## Confirms the animated carriage sprite is wired to sheet slices from the exported asset.
 func test_step1_carriage_sprite_uses_animated_sheet_frames() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2849,8 +2894,8 @@ func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	var wagon: Polygon2D = scene.get_node("%Wagon")
 	var shadow := scene.get_node("World/Wagon/Shadow") as AnimatedSprite2D
 	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
-	var horse_left: Sprite2D = scene.get_node("World/Wagon/HorseTeam/HorseLeft")
-	var horse_right: Sprite2D = scene.get_node("World/Wagon/HorseTeam/HorseRight")
+	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
+	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
 
 	assert_eq(wagon.color.a, 0.0)
 	assert_not_null(shadow)
@@ -2873,8 +2918,18 @@ func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	assert_eq(shadow.speed_scale, 1.0)
 	assert_true(carriage_sprite.is_playing())
 	assert_eq(carriage_sprite.speed_scale, 1.0)
-	assert_eq(horse_left.texture, scene.HORSE_TEXTURE)
-	assert_eq(horse_right.texture, scene.HORSE_TEXTURE)
+	assert_not_null(horse_left.sprite_frames)
+	assert_not_null(horse_right.sprite_frames)
+	assert_true(horse_left.sprite_frames.has_animation("default"))
+	assert_true(horse_right.sprite_frames.has_animation("default"))
+	assert_eq(horse_left.sprite_frames.get_frame_count("default"), 4)
+	assert_eq(horse_right.sprite_frames.get_frame_count("default"), 4)
+	assert_eq(horse_left.sprite_frames.get_animation_speed("default"), scene.HORSE_ANIMATION_FPS)
+	assert_eq(horse_right.sprite_frames.get_animation_speed("default"), scene.HORSE_ANIMATION_FPS)
+	assert_eq(horse_left.sprite_frames.get_animation_loop("default"), true)
+	assert_eq(horse_right.sprite_frames.get_animation_loop("default"), true)
+	assert_true(horse_left.is_playing())
+	assert_true(horse_right.is_playing())
 
 
 func test_step3_panel_styles_use_western_palette() -> void:

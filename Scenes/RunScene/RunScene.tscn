@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://cdm6b62edidaa" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
 [ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Scripts/Hazards/hazard_spawner.gd" id="2_ok7u7"]
 [ext_resource type="Texture2D" uid="uid://c87jx435lsdui" path="res://Assets/Tilesets/Carriage/Carriage-32x64.png" id="3_qapb8"]
-[ext_resource type="Texture2D" uid="uid://bvfd5lxykfl45" path="res://Assets/Tilesets/Horse/Horse-16x48.png" id="4_rn5qx"]
+[ext_resource type="Texture2D" uid="uid://d0fxmc8h746io" path="res://Assets/Tilesets/Horse/Horse-16x48-Sheet.png" id="4_rn5qx"]
 [ext_resource type="Texture2D" uid="uid://bsmtbkgrqdt63" path="res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png" id="5_vvclu"]
 [ext_resource type="Texture2D" uid="uid://de6ppq0376jbi" path="res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png" id="6_kd7yq"]
 [ext_resource type="Texture2D" uid="uid://bfo6dckq6e7jq" path="res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png" id="7_l2yxu"]
@@ -107,13 +107,11 @@ position = Vector2(0, 5)
 [node name="HorseTeam" type="Node2D" parent="World/Wagon" unique_id=1666748263]
 position = Vector2(0, -54)
 
-[node name="HorseLeft" type="Sprite2D" parent="World/Wagon/HorseTeam" unique_id=1813804162]
+[node name="HorseLeft" type="AnimatedSprite2D" parent="World/Wagon/HorseTeam" unique_id=1813804162]
 position = Vector2(-8, 0)
-texture = ExtResource("4_rn5qx")
 
-[node name="HorseRight" type="Sprite2D" parent="World/Wagon/HorseTeam" unique_id=1874504157]
+[node name="HorseRight" type="AnimatedSprite2D" parent="World/Wagon/HorseTeam" unique_id=1874504157]
 position = Vector2(8, 0)
-texture = ExtResource("4_rn5qx")
 
 [node name="HarnessLeft" type="Line2D" parent="World/Wagon/HorseTeam" unique_id=1283736362]
 points = PackedVector2Array(0, 30, -8, 8)

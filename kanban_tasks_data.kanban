@@ -11,13 +11,13 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"16467d80-07e9-4a7c-8693-453bd6eb1804"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
+				"16467d80-07e9-4a7c-8693-453bd6eb1804"
 			]
 		},
 		{
@@ -732,7 +732,7 @@
 			"steps": [
 				{
 					"details": "Add the exported 4-frame horse animation asset to the horse tileset folder, import it cleanly into Godot, and update the run-scene horse presentation so both horses can use frame-based horse art instead of the single static texture. Keep the horses aligned to the existing wagon rig and harness setup, and write very thorough unit or scene tests for the animation resource wiring.\n\nDone when: by starting a run, both horses appear in the correct place and play the 4-frame animation instead of showing a single still image.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Wire the animated horse nodes into the existing wagon presentation flow so normal gameplay, restart flow, return-to-title flow, and current wagon visual effects still work with the animated horse art. Keep both horses visually consistent with each other and write very thorough unit or scene tests for the affected behavior.\n\nDone when: by playing, restarting, and returning to the title, both horse animations keep working through the normal game flow and the wagon team still shows the expected hit, failure, and run-state presentation without obvious visual breakage.",
