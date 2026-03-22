@@ -63,6 +63,7 @@ const ROUTE_PHASE_FIRST_TROUBLE := &"first_trouble"
 const ROUTE_PHASE_CROSSING_BEAT := &"crossing_beat"
 const ROUTE_PHASE_CLUTTER_BEAT := &"clutter_beat"
 const ROUTE_PHASE_RESET_BEFORE_FINALE := &"reset_before_finale"
+const ROUTE_PHASE_FINAL_STRETCH := &"final_stretch"
 const ROUTE_PHASE_WARM_UP_END := 0.20
 const ROUTE_PHASE_FIRST_TROUBLE_END := 0.45
 const ROUTE_PHASE_CROSSING_BEAT_END := 0.60
@@ -77,6 +78,7 @@ const DISTANCE_BAR_BAND_BOUNDARIES := [
 ]
 const DISTANCE_BAR_MARKER_COLOR := Color(0.945098, 0.882353, 0.709804, 0.9)
 const DISTANCE_BAR_MARKER_HALF_WIDTH := 1.0
+const PHASE_CALLOUT_DURATION := 0.95
 const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN := 12.0
 const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX := 14.0
 const BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN := 9.5
@@ -155,6 +157,7 @@ var _bad_luck_elapsed := 0.0
 var _scheduled_bad_luck_interval := 0.0
 var _pending_bad_luck_trigger := false
 var _route_phase: StringName = &""
+var _route_phase_callout_zone: StringName = &""
 var _bad_luck_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
@@ -165,6 +168,8 @@ var _onboarding_active := false
 var _bonus_callout_text := ""
 var _bonus_callout_remaining := 0.0
 var _bonus_callout_anchor_world_position := Vector2.ZERO
+var _phase_callout_text := ""
+var _phase_callout_remaining := 0.0
 var _touch_controls_enabled_for_runtime := false
 var _has_native_mobile_runtime_override := false
 var _native_mobile_runtime_override := false
@@ -195,6 +200,8 @@ var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGe
 @onready var _cargo_label: Label = %CargoLabel
 @onready var _bonus_callout_panel: Control = %BonusCalloutPanel
 @onready var _bonus_callout_label: Label = %BonusCalloutLabel
+@onready var _phase_callout_panel: PanelContainer = %PhaseCalloutPanel
+@onready var _phase_callout_label: Label = %PhaseCalloutLabel
 @onready var _touch_layer: CanvasLayer = %TouchLayer
 @onready var _touch_left_button: Button = %TouchLeft
 @onready var _touch_right_button: Button = %TouchRight
@@ -246,16 +253,20 @@ func setup(run_state: RunStateType) -> void:
 	_bonus_callout_text = ""
 	_bonus_callout_remaining = 0.0
 	_bonus_callout_anchor_world_position = Vector2.ZERO
+	_phase_callout_text = ""
+	_phase_callout_remaining = 0.0
 	_bad_luck_elapsed = 0.0
 	_pending_bad_luck_trigger = false
 	_scheduled_bad_luck_interval = 0.0
 	_route_phase = &""
+	_route_phase_callout_zone = &""
 	_last_announced_failure = _run_state.active_failure
 	_last_announced_result = _run_state.result
 	_sync_route_phase()
 	_refresh_status()
 	_refresh_onboarding_prompt()
 	_refresh_bonus_callout()
+	_refresh_phase_callout()
 	_refresh_recovery_prompt()
 	_refresh_pause_menu()
 	_refresh_result_screen()
@@ -272,6 +283,7 @@ func _ready() -> void:
 	_ensure_scroll_visuals()
 	_configure_vehicle_sprites()
 	_configure_distance_bar_band_markers()
+	_refresh_phase_callout()
 	_configure_touch_buttons()
 	_configure_dust_trail()
 	_configure_audio_players()
@@ -425,10 +437,13 @@ func _exit_tree() -> void:
 func _process(delta: float) -> void:
 	if _run_state == null:
 		_refresh_bonus_callout()
+		_refresh_phase_callout()
 		return
 	if _pause_menu_open:
 		_refresh_onboarding_prompt()
 		_refresh_bonus_callout()
+		_tick_phase_callout(delta)
+		_refresh_phase_callout()
 		_refresh_pause_menu()
 		_refresh_result_screen()
 		_refresh_touch_controls()
@@ -436,12 +451,14 @@ func _process(delta: float) -> void:
 		return
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_tick_bonus_callout(delta)
+		_tick_phase_callout(delta)
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
 		_update_camera_framing()
 		_refresh_status()
 		_refresh_onboarding_prompt()
 		_refresh_bonus_callout()
+		_refresh_phase_callout()
 		_refresh_pause_menu()
 		_refresh_recovery_prompt()
 		_refresh_result_screen()
@@ -450,6 +467,7 @@ func _process(delta: float) -> void:
 		return
 	if _onboarding_active:
 		_tick_bonus_callout(delta)
+		_tick_phase_callout(delta)
 		_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
@@ -458,6 +476,7 @@ func _process(delta: float) -> void:
 		_refresh_status()
 		_refresh_onboarding_prompt()
 		_refresh_bonus_callout()
+		_refresh_phase_callout()
 		_refresh_pause_menu()
 		_refresh_recovery_prompt()
 		_refresh_result_screen()
@@ -502,6 +521,7 @@ func _process(delta: float) -> void:
 	_check_for_success()
 	_sync_completed_run_best_state()
 	_tick_bonus_callout(delta)
+	_tick_phase_callout(delta)
 	_update_impact_feedback(delta)
 	_update_wagon_visual()
 	_update_scroll_visuals()
@@ -509,6 +529,7 @@ func _process(delta: float) -> void:
 	_refresh_status()
 	_refresh_onboarding_prompt()
 	_refresh_bonus_callout()
+	_refresh_phase_callout()
 	_refresh_pause_menu()
 	_refresh_recovery_prompt()
 	_refresh_result_screen()
@@ -559,6 +580,28 @@ func _refresh_bonus_callout() -> void:
 	var panel_size: Vector2 = _bonus_callout_panel.size
 	_bonus_callout_panel.position = canvas_position + flyout_offset - (panel_size * 0.5)
 	_bonus_callout_panel.self_modulate = Color(1, 1, 1, 1.0 - progress_ratio)
+
+
+## Shows a short route-phase cue while an authored phase transition is active.
+func _refresh_phase_callout() -> void:
+	if _phase_callout_panel == null or _phase_callout_label == null:
+		return
+
+	var is_visible := (
+		_run_state != null
+		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
+		and _phase_callout_remaining > 0.0
+		and _phase_callout_text != ""
+	)
+	_phase_callout_panel.visible = is_visible
+	if not is_visible:
+		_phase_callout_label.text = ""
+		_phase_callout_panel.self_modulate = Color(1, 1, 1, 1)
+		return
+
+	_phase_callout_label.text = _phase_callout_text
+	var progress_ratio: float = 1.0 - (_phase_callout_remaining / PHASE_CALLOUT_DURATION)
+	_phase_callout_panel.self_modulate = Color(1, 1, 1, 1.0 - (progress_ratio * 0.25))
 
 
 ## Shows only the active recovery sequence prompt when gameplay allows it.
@@ -790,6 +833,8 @@ func _input(event: InputEvent) -> void:
 		if _should_dismiss_onboarding(event):
 			_onboarding_active = false
 			_refresh_onboarding_prompt()
+			if _route_phase_callout_zone == ROUTE_PHASE_WARM_UP:
+				_show_phase_callout(_get_route_phase_display_name(_route_phase_callout_zone))
 		return
 	if not _run_state.has_active_recovery_sequence():
 		return
@@ -1005,11 +1050,19 @@ func _sync_route_phase() -> void:
 
 	var route_progress_ratio := _run_state.get_delivery_progress_ratio()
 	var next_route_phase := _get_route_phase(route_progress_ratio)
-	if next_route_phase == _route_phase:
+	var next_route_phase_callout_zone := _get_route_phase_callout_zone(route_progress_ratio)
+	var route_phase_changed := next_route_phase != _route_phase
+	var route_phase_callout_zone_changed := next_route_phase_callout_zone != _route_phase_callout_zone
+	if not route_phase_changed and not route_phase_callout_zone_changed:
 		return
 
 	_route_phase = next_route_phase
-	_handle_route_phase_change()
+	var previous_route_phase_callout_zone := _route_phase_callout_zone
+	_route_phase_callout_zone = next_route_phase_callout_zone
+	if route_phase_changed:
+		_handle_route_phase_change()
+	if route_phase_callout_zone_changed and previous_route_phase_callout_zone != &"":
+		_show_phase_callout(_get_route_phase_display_name(_route_phase_callout_zone))
 
 
 ## Applies the timer-bad-luck scheduling rules for the current route phase.
@@ -1041,6 +1094,32 @@ func _get_route_phase(progress_ratio: float) -> StringName:
 	if progress_ratio < ROUTE_PHASE_RESET_BEFORE_FINALE_END:
 		return ROUTE_PHASE_RESET_BEFORE_FINALE
 	return ROUTE_PHASE_RESET_BEFORE_FINALE
+
+
+## Returns the current cue region for one route-progress ratio, including the finale placeholder chunk.
+func _get_route_phase_callout_zone(progress_ratio: float) -> StringName:
+	if progress_ratio < ROUTE_PHASE_RESET_BEFORE_FINALE_END:
+		return _get_route_phase(progress_ratio)
+	return ROUTE_PHASE_FINAL_STRETCH
+
+
+## Returns a readable label for the current authored route phase.
+func _get_route_phase_display_name(route_phase: StringName) -> String:
+	match route_phase:
+		ROUTE_PHASE_WARM_UP:
+			return "Warm-Up"
+		ROUTE_PHASE_FIRST_TROUBLE:
+			return "First Trouble"
+		ROUTE_PHASE_CROSSING_BEAT:
+			return "Crossing Beat"
+		ROUTE_PHASE_CLUTTER_BEAT:
+			return "Clutter Beat"
+		ROUTE_PHASE_RESET_BEFORE_FINALE:
+			return "Reset Before Finale"
+		ROUTE_PHASE_FINAL_STRETCH:
+			return "FINAL STRETCH"
+		_:
+			return "Route Phase"
 
 
 ## Attempts to start a hazard-specific failure when a collision resolves into a failure state.
@@ -1654,6 +1733,13 @@ func _show_bonus_callout(text: String) -> void:
 	_refresh_bonus_callout()
 
 
+## Starts or refreshes the short-lived on-screen phase cue.
+func _show_phase_callout(text: String) -> void:
+	_phase_callout_text = text
+	_phase_callout_remaining = PHASE_CALLOUT_DURATION
+	_refresh_phase_callout()
+
+
 ## Counts down the active bonus callout and hides it after the display window expires.
 func _tick_bonus_callout(delta: float) -> void:
 	if _bonus_callout_remaining <= 0.0:
@@ -1663,6 +1749,17 @@ func _tick_bonus_callout(delta: float) -> void:
 	if _bonus_callout_remaining == 0.0:
 		_bonus_callout_text = ""
 	_refresh_bonus_callout()
+
+
+## Counts down the active phase cue and hides it after the display window expires.
+func _tick_phase_callout(delta: float) -> void:
+	if _phase_callout_remaining <= 0.0:
+		return
+
+	_phase_callout_remaining = max(0.0, _phase_callout_remaining - max(0.0, delta))
+	if _phase_callout_remaining == 0.0:
+		_phase_callout_text = ""
+	_refresh_phase_callout()
 
 
 ## Plays the shared menu click cue for pause and result buttons.

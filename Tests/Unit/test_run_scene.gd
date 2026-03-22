@@ -35,6 +35,121 @@ func _setup_active_run_at_progress(scene: Node, state: RunStateType, progress_ra
 	_dismiss_onboarding(scene)
 
 
+## Confirms the route-phase callout is anchored as a small top-center overlay.
+func test_route_phase_callout_panel_uses_top_center_overlay_layout() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var phase_callout_panel: PanelContainer = scene.get_node("%PhaseCalloutPanel")
+	var phase_callout_label: Label = scene.get_node("%PhaseCalloutLabel")
+
+	assert_not_null(phase_callout_panel)
+	assert_not_null(phase_callout_label)
+	assert_false(phase_callout_panel.visible)
+	assert_eq(phase_callout_panel.anchor_left, 0.5)
+	assert_eq(phase_callout_panel.anchor_right, 0.5)
+	assert_eq(phase_callout_panel.offset_top, 12.0)
+	assert_eq(phase_callout_panel.offset_bottom, 42.0)
+	assert_eq(phase_callout_panel.custom_minimum_size, Vector2(216, 30))
+
+
+## Asserts that a phase transition shows a short readable banner and then hides again.
+func _assert_phase_callout_for_transition(
+	scene: Node,
+	state: RunStateType,
+	start_progress_ratio: float,
+	delta: float,
+	expected_text: String
+) -> void:
+	_setup_active_run_at_progress(scene, state, start_progress_ratio)
+
+	var phase_callout_panel: PanelContainer = scene.get_node("%PhaseCalloutPanel")
+	var phase_callout_label: Label = scene.get_node("%PhaseCalloutLabel")
+	if phase_callout_panel.visible:
+		scene._tick_phase_callout(scene.PHASE_CALLOUT_DURATION)
+	assert_false(phase_callout_panel.visible)
+
+	scene._process(delta)
+
+	assert_true(phase_callout_panel.visible)
+	assert_eq(phase_callout_label.text, expected_text)
+	var phase_callout_rect: Rect2 = phase_callout_panel.get_global_rect()
+	var viewport_size: Vector2 = scene.get_viewport().get_visible_rect().size
+	assert_true(phase_callout_rect.position.y >= 0.0)
+	assert_true(phase_callout_rect.end.y <= viewport_size.y)
+	assert_true(phase_callout_rect.position.x >= 0.0)
+	assert_true(phase_callout_rect.end.x <= viewport_size.x)
+
+	scene._tick_phase_callout(scene.PHASE_CALLOUT_DURATION)
+
+	assert_false(phase_callout_panel.visible)
+	assert_eq(phase_callout_label.text, "")
+
+
+func test_route_phase_when_transitioning_from_warm_up_then_first_trouble_callout_appears() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_assert_phase_callout_for_transition(scene, state, 0.19, 0.05, "First Trouble")
+
+
+func test_route_phase_when_transitioning_from_first_trouble_then_crossing_beats_callout_appears() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_assert_phase_callout_for_transition(scene, state, 0.44, 0.05, "Crossing Beat")
+
+
+func test_route_phase_when_transitioning_from_crossing_then_clutter_callout_appears() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_assert_phase_callout_for_transition(scene, state, 0.59, 0.05, "Clutter Beat")
+
+
+func test_route_phase_when_transitioning_from_clutter_then_reset_callout_appears() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_assert_phase_callout_for_transition(scene, state, 0.79, 0.05, "Reset Before Finale")
+
+
+func test_route_phase_when_transitioning_from_reset_then_final_stretch_callout_appears() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_assert_phase_callout_for_transition(scene, state, 0.87, 0.05, "FINAL STRETCH")
+
+
+func test_dismissing_onboarding_when_run_starts_then_warm_up_callout_appears() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var phase_callout_panel: PanelContainer = scene.get_node("%PhaseCalloutPanel")
+	var phase_callout_label: Label = scene.get_node("%PhaseCalloutLabel")
+	assert_false(phase_callout_panel.visible)
+
+	_dismiss_onboarding(scene)
+
+	assert_true(phase_callout_panel.visible)
+	assert_eq(phase_callout_label.text, "Warm-Up")
+
+
 ## Forces touch controls on for tests that exercise the native mobile runtime path.
 func _enable_touch_controls_for_native_mobile(scene: Node) -> void:
 	scene._has_native_mobile_runtime_override = true
@@ -175,7 +290,7 @@ func test_dismissing_onboarding_with_steer_input_starts_normal_gameplay() -> voi
 	scene._input(dismiss_event)
 
 	var distance_before_process := state.distance_remaining
-	scene._process(2.0)
+	scene._process(3.0)
 
 	var onboarding_panel: PanelContainer = scene.get_node("%OnboardingPanel")
 	var spawner = scene.get_node("%HazardSpawner")

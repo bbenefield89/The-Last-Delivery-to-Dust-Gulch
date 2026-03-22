@@ -654,7 +654,7 @@
 				},
 				{
 					"details": "Add a lightweight on-screen phase cue for each phase change, and write very thorough unit and UI coverage for the cue timing and display.\n\nDone when: by playing through the run, each phase transition shows a short readable cue without interrupting control or opening a new screen.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Tune the phase profiles so `Warm-Up`, `Crossing Beat`, `Clutter Beat`, and `Reset Before Finale` are visibly different in live play, and write very thorough unit tests for the final tuned behavior.\n\nDone when: by playing through a full run, the early section feels lighter, the crossing beat favors moving hazards, the clutter beat favors tighter static reads, and the reset phase briefly eases pressure before the finale.",

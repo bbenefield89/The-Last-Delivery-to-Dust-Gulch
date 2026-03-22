@@ -306,6 +306,43 @@ text = "NEAR MISS +50"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="PhaseCalloutLayer" type="CanvasLayer" parent="." unique_id=1713599605]
+layer = 1
+
+[node name="PhaseCalloutPanel" type="PanelContainer" parent="PhaseCalloutLayer" unique_id=1557692818]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(216, 30)
+anchors_preset = 0
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -108.0
+offset_top = 12.0
+offset_right = 108.0
+offset_bottom = 42.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
+
+[node name="PhaseCalloutMargin" type="MarginContainer" parent="PhaseCalloutLayer/PhaseCalloutPanel" unique_id=2087114527]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 6
+
+[node name="PhaseCalloutLabel" type="Label" parent="PhaseCalloutLayer/PhaseCalloutPanel/PhaseCalloutMargin" unique_id=1099225811]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 13
+text = "WARM-UP"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="TouchLayer" type="CanvasLayer" parent="." unique_id=1837018594]
 unique_name_in_owner = true
 
