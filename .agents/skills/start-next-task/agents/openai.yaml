@@ -1,4 +1,0 @@
-interface:
-  display_name: "Start Next Task"
-  short_description: "Start the next kanban ticket workflow"
-  default_prompt: "Use $start-next-task to start the next kanban ticket or a specific WMFC ticket in this repository."
