@@ -20,14 +20,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"18282a78-c593-4d8b-bb37-bcf2350354f8"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"18282a78-c593-4d8b-bb37-bcf2350354f8",
 				"66be59e9-0f83-45e7-b735-73b9394d78dc",
 				"677fbfae-de4a-4e95-891c-00ee0a7de59c",
 				"d4c22985-085e-437a-89a0-a19eb4210cff",
@@ -597,7 +596,7 @@
 				},
 				{
 					"details": "Lay out all four mastery stats on the existing result panel for both success and collapse outcomes, and write very thorough unit and UI coverage for the final display.\n\nDone when: by finishing one successful run and one failed run, the player can read all four mastery stats clearly on the normal result screen without opening any extra menu.",
-					"done": false
+					"done": true
 				}
 			]
 		},

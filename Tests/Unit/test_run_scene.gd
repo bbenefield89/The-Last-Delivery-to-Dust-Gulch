@@ -1666,7 +1666,9 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 	scene.setup(state)
 	scene._refresh_result_screen()
 
+	var result_summary: Label = scene.get_node("%ResultSummary")
 	var result_stats: Label = scene.get_node("%ResultStats")
+	assert_false(result_summary.visible)
 	assert_string_contains(result_stats.text, "Score: 1565")
 	assert_string_contains(result_stats.text, "Delivery Grade: A")
 	assert_string_contains(result_stats.text, "Health: 41")
@@ -1703,8 +1705,10 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	scene._refresh_result_screen()
 
 	var result_title: Label = scene.get_node("%ResultTitle")
+	var result_summary: Label = scene.get_node("%ResultSummary")
 	var result_stats: Label = scene.get_node("%ResultStats")
 	assert_eq(result_title.text, "Wagon Collapsed")
+	assert_false(result_summary.visible)
 	assert_string_contains(result_stats.text, "Score: 400")
 	assert_string_contains(result_stats.text, "Delivery Grade: F")
 	assert_string_contains(result_stats.text, "Health: 20")
@@ -1714,6 +1718,77 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	assert_string_contains(result_stats.text, "Near Misses: 1")
 	assert_string_contains(result_stats.text, "Perfect Recoveries: 0")
 	assert_string_contains(result_stats.text, "Recovery Failures: 3")
+
+
+func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 0.0
+	state.cargo_value = 88
+	state.wagon_health = 54
+	state.hazards_dodged = 12
+	state.near_misses = 4
+	state.perfect_recoveries = 3
+	state.recovery_failures = 2
+	scene.setup(state)
+	scene._refresh_result_screen()
+	await wait_process_frames(1)
+
+	var viewport_rect: Rect2 = scene.get_viewport_rect()
+	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
+	var result_stats: Label = scene.get_node("%ResultStats")
+	var restart_button: Button = scene.get_node(
+		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+	)
+	var title_button: Button = scene.get_node(
+		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
+	)
+
+	assert_true(result_panel.get_global_rect().position.y >= viewport_rect.position.y)
+	assert_true(result_panel.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(result_stats.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
+	assert_true(restart_button.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
+	assert_true(title_button.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
+
+
+func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_COLLAPSED
+	state.distance_remaining = 4359.0
+	state.route_distance = 10000.0
+	state.cargo_value = 48
+	state.wagon_health = 0
+	state.hazards_dodged = 1
+	state.near_misses = 1
+	state.perfect_recoveries = 1
+	state.recovery_failures = 1
+	scene.setup(state)
+	scene._refresh_result_screen()
+	await wait_process_frames(1)
+
+	var viewport_rect: Rect2 = scene.get_viewport_rect()
+	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
+	var result_stats: Label = scene.get_node("%ResultStats")
+	var restart_button: Button = scene.get_node(
+		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+	)
+	var title_button: Button = scene.get_node(
+		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
+	)
+
+	assert_true(result_panel.get_global_rect().position.y >= viewport_rect.position.y)
+	assert_true(result_panel.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(result_stats.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
+	assert_true(restart_button.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
+	assert_true(title_button.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
 
 
 func test_result_panel_buttons_emit_restart_and_return_signals() -> void:
