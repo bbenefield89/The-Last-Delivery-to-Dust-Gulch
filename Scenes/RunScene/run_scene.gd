@@ -58,12 +58,33 @@ const HORSE_PANIC_DRIFT_SPEED := 150.0
 const HORSE_PANIC_DRIFT_FREQUENCY := 5.0
 const HORSE_PANIC_WOBBLE_DEGREES := 8.0
 const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
-const BAD_LUCK_INTERVAL_EARLY_MIN := 12.0
-const BAD_LUCK_INTERVAL_EARLY_MAX := 14.0
-const BAD_LUCK_INTERVAL_MID_MIN := 9.5
-const BAD_LUCK_INTERVAL_MID_MAX := 11.5
-const BAD_LUCK_INTERVAL_LATE_MIN := 7.5
-const BAD_LUCK_INTERVAL_LATE_MAX := 9.0
+const ROUTE_PHASE_WARM_UP := &"warm_up"
+const ROUTE_PHASE_FIRST_TROUBLE := &"first_trouble"
+const ROUTE_PHASE_CROSSING_BEAT := &"crossing_beat"
+const ROUTE_PHASE_CLUTTER_BEAT := &"clutter_beat"
+const ROUTE_PHASE_RESET_BEFORE_FINALE := &"reset_before_finale"
+const ROUTE_PHASE_WARM_UP_END := 0.20
+const ROUTE_PHASE_FIRST_TROUBLE_END := 0.45
+const ROUTE_PHASE_CROSSING_BEAT_END := 0.60
+const ROUTE_PHASE_CLUTTER_BEAT_END := 0.80
+const ROUTE_PHASE_RESET_BEFORE_FINALE_END := 0.88
+const DISTANCE_BAR_BAND_BOUNDARIES := [
+	ROUTE_PHASE_WARM_UP_END,
+	ROUTE_PHASE_FIRST_TROUBLE_END,
+	ROUTE_PHASE_CROSSING_BEAT_END,
+	ROUTE_PHASE_CLUTTER_BEAT_END,
+	ROUTE_PHASE_RESET_BEFORE_FINALE_END,
+]
+const DISTANCE_BAR_MARKER_COLOR := Color(0.945098, 0.882353, 0.709804, 0.9)
+const DISTANCE_BAR_MARKER_HALF_WIDTH := 1.0
+const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN := 12.0
+const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX := 14.0
+const BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN := 9.5
+const BAD_LUCK_INTERVAL_CROSSING_BEAT_MAX := 11.5
+const BAD_LUCK_INTERVAL_CLUTTER_BEAT_MIN := 7.5
+const BAD_LUCK_INTERVAL_CLUTTER_BEAT_MAX := 9.0
+const BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN := 11.5
+const BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX := 13.5
 const RECOVERY_PROMPT_POOL: Array[StringName] = [
 	&"steer_left",
 	&"steer_right",
@@ -131,8 +152,9 @@ var _impact_wobble_remaining := 0.0
 var _impact_shake_remaining := 0.0
 var _impact_time := 0.0
 var _bad_luck_elapsed := 0.0
-var _scheduled_bad_luck_interval := BAD_LUCK_INTERVAL_EARLY_MIN
+var _scheduled_bad_luck_interval := 0.0
 var _pending_bad_luck_trigger := false
+var _route_phase: StringName = &""
 var _bad_luck_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
@@ -169,6 +191,7 @@ var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGe
 @onready var _health_bar: ProgressBar = %HealthBar
 @onready var _health_label: Label = %HealthLabel
 @onready var _distance_bar: ProgressBar = %DistanceBar
+@onready var _distance_band_markers: Control = %DistanceBandMarkers
 @onready var _cargo_label: Label = %CargoLabel
 @onready var _bonus_callout_panel: Control = %BonusCalloutPanel
 @onready var _bonus_callout_label: Label = %BonusCalloutLabel
@@ -225,9 +248,11 @@ func setup(run_state: RunStateType) -> void:
 	_bonus_callout_anchor_world_position = Vector2.ZERO
 	_bad_luck_elapsed = 0.0
 	_pending_bad_luck_trigger = false
-	_schedule_next_bad_luck_interval()
+	_scheduled_bad_luck_interval = 0.0
+	_route_phase = &""
 	_last_announced_failure = _run_state.active_failure
 	_last_announced_result = _run_state.result
+	_sync_route_phase()
 	_refresh_status()
 	_refresh_onboarding_prompt()
 	_refresh_bonus_callout()
@@ -246,6 +271,7 @@ func _ready() -> void:
 	_configure_environment_art()
 	_ensure_scroll_visuals()
 	_configure_vehicle_sprites()
+	_configure_distance_bar_band_markers()
 	_configure_touch_buttons()
 	_configure_dust_trail()
 	_configure_audio_players()
@@ -349,6 +375,26 @@ func _make_touch_button_stylebox(background_color: Color = RECOVERY_STEP_PENDING
 	return stylebox
 
 
+## Rebuilds the distance bar markers from the authored route-band thresholds.
+func _configure_distance_bar_band_markers() -> void:
+	if _distance_band_markers == null:
+		return
+
+	for child in _distance_band_markers.get_children():
+		child.queue_free()
+
+	for boundary in DISTANCE_BAR_BAND_BOUNDARIES:
+		var marker := ColorRect.new()
+		marker.color = DISTANCE_BAR_MARKER_COLOR
+		marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		marker.anchor_left = boundary
+		marker.anchor_right = boundary
+		marker.anchor_bottom = 1.0
+		marker.offset_left = -DISTANCE_BAR_MARKER_HALF_WIDTH
+		marker.offset_right = DISTANCE_BAR_MARKER_HALF_WIDTH
+		_distance_band_markers.add_child(marker)
+
+
 ## Stops transient input/audio state when the run scene leaves the tree.
 func _exit_tree() -> void:
 	_release_touch_steer_actions()
@@ -445,6 +491,7 @@ func _process(delta: float) -> void:
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
+	_sync_route_phase()
 	_hazard_spawner.advance(_run_state.current_speed * delta, _run_state.get_delivery_progress_ratio())
 	_update_hazard_near_miss_tracking()
 	_apply_hazard_collisions()
@@ -929,6 +976,11 @@ func _advance_failure_triggers(delta: float) -> void:
 		_apply_recovery_failure_penalty()
 		return
 
+	if not _is_timer_bad_luck_enabled():
+		_bad_luck_elapsed = 0.0
+		_pending_bad_luck_trigger = false
+		return
+
 	if _pending_bad_luck_trigger:
 		if _run_state.can_start_failure(&"horse_panic"):
 			_start_failure_and_reschedule_bad_luck(&"horse_panic", &"bad_luck")
@@ -944,6 +996,51 @@ func _advance_failure_triggers(delta: float) -> void:
 		return
 
 	_start_failure_and_reschedule_bad_luck(&"horse_panic", &"bad_luck")
+
+
+## Synchronizes the route phase against the current run progress and refreshes bad-luck timing when it changes.
+func _sync_route_phase() -> void:
+	if _run_state == null:
+		return
+
+	var route_progress_ratio := _run_state.get_delivery_progress_ratio()
+	var next_route_phase := _get_route_phase(route_progress_ratio)
+	if next_route_phase == _route_phase:
+		return
+
+	_route_phase = next_route_phase
+	_handle_route_phase_change()
+
+
+## Applies the timer-bad-luck scheduling rules for the current route phase.
+func _handle_route_phase_change() -> void:
+	_bad_luck_elapsed = 0.0
+	_pending_bad_luck_trigger = false
+	if not _is_timer_bad_luck_enabled():
+		_scheduled_bad_luck_interval = 0.0
+		return
+
+	_schedule_next_bad_luck_interval()
+
+
+## Returns whether timer-driven bad luck should currently run.
+func _is_timer_bad_luck_enabled() -> bool:
+	return _route_phase != &"" and _route_phase != ROUTE_PHASE_WARM_UP
+
+
+## Returns the current authored phase for one route-progress ratio.
+func _get_route_phase(progress_ratio: float) -> StringName:
+	if progress_ratio < ROUTE_PHASE_WARM_UP_END:
+		return ROUTE_PHASE_WARM_UP
+	if progress_ratio < ROUTE_PHASE_FIRST_TROUBLE_END:
+		return ROUTE_PHASE_FIRST_TROUBLE
+	if progress_ratio < ROUTE_PHASE_CROSSING_BEAT_END:
+		return ROUTE_PHASE_CROSSING_BEAT
+	if progress_ratio < ROUTE_PHASE_CLUTTER_BEAT_END:
+		return ROUTE_PHASE_CLUTTER_BEAT
+	if progress_ratio < ROUTE_PHASE_RESET_BEFORE_FINALE_END:
+		return ROUTE_PHASE_RESET_BEFORE_FINALE
+	return ROUTE_PHASE_RESET_BEFORE_FINALE
 
 
 ## Attempts to start a hazard-specific failure when a collision resolves into a failure state.
@@ -962,15 +1059,27 @@ func _attempt_failure_trigger_from_collision(hazard_type: StringName) -> void:
 
 ## Returns the rolled bad-luck interval bounds for the supplied delivery progress ratio.
 func _get_bad_luck_interval_range(progress_ratio: float) -> Vector2:
-	if progress_ratio < 0.33:
-		return Vector2(BAD_LUCK_INTERVAL_EARLY_MIN, BAD_LUCK_INTERVAL_EARLY_MAX)
-	if progress_ratio < 0.66:
-		return Vector2(BAD_LUCK_INTERVAL_MID_MIN, BAD_LUCK_INTERVAL_MID_MAX)
-	return Vector2(BAD_LUCK_INTERVAL_LATE_MIN, BAD_LUCK_INTERVAL_LATE_MAX)
+	match _get_route_phase(progress_ratio):
+		ROUTE_PHASE_FIRST_TROUBLE:
+			return Vector2(BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN, BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX)
+		ROUTE_PHASE_CROSSING_BEAT:
+			return Vector2(BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN, BAD_LUCK_INTERVAL_CROSSING_BEAT_MAX)
+		ROUTE_PHASE_CLUTTER_BEAT:
+			return Vector2(BAD_LUCK_INTERVAL_CLUTTER_BEAT_MIN, BAD_LUCK_INTERVAL_CLUTTER_BEAT_MAX)
+		ROUTE_PHASE_RESET_BEFORE_FINALE:
+			return Vector2(
+				BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN,
+				BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
+			)
+		_:
+			return Vector2.ZERO
 
 
 ## Rolls a fresh bad-luck interval from the current route-progress band.
 func _roll_bad_luck_interval() -> float:
+	if not _is_timer_bad_luck_enabled():
+		return 0.0
+
 	var progress_ratio := 0.0 if _run_state == null else _run_state.get_delivery_progress_ratio()
 	var interval_range := _get_bad_luck_interval_range(progress_ratio)
 	return _bad_luck_rng.randf_range(interval_range.x, interval_range.y)
@@ -978,6 +1087,10 @@ func _roll_bad_luck_interval() -> float:
 
 ## Schedules the next timer-driven bad-luck interval using the current route-progress band.
 func _schedule_next_bad_luck_interval() -> void:
+	if not _is_timer_bad_luck_enabled():
+		_scheduled_bad_luck_interval = 0.0
+		return
+
 	_scheduled_bad_luck_interval = _roll_bad_luck_interval()
 
 

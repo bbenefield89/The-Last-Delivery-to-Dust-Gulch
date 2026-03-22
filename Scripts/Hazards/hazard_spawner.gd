@@ -1,13 +1,12 @@
 class_name HazardSpawner
 extends Node2D
 
-## Spawns readable hazard layouts with route-progress pacing and late-run pressure pairs.
+## Spawns readable hazard layouts with route-progress pacing and phase-based pressure pairs.
 
 const LANE_X_POSITIONS := [-96.0, -64.0, -32.0, 0.0, 32.0, 64.0, 96.0]
 const DEFAULT_SPAWN_Y := -320.0
 const DEFAULT_DESPAWN_Y := 260.0
 const DEFAULT_HAZARD_TYPE := &"pothole"
-const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const PRESSURE_PAIR_Y_OFFSET := 56.0
 const TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MIN := 0.08
 const TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MAX := 0.50
@@ -18,6 +17,16 @@ const TUMBLEWEED_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT := 0.75
 const HAZARD_SIDE_DESPAWN_X := 360.0
+const ROUTE_PHASE_WARM_UP := &"warm_up"
+const ROUTE_PHASE_FIRST_TROUBLE := &"first_trouble"
+const ROUTE_PHASE_CROSSING_BEAT := &"crossing_beat"
+const ROUTE_PHASE_CLUTTER_BEAT := &"clutter_beat"
+const ROUTE_PHASE_RESET_BEFORE_FINALE := &"reset_before_finale"
+const ROUTE_PHASE_WARM_UP_END := 0.20
+const ROUTE_PHASE_FIRST_TROUBLE_END := 0.45
+const ROUTE_PHASE_CROSSING_BEAT_END := 0.60
+const ROUTE_PHASE_CLUTTER_BEAT_END := 0.80
+const ROUTE_PHASE_RESET_BEFORE_FINALE_END := 0.88
 
 # Public Fields: Export
 
@@ -82,7 +91,7 @@ func _prime_next_spawn() -> void:
 	var hazard_type := _roll_hazard_type(band.weights)
 	var lane_index := _roll_lane_index()
 	var plan := SpawnPlan.new(hazard_type, lane_index, _roll_spacing(band))
-	if band.allows_pressure_pair and _route_progress_ratio >= PRESSURE_PAIR_PROGRESS_THRESHOLD:
+	if band.allows_pressure_pair:
 		var pressure_lane := _get_pressure_lane_index(lane_index)
 		if pressure_lane != lane_index:
 			plan.pressure_pair_type = _roll_pressure_pair_type(hazard_type, band.weights)
@@ -117,11 +126,32 @@ func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DE
 
 ## Returns the current band definition for the active route progress.
 func _get_active_band() -> SpawnBand:
-	if _route_progress_ratio < 0.33:
-		return SpawnBand.new(500.0, 620.0, 8, 1, 2, 0, false)
-	if _route_progress_ratio < 0.66:
-		return SpawnBand.new(400.0, 520.0, 5, 2, 4, 1, false)
-	return SpawnBand.new(300.0, 420.0, 4, 2, 5, 1, true)
+	match _get_route_phase(_route_progress_ratio):
+		ROUTE_PHASE_WARM_UP:
+			return SpawnBand.new(520.0, 660.0, 10, 2, 0, 0, false)
+		ROUTE_PHASE_FIRST_TROUBLE:
+			return SpawnBand.new(440.0, 560.0, 6, 2, 2, 0, false)
+		ROUTE_PHASE_CROSSING_BEAT:
+			return SpawnBand.new(340.0, 450.0, 2, 1, 4, 4, true)
+		ROUTE_PHASE_CLUTTER_BEAT:
+			return SpawnBand.new(300.0, 400.0, 5, 4, 1, 0, true)
+		_:
+			return SpawnBand.new(480.0, 620.0, 6, 2, 1, 0, false)
+
+
+## Returns the current authored phase for one route-progress ratio.
+func _get_route_phase(progress_ratio: float) -> StringName:
+	if progress_ratio < ROUTE_PHASE_WARM_UP_END:
+		return ROUTE_PHASE_WARM_UP
+	if progress_ratio < ROUTE_PHASE_FIRST_TROUBLE_END:
+		return ROUTE_PHASE_FIRST_TROUBLE
+	if progress_ratio < ROUTE_PHASE_CROSSING_BEAT_END:
+		return ROUTE_PHASE_CROSSING_BEAT
+	if progress_ratio < ROUTE_PHASE_CLUTTER_BEAT_END:
+		return ROUTE_PHASE_CLUTTER_BEAT
+	if progress_ratio < ROUTE_PHASE_RESET_BEFORE_FINALE_END:
+		return ROUTE_PHASE_RESET_BEFORE_FINALE
+	return ROUTE_PHASE_RESET_BEFORE_FINALE
 
 
 ## Rolls a hazard type from the current band's weights.

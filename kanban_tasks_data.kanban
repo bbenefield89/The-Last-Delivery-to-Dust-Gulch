@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"0ca1b626-31ec-4978-9352-36006543cbb9",
 				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6",
 				"4ff4b0c3-f6cc-4f2d-adba-302a991e4da7"
 			]
@@ -19,7 +18,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"0ca1b626-31ec-4978-9352-36006543cbb9"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -649,7 +650,7 @@
 			"steps": [
 				{
 					"details": "Implement the five fixed route phases above and switch spawn and bad-luck behavior at the listed progress ranges, and write very thorough unit tests for the phase boundaries and profile switches.\n\nDone when: by playing from the start of a run into late progress, each named phase appears in order and its hazard and bad-luck behavior changes at the expected progress window.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add a lightweight on-screen phase cue for each phase change, and write very thorough unit and UI coverage for the cue timing and display.\n\nDone when: by playing through the run, each phase transition shows a short readable cue without interrupting control or opening a new screen.",

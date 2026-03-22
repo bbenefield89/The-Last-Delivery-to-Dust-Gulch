@@ -24,39 +24,49 @@ func _prime_seeded_plan(spawner: Node, seed: int, route_progress_ratio: float) -
 	return spawner._next_spawn_plan
 
 
-func test_progress_bands_define_expected_spacing_ranges_and_weights() -> void:
+## Asserts that each authored route phase resolves to the expected spawn band.
+func _assert_route_phase_band(
+	spawner: Node,
+	progress_ratio: float,
+	expected_phase: StringName,
+	expected_spacing_min: float,
+	expected_spacing_max: float,
+	pothole_weight: int,
+	rock_weight: int,
+	tumbleweed_weight: int,
+	livestock_weight: int,
+	allows_pressure_pair: bool
+) -> void:
+	spawner._route_progress_ratio = progress_ratio
+	var route_phase: StringName = spawner._get_route_phase(progress_ratio)
+	var band: Object = spawner._get_active_band()
+
+	assert_eq(route_phase, expected_phase)
+	assert_eq(band.spacing_min, expected_spacing_min)
+	assert_eq(band.spacing_max, expected_spacing_max)
+	assert_eq(band.weights.pothole, pothole_weight)
+	assert_eq(band.weights.rock, rock_weight)
+	assert_eq(band.weights.tumbleweed, tumbleweed_weight)
+	assert_eq(band.weights.livestock, livestock_weight)
+	assert_eq(band.allows_pressure_pair, allows_pressure_pair)
+
+
+## Verifies the literal DG-26 phase windows switch to the authored spawn profiles.
+func test_route_phase_profiles_define_expected_spacing_ranges_and_weights() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	spawner._route_progress_ratio = 0.0
-	var early_band = spawner._get_active_band()
-	assert_eq(early_band.spacing_min, 500.0)
-	assert_eq(early_band.spacing_max, 620.0)
-	assert_eq(early_band.weights.pothole, 8)
-	assert_eq(early_band.weights.rock, 1)
-	assert_eq(early_band.weights.tumbleweed, 2)
-	assert_eq(early_band.weights.livestock, 0)
-	assert_false(early_band.allows_pressure_pair)
-
-	spawner._route_progress_ratio = 0.5
-	var mid_band = spawner._get_active_band()
-	assert_eq(mid_band.spacing_min, 400.0)
-	assert_eq(mid_band.spacing_max, 520.0)
-	assert_eq(mid_band.weights.pothole, 5)
-	assert_eq(mid_band.weights.rock, 2)
-	assert_eq(mid_band.weights.tumbleweed, 4)
-	assert_eq(mid_band.weights.livestock, 1)
-	assert_false(mid_band.allows_pressure_pair)
-
-	spawner._route_progress_ratio = 0.8
-	var late_band = spawner._get_active_band()
-	assert_eq(late_band.spacing_min, 300.0)
-	assert_eq(late_band.spacing_max, 420.0)
-	assert_eq(late_band.weights.pothole, 4)
-	assert_eq(late_band.weights.rock, 2)
-	assert_eq(late_band.weights.tumbleweed, 5)
-	assert_eq(late_band.weights.livestock, 1)
-	assert_true(late_band.allows_pressure_pair)
+	_assert_route_phase_band(spawner, 0.0, spawner.ROUTE_PHASE_WARM_UP, 520.0, 660.0, 10, 2, 0, 0, false)
+	_assert_route_phase_band(spawner, 0.199, spawner.ROUTE_PHASE_WARM_UP, 520.0, 660.0, 10, 2, 0, 0, false)
+	_assert_route_phase_band(spawner, 0.2, spawner.ROUTE_PHASE_FIRST_TROUBLE, 440.0, 560.0, 6, 2, 2, 0, false)
+	_assert_route_phase_band(spawner, 0.449, spawner.ROUTE_PHASE_FIRST_TROUBLE, 440.0, 560.0, 6, 2, 2, 0, false)
+	_assert_route_phase_band(spawner, 0.45, spawner.ROUTE_PHASE_CROSSING_BEAT, 340.0, 450.0, 2, 1, 4, 4, true)
+	_assert_route_phase_band(spawner, 0.599, spawner.ROUTE_PHASE_CROSSING_BEAT, 340.0, 450.0, 2, 1, 4, 4, true)
+	_assert_route_phase_band(spawner, 0.6, spawner.ROUTE_PHASE_CLUTTER_BEAT, 300.0, 400.0, 5, 4, 1, 0, true)
+	_assert_route_phase_band(spawner, 0.799, spawner.ROUTE_PHASE_CLUTTER_BEAT, 300.0, 400.0, 5, 4, 1, 0, true)
+	_assert_route_phase_band(spawner, 0.8, spawner.ROUTE_PHASE_RESET_BEFORE_FINALE, 480.0, 620.0, 6, 2, 1, 0, false)
+	_assert_route_phase_band(spawner, 0.879, spawner.ROUTE_PHASE_RESET_BEFORE_FINALE, 480.0, 620.0, 6, 2, 1, 0, false)
+	_assert_route_phase_band(spawner, 0.88, spawner.ROUTE_PHASE_RESET_BEFORE_FINALE, 480.0, 620.0, 6, 2, 1, 0, false)
 
 
 func test_seeded_spawn_plan_advance_uses_rolled_lane_and_type_metadata() -> void:
@@ -82,16 +92,16 @@ func test_seeded_spawn_rolls_keep_spacing_inside_band_ranges() -> void:
 
 	for roll_index in range(12):
 		var early_plan = _prime_seeded_plan(spawner, 100 + roll_index, 0.1)
-		assert_true(early_plan.spacing >= 500.0)
-		assert_true(early_plan.spacing <= 620.0)
+		assert_true(early_plan.spacing >= 520.0)
+		assert_true(early_plan.spacing <= 660.0)
 
 		var mid_plan = _prime_seeded_plan(spawner, 200 + roll_index, 0.5)
-		assert_true(mid_plan.spacing >= 400.0)
-		assert_true(mid_plan.spacing <= 520.0)
+		assert_true(mid_plan.spacing >= 340.0)
+		assert_true(mid_plan.spacing <= 450.0)
 
 		var late_plan = _prime_seeded_plan(spawner, 300 + roll_index, 0.9)
-		assert_true(late_plan.spacing >= 300.0)
-		assert_true(late_plan.spacing <= 420.0)
+		assert_true(late_plan.spacing >= 480.0)
+		assert_true(late_plan.spacing <= 620.0)
 
 
 func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
@@ -110,32 +120,51 @@ func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
 	)
 
 
-func test_late_band_rolls_add_pressure_pairs_but_earlier_bands_do_not() -> void:
+## Verifies pressure pairs only appear in the phases that author them.
+func test_route_phase_pressure_pairs_follow_the_authoring_rules() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	var pressure_pair_lane_indices: Dictionary = {}
 	var lane_centers: Array = HazardSpawnerType.LANE_X_POSITIONS
+	var crossing_pressure_pair_count := 0
+	var clutter_pressure_pair_count := 0
 
-	for roll_index in range(12):
-		var early_plan = _prime_seeded_plan(spawner, 500 + roll_index, 0.2)
-		assert_false(early_plan.has_pressure_pair())
+	for roll_index in range(24):
+		assert_false(_prime_seeded_plan(spawner, 500 + roll_index, 0.1).has_pressure_pair())
+		assert_false(_prime_seeded_plan(spawner, 600 + roll_index, 0.3).has_pressure_pair())
 
-		var mid_plan = _prime_seeded_plan(spawner, 600 + roll_index, 0.65)
-		assert_false(mid_plan.has_pressure_pair())
+		var crossing_plan = _prime_seeded_plan(spawner, 700 + roll_index, 0.5)
+		if crossing_plan.has_pressure_pair():
+			crossing_pressure_pair_count += 1
+			assert_ne(crossing_plan.pressure_pair_lane_index, crossing_plan.lane_index)
+			assert_has(lane_centers, HazardSpawnerType.LANE_X_POSITIONS[crossing_plan.lane_index])
+			assert_has(
+				lane_centers,
+				HazardSpawnerType.LANE_X_POSITIONS[crossing_plan.pressure_pair_lane_index]
+			)
+			assert_ne(
+				spawner._is_static_hazard_type(crossing_plan.hazard_type),
+				spawner._is_static_hazard_type(crossing_plan.pressure_pair_type)
+			)
 
-		var late_plan = _prime_seeded_plan(spawner, 700 + roll_index, 0.75)
-		assert_true(late_plan.has_pressure_pair())
-		assert_ne(late_plan.pressure_pair_lane_index, late_plan.lane_index)
-		assert_has(lane_centers, HazardSpawnerType.LANE_X_POSITIONS[late_plan.lane_index])
-		assert_has(lane_centers, HazardSpawnerType.LANE_X_POSITIONS[late_plan.pressure_pair_lane_index])
-		assert_ne(
-			spawner._is_static_hazard_type(late_plan.hazard_type),
-			spawner._is_static_hazard_type(late_plan.pressure_pair_type)
-		)
-		pressure_pair_lane_indices[late_plan.pressure_pair_lane_index] = true
+		var clutter_plan = _prime_seeded_plan(spawner, 800 + roll_index, 0.7)
+		if clutter_plan.has_pressure_pair():
+			clutter_pressure_pair_count += 1
+			assert_ne(clutter_plan.pressure_pair_lane_index, clutter_plan.lane_index)
+			assert_has(lane_centers, HazardSpawnerType.LANE_X_POSITIONS[clutter_plan.lane_index])
+			assert_has(
+				lane_centers,
+				HazardSpawnerType.LANE_X_POSITIONS[clutter_plan.pressure_pair_lane_index]
+			)
+			assert_ne(
+				spawner._is_static_hazard_type(clutter_plan.hazard_type),
+				spawner._is_static_hazard_type(clutter_plan.pressure_pair_type)
+			)
 
-	assert_true(pressure_pair_lane_indices.size() > 1)
+		assert_false(_prime_seeded_plan(spawner, 900 + roll_index, 0.85).has_pressure_pair())
+
+	assert_true(crossing_pressure_pair_count > 0)
+	assert_true(clutter_pressure_pair_count > 0)
 
 
 func test_spawned_static_hazards_only_use_allowed_lane_center_x_positions() -> void:
@@ -149,27 +178,27 @@ func test_spawned_static_hazards_only_use_allowed_lane_center_x_positions() -> v
 		assert_eq(hazard.position.x, HazardSpawnerType.LANE_X_POSITIONS[lane_index])
 
 
-## Confirms livestock remains absent from the opening band but can roll once the run advances.
-func test_spawn_plan_when_band_progress_advances_then_livestock_only_rolls_after_opening() -> void:
+## Confirms moving hazards stay out of warm-up and show up once the first trouble phase starts.
+func test_route_phase_when_sampled_then_moving_hazards_start_after_warm_up() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	var early_rolls: Array[StringName] = []
-	var mid_found := false
-	var late_found := false
+	var warm_up_counts := _sample_primary_hazard_counts(spawner, 0.1, 120, 800)
+	var first_trouble_counts := _sample_primary_hazard_counts(spawner, 0.3, 120, 1000)
+	var crossing_counts := _sample_primary_hazard_counts(spawner, 0.5, 120, 1200)
+	var clutter_counts := _sample_primary_hazard_counts(spawner, 0.7, 120, 1400)
+	var reset_counts := _sample_primary_hazard_counts(spawner, 0.85, 120, 1600)
 
-	for roll_index in range(120):
-		early_rolls.append(_prime_seeded_plan(spawner, 800 + roll_index, 0.2).hazard_type)
-
-		if _prime_seeded_plan(spawner, 1000 + roll_index, 0.5).hazard_type == &"livestock":
-			mid_found = true
-
-		if _prime_seeded_plan(spawner, 1200 + roll_index, 0.85).hazard_type == &"livestock":
-			late_found = true
-
-	assert_false(early_rolls.has(&"livestock"))
-	assert_true(mid_found)
-	assert_true(late_found)
+	assert_eq(warm_up_counts[&"tumbleweed"], 0)
+	assert_eq(warm_up_counts[&"livestock"], 0)
+	assert_true(first_trouble_counts[&"tumbleweed"] > 0)
+	assert_eq(first_trouble_counts[&"livestock"], 0)
+	assert_true(crossing_counts[&"tumbleweed"] > 0)
+	assert_true(crossing_counts[&"livestock"] > 0)
+	assert_true(clutter_counts[&"pothole"] > clutter_counts[&"tumbleweed"])
+	assert_true(clutter_counts[&"rock"] > clutter_counts[&"livestock"])
+	assert_true(reset_counts[&"pothole"] > reset_counts[&"rock"])
+	assert_true(reset_counts[&"tumbleweed"] > 0)
 
 
 func test_each_hazard_type_uses_a_distinct_readable_sprite() -> void:
@@ -344,11 +373,12 @@ func test_collect_collisions_reports_profile_damage_for_intersecting_hazard() ->
 	assert_eq(collisions[0]["cargo_damage"], 2)
 
 
+## Verifies the lighter phases still keep potholes more common than rocks.
 func test_spawn_bands_when_sampled_many_times_then_potholes_outnumber_rocks() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	for progress_ratio in [0.1, 0.5, 0.85]:
+	for progress_ratio in [0.1, 0.3, 0.85]:
 		var pothole_count := 0
 		var rock_count := 0
 		for roll_index in range(240):
@@ -361,42 +391,69 @@ func test_spawn_bands_when_sampled_many_times_then_potholes_outnumber_rocks() ->
 		assert_true(pothole_count > rock_count)
 
 
-func test_spawn_usage_when_sampled_across_progress_bands_then_roles_follow_the_intended_mix() -> void:
+## Verifies each authored route phase produces the intended hazard mix.
+func test_spawn_usage_when_sampled_across_route_phases_then_roles_follow_the_intended_mix() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	var early_counts := _sample_primary_hazard_counts(spawner, 0.2, 600, 3000)
-	var mid_counts := _sample_primary_hazard_counts(spawner, 0.5, 600, 4000)
-	var late_counts := _sample_primary_hazard_counts(spawner, 0.85, 600, 5000)
+	var warm_up_counts := _sample_primary_hazard_counts(spawner, 0.1, 600, 3000)
+	var first_trouble_counts := _sample_primary_hazard_counts(spawner, 0.3, 600, 4000)
+	var crossing_counts := _sample_primary_hazard_counts(spawner, 0.5, 600, 5000)
+	var clutter_counts := _sample_primary_hazard_counts(spawner, 0.7, 600, 6000)
+	var reset_counts := _sample_primary_hazard_counts(spawner, 0.85, 600, 7000)
 
-	assert_true(early_counts[&"pothole"] > early_counts[&"tumbleweed"])
-	assert_true(early_counts[&"tumbleweed"] > early_counts[&"rock"])
-	assert_eq(early_counts[&"livestock"], 0)
+	assert_eq(warm_up_counts[&"tumbleweed"], 0)
+	assert_eq(warm_up_counts[&"livestock"], 0)
+	assert_true(warm_up_counts[&"pothole"] > warm_up_counts[&"rock"])
 
-	assert_true(mid_counts[&"pothole"] > mid_counts[&"tumbleweed"])
-	assert_true(mid_counts[&"tumbleweed"] > mid_counts[&"rock"])
-	assert_true(mid_counts[&"rock"] > mid_counts[&"livestock"])
+	assert_true(first_trouble_counts[&"pothole"] > first_trouble_counts[&"rock"])
+	assert_true(first_trouble_counts[&"tumbleweed"] > 0)
+	assert_eq(first_trouble_counts[&"livestock"], 0)
 
-	assert_true(late_counts[&"tumbleweed"] > late_counts[&"pothole"])
-	assert_true(late_counts[&"pothole"] > late_counts[&"rock"])
-	assert_true(late_counts[&"rock"] >= late_counts[&"livestock"])
+	assert_true(crossing_counts[&"tumbleweed"] > 0)
+	assert_true(crossing_counts[&"livestock"] > 0)
+	assert_true(
+		crossing_counts[&"tumbleweed"] + crossing_counts[&"livestock"]
+			> crossing_counts[&"pothole"] + crossing_counts[&"rock"]
+	)
+
+	assert_true(clutter_counts[&"pothole"] > clutter_counts[&"tumbleweed"])
+	assert_true(clutter_counts[&"rock"] > clutter_counts[&"livestock"])
+	assert_true(
+		clutter_counts[&"pothole"] + clutter_counts[&"rock"]
+			> clutter_counts[&"tumbleweed"] + clutter_counts[&"livestock"]
+	)
+
+	assert_true(reset_counts[&"pothole"] > reset_counts[&"rock"])
+	assert_true(reset_counts[&"tumbleweed"] > 0)
+	assert_eq(reset_counts[&"livestock"], 0)
 
 
-func test_pressure_pairs_when_sampled_late_then_static_and_timing_roles_are_mixed() -> void:
+## Verifies pressure pairs only mix static and timing roles in the two middle route phases.
+func test_route_phase_when_sampled_then_pressure_pairs_mix_static_and_timing_roles() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
 	var static_primary_count := 0
 	var timing_primary_count := 0
 	for roll_index in range(180):
-		var late_plan = _prime_seeded_plan(spawner, 6000 + roll_index, 0.85)
-		assert_true(late_plan.has_pressure_pair())
-		if spawner._is_static_hazard_type(late_plan.hazard_type):
+		var crossing_plan = _prime_seeded_plan(spawner, 6000 + roll_index, 0.5)
+		assert_true(crossing_plan.has_pressure_pair())
+		if spawner._is_static_hazard_type(crossing_plan.hazard_type):
 			static_primary_count += 1
-			assert_false(spawner._is_static_hazard_type(late_plan.pressure_pair_type))
+			assert_false(spawner._is_static_hazard_type(crossing_plan.pressure_pair_type))
 		else:
 			timing_primary_count += 1
-			assert_true(spawner._is_static_hazard_type(late_plan.pressure_pair_type))
+			assert_true(spawner._is_static_hazard_type(crossing_plan.pressure_pair_type))
+
+		var clutter_plan = _prime_seeded_plan(spawner, 7000 + roll_index, 0.7)
+		assert_true(clutter_plan.has_pressure_pair())
+		if spawner._is_static_hazard_type(clutter_plan.hazard_type):
+			static_primary_count += 1
+			assert_false(spawner._is_static_hazard_type(clutter_plan.pressure_pair_type))
+		else:
+			timing_primary_count += 1
+			assert_true(spawner._is_static_hazard_type(clutter_plan.pressure_pair_type))
 
 	assert_true(static_primary_count > 0)
 	assert_true(timing_primary_count > 0)

@@ -28,6 +28,13 @@ func _setup_active_run(scene: Node, state: RunStateType) -> void:
 	_dismiss_onboarding(scene)
 
 
+## Starts a run at a specific delivery progress ratio before dismissing onboarding.
+func _setup_active_run_at_progress(scene: Node, state: RunStateType, progress_ratio: float) -> void:
+	state.distance_remaining = state.route_distance * (1.0 - progress_ratio)
+	scene.setup(state)
+	_dismiss_onboarding(scene)
+
+
 ## Forces touch controls on for tests that exercise the native mobile runtime path.
 func _enable_touch_controls_for_native_mobile(scene: Node) -> void:
 	scene._has_native_mobile_runtime_override = true
@@ -499,19 +506,31 @@ func test_scroll_segment_populates_enough_roadside_scrub_to_cover_loop_end() -> 
 	assert_true(left_scrub_positions.back() >= 0.0)
 
 
-func test_late_route_progress_spawns_more_hazard_pressure() -> void:
-	var scene = RUN_SCENE.instantiate()
-	add_child_autofree(scene)
+## Verifies the scene flow keeps crossing beat pressure pairs enabled and the reset phase disabled.
+func test_crossing_beat_and_reset_before_finale_switch_hazard_pressure_rules() -> void:
+	var crossing_scene = RUN_SCENE.instantiate()
+	add_child_autofree(crossing_scene)
 	await wait_process_frames(1)
 
-	var state := RunStateType.new()
-	state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.2
-	_setup_active_run(scene, state)
+	var crossing_state := RunStateType.new()
+	crossing_state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.5
+	_setup_active_run(crossing_scene, crossing_state)
+	var crossing_spawner = crossing_scene.get_node("%HazardSpawner")
+	crossing_scene._process(0.0)
+	assert_eq(crossing_scene._route_phase, crossing_scene.ROUTE_PHASE_CROSSING_BEAT)
+	assert_true(crossing_spawner._get_active_band().allows_pressure_pair)
 
-	var spawner = scene.get_node("%HazardSpawner")
-	scene._process(2.0)
+	var reset_scene = RUN_SCENE.instantiate()
+	add_child_autofree(reset_scene)
+	await wait_process_frames(1)
 
-	assert_true(spawner.get_child_count() >= 2)
+	var reset_state := RunStateType.new()
+	reset_state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.2
+	_setup_active_run(reset_scene, reset_state)
+	var reset_spawner = reset_scene.get_node("%HazardSpawner")
+	reset_scene._process(0.0)
+	assert_eq(reset_scene._route_phase, reset_scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
+	assert_false(reset_spawner._get_active_band().allows_pressure_pair)
 
 
 func test_reaching_dust_gulch_triggers_success_and_stops_forward_motion() -> void:
@@ -604,15 +623,15 @@ func test_tumbleweed_collision_triggers_horse_panic_failure() -> void:
 	assert_eq(state.current_failure.source_hazard, &"tumbleweed")
 
 
+## Verifies timer bad luck still fires in the reset-before-finale phase.
 func test_bad_luck_timer_triggers_failure_when_no_active_failure_exists() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	state.distance_remaining = RunStateType.DEFAULT_ROUTE_DISTANCE * 0.2
 	scene._bad_luck_rng.seed = 7
-	scene.setup(state)
+	_setup_active_run_at_progress(scene, state, 0.8)
 
 	scene._advance_failure_triggers(scene._scheduled_bad_luck_interval)
 
@@ -620,29 +639,73 @@ func test_bad_luck_timer_triggers_failure_when_no_active_failure_exists() -> voi
 	assert_eq(state.current_failure.source_hazard, &"bad_luck")
 	assert_eq(scene._bad_luck_elapsed, 0.0)
 	assert_false(scene._pending_bad_luck_trigger)
-	assert_true(scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_LATE_MIN)
-	assert_true(scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_LATE_MAX)
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
+	assert_true(
+		scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN
+	)
+	assert_true(
+		scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
+	)
 
 
-func test_bad_luck_interval_range_uses_progress_bands() -> void:
+## Verifies the timer bad-luck ranges line up with the authored phase windows.
+func test_bad_luck_interval_range_uses_route_phase_windows() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
 	assert_eq(
+		scene._get_bad_luck_interval_range(0.1),
+		Vector2.ZERO
+	)
+	assert_eq(
 		scene._get_bad_luck_interval_range(0.2),
-		Vector2(scene.BAD_LUCK_INTERVAL_EARLY_MIN, scene.BAD_LUCK_INTERVAL_EARLY_MAX)
+		Vector2(
+			scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN,
+			scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
+		)
 	)
 	assert_eq(
-		scene._get_bad_luck_interval_range(0.5),
-		Vector2(scene.BAD_LUCK_INTERVAL_MID_MIN, scene.BAD_LUCK_INTERVAL_MID_MAX)
+		scene._get_bad_luck_interval_range(0.45),
+		Vector2(
+			scene.BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN,
+			scene.BAD_LUCK_INTERVAL_CROSSING_BEAT_MAX
+		)
 	)
 	assert_eq(
-		scene._get_bad_luck_interval_range(0.9),
-		Vector2(scene.BAD_LUCK_INTERVAL_LATE_MIN, scene.BAD_LUCK_INTERVAL_LATE_MAX)
+		scene._get_bad_luck_interval_range(0.6),
+		Vector2(
+			scene.BAD_LUCK_INTERVAL_CLUTTER_BEAT_MIN,
+			scene.BAD_LUCK_INTERVAL_CLUTTER_BEAT_MAX
+		)
+	)
+	assert_eq(
+		scene._get_bad_luck_interval_range(0.85),
+		Vector2(
+			scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN,
+			scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
+		)
 	)
 
 
+## Verifies warm-up suppresses timer bad luck until the first trouble phase starts.
+func test_bad_luck_timer_when_run_starts_in_warm_up_then_it_stays_disabled() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	scene._advance_failure_triggers(10.0)
+
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_WARM_UP)
+	assert_eq(scene._scheduled_bad_luck_interval, 0.0)
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_eq(state.active_failure, &"")
+
+
+## Verifies setup disables timer bad luck in warm-up and schedules it once phases activate.
 func test_setup_rolls_first_bad_luck_interval_from_current_progress_band() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -650,16 +713,30 @@ func test_setup_rolls_first_bad_luck_interval_from_current_progress_band() -> vo
 
 	scene._bad_luck_rng.seed = 19
 
-	var early_state := RunStateType.new()
-	scene.setup(early_state)
-	assert_true(scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_EARLY_MIN)
-	assert_true(scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_EARLY_MAX)
+	var warm_up_state := RunStateType.new()
+	scene.setup(warm_up_state)
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_WARM_UP)
+	assert_eq(scene._scheduled_bad_luck_interval, 0.0)
 
-	var late_state := RunStateType.new()
-	late_state.distance_remaining = late_state.route_distance * 0.1
-	scene.setup(late_state)
-	assert_true(scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_LATE_MIN)
-	assert_true(scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_LATE_MAX)
+	var first_trouble_state := RunStateType.new()
+	_setup_active_run_at_progress(scene, first_trouble_state, 0.2)
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FIRST_TROUBLE)
+	assert_true(
+		scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN
+	)
+	assert_true(
+		scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
+	)
+
+	var reset_state := RunStateType.new()
+	_setup_active_run_at_progress(scene, reset_state, 0.85)
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
+	assert_true(
+		scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN
+	)
+	assert_true(
+		scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
+	)
 
 
 func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
@@ -677,6 +754,7 @@ func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
 	assert_eq(state.current_failure.source_hazard, &"rock")
 
 
+## Verifies collision-triggered failures reschedule timer bad luck using the active phase.
 func test_collision_trigger_reschedules_bad_luck_interval_when_failure_starts() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -684,7 +762,7 @@ func test_collision_trigger_reschedules_bad_luck_interval_when_failure_starts() 
 
 	var state := RunStateType.new()
 	scene._bad_luck_rng.seed = 31
-	_setup_active_run(scene, state)
+	_setup_active_run_at_progress(scene, state, 0.3)
 	scene._scheduled_bad_luck_interval = 99.0
 	scene._bad_luck_elapsed = 5.0
 	scene._pending_bad_luck_trigger = true
@@ -695,8 +773,13 @@ func test_collision_trigger_reschedules_bad_luck_interval_when_failure_starts() 
 	assert_eq(state.current_failure.source_hazard, &"rock")
 	assert_eq(scene._bad_luck_elapsed, 0.0)
 	assert_false(scene._pending_bad_luck_trigger)
-	assert_true(scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_EARLY_MIN)
-	assert_true(scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_EARLY_MAX)
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FIRST_TROUBLE)
+	assert_true(
+		scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN
+	)
+	assert_true(
+		scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
+	)
 
 
 func test_bad_luck_timer_arms_one_pending_trigger_during_recovery_cooldown() -> void:
@@ -705,7 +788,7 @@ func test_bad_luck_timer_arms_one_pending_trigger_during_recovery_cooldown() -> 
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	_setup_active_run(scene, state)
+	_setup_active_run_at_progress(scene, state, 0.3)
 	state.recovery_cooldown_remaining = 0.5
 	scene._scheduled_bad_luck_interval = 0.2
 	scene._bad_luck_elapsed = 0.0
@@ -729,7 +812,7 @@ func test_bad_luck_timer_arms_one_pending_trigger_during_active_failure() -> voi
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	_setup_active_run(scene, state)
+	_setup_active_run_at_progress(scene, state, 0.3)
 	state.start_failure(&"wheel_loose", &"rock")
 	scene._scheduled_bad_luck_interval = 0.2
 	scene._bad_luck_elapsed = 0.0
@@ -749,7 +832,7 @@ func test_pending_bad_luck_fires_on_first_frame_after_cooldown_clears() -> void:
 
 	var state := RunStateType.new()
 	scene._bad_luck_rng.seed = 47
-	_setup_active_run(scene, state)
+	_setup_active_run_at_progress(scene, state, 0.3)
 	state.recovery_cooldown_remaining = 0.1
 	scene._scheduled_bad_luck_interval = 0.05
 
@@ -768,7 +851,7 @@ func test_pending_bad_luck_does_not_stack_or_reroll_while_blocked() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	_setup_active_run(scene, state)
+	_setup_active_run_at_progress(scene, state, 0.3)
 	state.recovery_cooldown_remaining = 0.6
 	scene._scheduled_bad_luck_interval = 0.2
 	scene._bad_luck_elapsed = 0.0
@@ -1363,8 +1446,7 @@ func test_hud_panel_uses_compact_health_distance_and_cargo_layout() -> void:
 	var distance_bar_overlay: Control = scene.get_node(
 		"HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay"
 	)
-	var band_marker_one: ColorRect = scene.get_node("%BandMarkerOne")
-	var band_marker_two: ColorRect = scene.get_node("%BandMarkerTwo")
+	var distance_band_markers: Control = scene.get_node("%DistanceBandMarkers")
 	var health_label: Label = scene.get_node("%HealthLabel")
 	var cargo_label: Label = scene.get_node("%CargoLabel")
 
@@ -1374,10 +1456,14 @@ func test_hud_panel_uses_compact_health_distance_and_cargo_layout() -> void:
 	assert_not_null(health_bar)
 	assert_not_null(distance_bar)
 	assert_not_null(distance_bar_overlay)
-	assert_almost_eq(band_marker_one.anchor_left, 0.333333, 0.00001)
-	assert_almost_eq(band_marker_one.anchor_right, 0.333333, 0.00001)
-	assert_almost_eq(band_marker_two.anchor_left, 0.666667, 0.00001)
-	assert_almost_eq(band_marker_two.anchor_right, 0.666667, 0.00001)
+	assert_not_null(distance_band_markers)
+	assert_eq(distance_band_markers.get_child_count(), scene.DISTANCE_BAR_BAND_BOUNDARIES.size())
+	for marker_index in range(distance_band_markers.get_child_count()):
+		var band_marker := distance_band_markers.get_child(marker_index) as ColorRect
+		var expected_boundary: float = scene.DISTANCE_BAR_BAND_BOUNDARIES[marker_index]
+		assert_not_null(band_marker)
+		assert_almost_eq(band_marker.anchor_left, expected_boundary, 0.00001)
+		assert_almost_eq(band_marker.anchor_right, expected_boundary, 0.00001)
 	assert_not_null(health_label)
 	assert_not_null(cargo_label)
 	assert_false(scene.has_node("%SpeedLabel"))
