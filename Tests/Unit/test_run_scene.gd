@@ -132,6 +132,38 @@ func test_route_phase_when_transitioning_from_reset_then_final_stretch_callout_a
 	_assert_phase_callout_for_transition(scene, state, 0.87, 0.05, "FINAL STRETCH")
 
 
+## Verifies the finale state takes over at 0.88 progress and clears any armed timer bad luck.
+func test_route_phase_when_progress_enters_final_stretch_then_bad_luck_is_disabled() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene._bad_luck_rng.seed = 7
+	_setup_active_run_at_progress(scene, state, 0.879)
+
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
+	assert_true(scene._is_timer_bad_luck_enabled())
+	assert_true(scene._scheduled_bad_luck_interval > 0.0)
+
+	state.distance_remaining = state.route_distance * 0.12
+	scene._process(0.0)
+
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
+	assert_false(scene._is_timer_bad_luck_enabled())
+	assert_eq(scene._scheduled_bad_luck_interval, 0.0)
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_false(scene._pending_bad_luck_trigger)
+
+	scene._advance_failure_triggers(999.0)
+
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
+	assert_eq(state.active_failure, &"")
+	assert_eq(scene._scheduled_bad_luck_interval, 0.0)
+	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_false(scene._pending_bad_luck_trigger)
+
+
 func test_dismissing_onboarding_when_run_starts_then_warm_up_callout_appears() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -801,6 +833,8 @@ func test_bad_luck_interval_range_uses_route_phase_windows() -> void:
 			scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
 		)
 	)
+	assert_eq(scene._get_route_phase(0.88), scene.ROUTE_PHASE_FINAL_STRETCH)
+	assert_eq(scene._get_bad_luck_interval_range(0.88), Vector2.ZERO)
 
 
 ## Verifies warm-up suppresses timer bad luck until the first trouble phase starts.

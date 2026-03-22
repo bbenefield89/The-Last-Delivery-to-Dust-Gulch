@@ -11,14 +11,15 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6",
 				"4ff4b0c3-f6cc-4f2d-adba-302a991e4da7"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -669,7 +670,7 @@
 			"steps": [
 				{
 					"details": "Add the finale state at `0.88` progress, show the `FINAL STRETCH` cue when it begins, suppress timer-driven bad luck for the rest of the run, and write very thorough unit tests for finale entry and bad-luck suppression.\n\nDone when: by playing into the last 12 percent of the route, the player sees `FINAL STRETCH` once and does not receive any further timer-driven bad-luck interruptions before the finish.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Implement the fixed four-beat finale sequence exactly as defined above, and write very thorough unit tests for finale beat order and survivable-path constraints.\n\nDone when: by playing the finale multiple times, the same four hazard beats always appear in the same order and each pressure beat still leaves one survivable path.",

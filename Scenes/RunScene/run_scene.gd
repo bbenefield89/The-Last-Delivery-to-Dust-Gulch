@@ -1078,7 +1078,11 @@ func _handle_route_phase_change() -> void:
 
 ## Returns whether timer-driven bad luck should currently run.
 func _is_timer_bad_luck_enabled() -> bool:
-	return _route_phase != &"" and _route_phase != ROUTE_PHASE_WARM_UP
+	return (
+		_route_phase != &""
+		and _route_phase != ROUTE_PHASE_WARM_UP
+		and _route_phase != ROUTE_PHASE_FINAL_STRETCH
+	)
 
 
 ## Returns the current authored phase for one route-progress ratio.
@@ -1093,14 +1097,12 @@ func _get_route_phase(progress_ratio: float) -> StringName:
 		return ROUTE_PHASE_CLUTTER_BEAT
 	if progress_ratio < ROUTE_PHASE_RESET_BEFORE_FINALE_END:
 		return ROUTE_PHASE_RESET_BEFORE_FINALE
-	return ROUTE_PHASE_RESET_BEFORE_FINALE
-
-
-## Returns the current cue region for one route-progress ratio, including the finale placeholder chunk.
-func _get_route_phase_callout_zone(progress_ratio: float) -> StringName:
-	if progress_ratio < ROUTE_PHASE_RESET_BEFORE_FINALE_END:
-		return _get_route_phase(progress_ratio)
 	return ROUTE_PHASE_FINAL_STRETCH
+
+
+## Returns the current cue region for one route-progress ratio.
+func _get_route_phase_callout_zone(progress_ratio: float) -> StringName:
+	return _get_route_phase(progress_ratio)
 
 
 ## Returns a readable label for the current authored route phase.
