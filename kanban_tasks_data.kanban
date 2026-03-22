@@ -17,13 +17,13 @@
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
-				"4ff4b0c3-f6cc-4f2d-adba-302a991e4da7"
 			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"4ff4b0c3-f6cc-4f2d-adba-302a991e4da7",
 				"0ca1b626-31ec-4978-9352-36006543cbb9",
 				"e0958d3a-e763-454c-a978-271443797d74",
 				"18282a78-c593-4d8b-bb37-bcf2350354f8",
@@ -698,7 +698,7 @@
 				},
 				{
 					"details": "Add keyboard navigation and default focus to the result and post-run flow, then verify the full start-to-finish loop remains mouse-free and write very thorough unit or UI tests for the final flow behavior.\n\nDone when: by completing or failing a run with only the keyboard, the player can use the result screen actions with the keyboard and return to the next intended state without needing pointer input anywhere in the full game loop.",
-					"done": false
+					"done": true
 				}
 			]
 		}

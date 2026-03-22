@@ -2071,6 +2071,106 @@ func test_result_panel_stays_hidden_during_active_run() -> void:
 	assert_false(result_panel.visible)
 
 
+## Verifies the result screen lands keyboard focus on restart as soon as it opens.
+func test_result_panel_when_opened_then_restart_button_has_default_focus() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 0.0
+	state.cargo_value = 88
+	state.wagon_health = 54
+	scene.setup(state)
+	scene._refresh_result_screen()
+	await wait_process_frames(1)
+
+	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
+	var return_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton")
+	assert_true(restart_button.has_focus())
+	assert_false(return_button.has_focus())
+
+
+## Verifies the result buttons move focus predictably with keyboard navigation.
+func test_result_panel_when_open_then_keyboard_navigation_moves_between_actions() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_COLLAPSED
+	state.distance_remaining = 375.0
+	state.cargo_value = 10
+	state.wagon_health = 20
+	scene.setup(state)
+	scene._refresh_result_screen()
+	await wait_process_frames(1)
+
+	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
+	var return_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton")
+	assert_true(restart_button.has_focus())
+
+	await _send_key_input(KEY_RIGHT)
+
+	assert_false(restart_button.has_focus())
+	assert_true(return_button.has_focus())
+
+	await _send_key_input(KEY_LEFT)
+
+	assert_true(restart_button.has_focus())
+	assert_false(return_button.has_focus())
+
+
+## Verifies keyboard confirm activates the focused restart result action.
+func test_result_panel_when_confirming_focused_restart_then_restart_requested_emits() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 0.0
+	state.cargo_value = 88
+	state.wagon_health = 54
+	scene.setup(state)
+	scene._refresh_result_screen()
+	await wait_process_frames(1)
+
+	var ui_click_player: AudioStreamPlayer = scene.get_node("%UIClickPlayer")
+	ui_click_player.stream = null
+
+	watch_signals(scene)
+	await _send_key_input(KEY_ENTER)
+
+	assert_signal_emitted(scene, "restart_requested")
+
+
+## Verifies keyboard confirm activates the focused return-to-title result action.
+func test_result_panel_when_confirming_focused_return_then_return_to_title_requested_emits() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 0.0
+	state.cargo_value = 88
+	state.wagon_health = 54
+	scene.setup(state)
+	scene._refresh_result_screen()
+	await wait_process_frames(1)
+
+	var ui_click_player: AudioStreamPlayer = scene.get_node("%UIClickPlayer")
+	ui_click_player.stream = null
+	await _send_key_input(KEY_RIGHT)
+
+	watch_signals(scene)
+	await _send_key_input(KEY_ENTER)
+
+	assert_signal_emitted(scene, "return_to_title_requested")
+
+
 ## Verifies the success result panel shows score and grade alongside the stat summary.
 func test_result_panel_includes_score_grade_and_small_stats_summary_for_success() -> void:
 	var scene = RUN_SCENE.instantiate()

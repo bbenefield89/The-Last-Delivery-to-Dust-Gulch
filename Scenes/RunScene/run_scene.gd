@@ -299,6 +299,7 @@ func _ready() -> void:
 	_result_restart_button.pressed.connect(_on_result_restart_pressed)
 	_result_return_button.pressed.connect(_on_result_return_to_title_pressed)
 	_configure_pause_menu_navigation()
+	_configure_result_menu_navigation()
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
@@ -699,6 +700,32 @@ func _configure_pause_menu_navigation() -> void:
 	_pause_return_button.focus_next = return_to_resume
 
 
+## Configures explicit keyboard focus traversal for the result screen buttons.
+func _configure_result_menu_navigation() -> void:
+	if _result_restart_button == null or _result_return_button == null:
+		return
+
+	_result_restart_button.focus_mode = Control.FOCUS_ALL
+	_result_return_button.focus_mode = Control.FOCUS_ALL
+
+	var restart_to_return := _result_restart_button.get_path_to(_result_return_button)
+	var return_to_restart := _result_return_button.get_path_to(_result_restart_button)
+
+	_result_restart_button.focus_neighbor_top = restart_to_return
+	_result_restart_button.focus_neighbor_bottom = restart_to_return
+	_result_restart_button.focus_neighbor_left = restart_to_return
+	_result_restart_button.focus_neighbor_right = restart_to_return
+	_result_restart_button.focus_previous = restart_to_return
+	_result_restart_button.focus_next = restart_to_return
+
+	_result_return_button.focus_neighbor_top = return_to_restart
+	_result_return_button.focus_neighbor_bottom = return_to_restart
+	_result_return_button.focus_neighbor_left = return_to_restart
+	_result_return_button.focus_neighbor_right = return_to_restart
+	_result_return_button.focus_previous = return_to_restart
+	_result_return_button.focus_next = return_to_restart
+
+
 ## Refreshes pause-menu visibility for the active run.
 func _refresh_pause_menu() -> void:
 	if _pause_overlay == null or _pause_panel == null:
@@ -763,6 +790,13 @@ func _refresh_result_screen() -> void:
 		_run_state.perfect_recoveries,
 		_run_state.recovery_failures,
 	]	
+	if (
+		_result_restart_button != null
+		and _result_return_button != null
+		and not _result_restart_button.has_focus()
+		and not _result_return_button.has_focus()
+	):
+		_focus_default_result_button()
 
 
 ## Persists a newly completed run exactly once when it beats the stored best score.
@@ -1882,6 +1916,13 @@ func _focus_default_pause_button() -> void:
 	if _pause_resume_button == null:
 		return
 	_pause_resume_button.grab_focus()
+
+
+## Gives the result screen a deterministic starting focus for keyboard-only play.
+func _focus_default_result_button() -> void:
+	if _result_restart_button == null:
+		return
+	_result_restart_button.grab_focus()
 
 
 ## Resumes gameplay after playing the pause-menu click cue.
