@@ -60,6 +60,9 @@ The intended emotional arc is:
 - desperate final stretch
 - either a messy success or total breakdown
 
+The final stretch should stay readable but not fully scripted. It should use a sharper late-run hazard profile with bad luck suspended,
+while still keeping enough RNG that repeated runs do not end on the exact same pattern.
+
 ## Camera and Controls
 
 ### Camera

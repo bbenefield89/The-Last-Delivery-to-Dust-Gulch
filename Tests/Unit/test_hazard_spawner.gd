@@ -20,6 +20,7 @@ func _create_seeded_spawner() -> Node:
 func _prime_seeded_plan(spawner: Node, seed: int, route_progress_ratio: float) -> Variant:
 	spawner._rng.seed = seed
 	spawner._route_progress_ratio = route_progress_ratio
+	spawner._active_route_phase = spawner._get_route_phase(route_progress_ratio)
 	spawner._prime_next_spawn()
 	return spawner._next_spawn_plan
 
@@ -191,14 +192,14 @@ func test_route_phase_profiles_define_expected_spacing_ranges_and_weights() -> v
 	_assert_route_phase_band(
 		spawner,
 		0.88,
-		spawner.ROUTE_PHASE_RESET_BEFORE_FINALE,
-		320.0,
-		420.0,
-		5,
-		4,
-		1,
-		0,
-		false,
+		spawner.ROUTE_PHASE_FINAL_STRETCH,
+		spawner.FINAL_STRETCH_SPACING_MIN,
+		spawner.FINAL_STRETCH_SPACING_MAX,
+		spawner.FINAL_STRETCH_POTHOLE_WEIGHT,
+		spawner.FINAL_STRETCH_ROCK_WEIGHT,
+		spawner.FINAL_STRETCH_TUMBLEWEED_WEIGHT,
+		spawner.FINAL_STRETCH_LIVESTOCK_WEIGHT,
+		true,
 		spawner.FULL_ROAD_LANE_INDICES
 	)
 
@@ -233,9 +234,69 @@ func test_seeded_spawn_rolls_keep_spacing_inside_band_ranges() -> void:
 		assert_true(mid_plan.spacing >= 230.0)
 		assert_true(mid_plan.spacing <= 320.0)
 
-		var late_plan = _prime_seeded_plan(spawner, 300 + roll_index, 0.9)
+		var late_plan = _prime_seeded_plan(spawner, 300 + roll_index, 0.85)
 		assert_true(late_plan.spacing >= 320.0)
 		assert_true(late_plan.spacing <= 420.0)
+
+		var final_stretch_plan = _prime_seeded_plan(spawner, 400 + roll_index, 0.9)
+		assert_true(final_stretch_plan.spacing >= spawner.FINAL_STRETCH_SPACING_MIN)
+		assert_true(final_stretch_plan.spacing <= spawner.FINAL_STRETCH_SPACING_MAX)
+
+
+## Verifies the final stretch keeps RNG by varying hazard mix, lane use, spacing, and pressure pairs.
+func test_final_stretch_when_sampled_then_hazard_order_lane_use_and_spacing_vary() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var final_stretch_hazard_types: Dictionary = {}
+	var final_stretch_lane_indices: Dictionary = {}
+	var min_spacing := INF
+	var max_spacing := 0.0
+	var pressure_pair_count := 0
+
+	for roll_index in range(240):
+		var final_stretch_plan = _prime_seeded_plan(spawner, 8000 + roll_index, 0.9)
+		final_stretch_hazard_types[final_stretch_plan.hazard_type] = true
+		final_stretch_lane_indices[final_stretch_plan.lane_index] = true
+		min_spacing = minf(min_spacing, final_stretch_plan.spacing)
+		max_spacing = maxf(max_spacing, final_stretch_plan.spacing)
+		if final_stretch_plan.has_pressure_pair():
+			pressure_pair_count += 1
+			assert_ne(final_stretch_plan.pressure_pair_lane_index, final_stretch_plan.lane_index)
+			assert_ne(
+				spawner._is_static_hazard_type(final_stretch_plan.hazard_type),
+				spawner._is_static_hazard_type(final_stretch_plan.pressure_pair_type)
+			)
+
+	assert_eq(spawner._get_route_phase(0.9), spawner.ROUTE_PHASE_FINAL_STRETCH)
+	assert_has(final_stretch_hazard_types, &"rock")
+	assert_has(final_stretch_hazard_types, &"tumbleweed")
+	assert_has(final_stretch_hazard_types, &"livestock")
+	assert_true(final_stretch_lane_indices.size() >= 6)
+	assert_true(min_spacing >= spawner.FINAL_STRETCH_SPACING_MIN)
+	assert_true(max_spacing <= spawner.FINAL_STRETCH_SPACING_MAX)
+	assert_true(max_spacing - min_spacing > 40.0)
+	assert_true(pressure_pair_count > 0)
+
+
+## Verifies the queued spawn plan refreshes as soon as the run enters the final stretch.
+func test_final_stretch_when_phase_changes_then_spawn_plan_resets_to_finale_profile() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	spawner._rng.seed = 27
+	spawner.advance(0.0, 0.85)
+
+	assert_eq(spawner._active_route_phase, spawner.ROUTE_PHASE_RESET_BEFORE_FINALE)
+	assert_true(spawner._next_spawn_plan.spacing >= 320.0)
+	assert_true(spawner._next_spawn_plan.spacing <= 420.0)
+
+	spawner.advance(0.0, 0.9)
+
+	assert_eq(spawner._active_route_phase, spawner.ROUTE_PHASE_FINAL_STRETCH)
+	assert_true(spawner._next_spawn_plan.spacing >= spawner.FINAL_STRETCH_SPACING_MIN)
+	assert_true(spawner._next_spawn_plan.spacing <= spawner.FINAL_STRETCH_SPACING_MAX)
+	assert_true(spawner._next_spawn_plan.has_pressure_pair())
 
 
 func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
@@ -570,6 +631,7 @@ func test_spawn_usage_when_sampled_across_route_phases_then_roles_follow_the_int
 	var crossing_counts := _sample_primary_hazard_counts(spawner, 0.5, 600, 5000)
 	var clutter_counts := _sample_primary_hazard_counts(spawner, 0.7, 600, 6000)
 	var reset_counts := _sample_primary_hazard_counts(spawner, 0.85, 600, 7000)
+	var final_stretch_counts := _sample_primary_hazard_counts(spawner, 0.9, 600, 8000)
 
 	assert_eq(warm_up_counts[&"tumbleweed"], 0)
 	assert_eq(warm_up_counts[&"livestock"], 0)
@@ -598,14 +660,23 @@ func test_spawn_usage_when_sampled_across_route_phases_then_roles_follow_the_int
 	assert_true(reset_counts[&"tumbleweed"] > 0)
 	assert_eq(reset_counts[&"livestock"], 0)
 
+	assert_true(final_stretch_counts[&"rock"] > final_stretch_counts[&"pothole"])
+	assert_true(final_stretch_counts[&"tumbleweed"] > 0)
+	assert_true(final_stretch_counts[&"livestock"] > 0)
+	assert_true(
+		final_stretch_counts[&"rock"] + final_stretch_counts[&"tumbleweed"]
+			> final_stretch_counts[&"pothole"] + final_stretch_counts[&"livestock"]
+	)
 
-## Verifies pressure pairs only mix static and timing roles in the two middle route phases.
+
+## Verifies pressure pairs mix static and timing roles everywhere the authored profiles allow them.
 func test_route_phase_when_sampled_then_pressure_pairs_mix_static_and_timing_roles() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
 	var static_primary_count := 0
 	var timing_primary_count := 0
+	var final_stretch_pressure_pair_count := 0
 	for roll_index in range(180):
 		var crossing_plan = _prime_seeded_plan(spawner, 6000 + roll_index, 0.5)
 		assert_true(crossing_plan.has_pressure_pair())
@@ -625,8 +696,19 @@ func test_route_phase_when_sampled_then_pressure_pairs_mix_static_and_timing_rol
 			timing_primary_count += 1
 			assert_true(spawner._is_static_hazard_type(clutter_plan.pressure_pair_type))
 
+		var final_stretch_plan = _prime_seeded_plan(spawner, 8000 + roll_index, 0.9)
+		if final_stretch_plan.has_pressure_pair():
+			final_stretch_pressure_pair_count += 1
+			if spawner._is_static_hazard_type(final_stretch_plan.hazard_type):
+				static_primary_count += 1
+				assert_false(spawner._is_static_hazard_type(final_stretch_plan.pressure_pair_type))
+			else:
+				timing_primary_count += 1
+				assert_true(spawner._is_static_hazard_type(final_stretch_plan.pressure_pair_type))
+
 	assert_true(static_primary_count > 0)
 	assert_true(timing_primary_count > 0)
+	assert_true(final_stretch_pressure_pair_count > 0)
 
 
 func test_hazard_profiles_when_comparing_pothole_and_rock_then_rock_is_the_punishing_hit() -> void:

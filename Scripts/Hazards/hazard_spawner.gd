@@ -22,11 +22,18 @@ const ROUTE_PHASE_FIRST_TROUBLE := &"first_trouble"
 const ROUTE_PHASE_CROSSING_BEAT := &"crossing_beat"
 const ROUTE_PHASE_CLUTTER_BEAT := &"clutter_beat"
 const ROUTE_PHASE_RESET_BEFORE_FINALE := &"reset_before_finale"
+const ROUTE_PHASE_FINAL_STRETCH := &"final_stretch"
 const ROUTE_PHASE_WARM_UP_END := 0.20
 const ROUTE_PHASE_FIRST_TROUBLE_END := 0.45
 const ROUTE_PHASE_CROSSING_BEAT_END := 0.60
 const ROUTE_PHASE_CLUTTER_BEAT_END := 0.80
 const ROUTE_PHASE_RESET_BEFORE_FINALE_END := 0.88
+const FINAL_STRETCH_SPACING_MIN := 180.0
+const FINAL_STRETCH_SPACING_MAX := 250.0
+const FINAL_STRETCH_POTHOLE_WEIGHT := 1
+const FINAL_STRETCH_ROCK_WEIGHT := 5
+const FINAL_STRETCH_TUMBLEWEED_WEIGHT := 4
+const FINAL_STRETCH_LIVESTOCK_WEIGHT := 2
 const WARM_UP_LANE_INDICES: Array[int] = [2, 3, 4]
 const FIRST_TROUBLE_LANE_INDICES: Array[int] = [1, 2, 3, 4, 5]
 const FULL_ROAD_LANE_INDICES: Array[int] = [0, 1, 2, 3, 4, 5, 6]
@@ -42,6 +49,7 @@ const FULL_ROAD_LANE_INDICES: Array[int] = [0, 1, 2, 3, 4, 5, 6]
 
 var _distance_until_next_spawn := 0.0
 var _route_progress_ratio := 0.0
+var _active_route_phase: StringName = &""
 var _next_spawn_plan: SpawnPlan
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -54,6 +62,7 @@ func _ready() -> void:
 ## Advances active hazards and spawns new ones using the current route-progress band.
 func advance(distance_delta: float, route_progress_ratio: float = 0.0) -> void:
 	_route_progress_ratio = clamp(route_progress_ratio, 0.0, 1.0)
+	_sync_route_phase()
 	if _next_spawn_plan == null:
 		_prime_next_spawn()
 	if _next_spawn_plan != null:
@@ -117,6 +126,17 @@ func _spawn_current_plan() -> void:
 		)
 
 
+## Resets the queued spawn plan when route progress enters a new authored phase.
+func _sync_route_phase() -> void:
+	var next_route_phase := _get_route_phase(_route_progress_ratio)
+	if next_route_phase == _active_route_phase:
+		return
+
+	_active_route_phase = next_route_phase
+	_next_spawn_plan = null
+	_distance_until_next_spawn = 0.0
+
+
 ## Adds one hazard node using the shared visual and metadata conventions.
 func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DEFAULT_SPAWN_Y) -> void:
 	var resolved_lane_index := _resolve_lane_index(lane_index)
@@ -138,6 +158,17 @@ func _get_active_band() -> SpawnBand:
 			return SpawnBand.new(230.0, 320.0, 1, 1, 5, 4, true, FULL_ROAD_LANE_INDICES)
 		ROUTE_PHASE_CLUTTER_BEAT:
 			return SpawnBand.new(210.0, 290.0, 3, 6, 1, 0, true, FULL_ROAD_LANE_INDICES)
+		ROUTE_PHASE_FINAL_STRETCH:
+			return SpawnBand.new(
+				FINAL_STRETCH_SPACING_MIN,
+				FINAL_STRETCH_SPACING_MAX,
+				FINAL_STRETCH_POTHOLE_WEIGHT,
+				FINAL_STRETCH_ROCK_WEIGHT,
+				FINAL_STRETCH_TUMBLEWEED_WEIGHT,
+				FINAL_STRETCH_LIVESTOCK_WEIGHT,
+				true,
+				FULL_ROAD_LANE_INDICES
+			)
 		_:
 			return SpawnBand.new(320.0, 420.0, 5, 4, 1, 0, false, FULL_ROAD_LANE_INDICES)
 
@@ -154,7 +185,7 @@ func _get_route_phase(progress_ratio: float) -> StringName:
 		return ROUTE_PHASE_CLUTTER_BEAT
 	if progress_ratio < ROUTE_PHASE_RESET_BEFORE_FINALE_END:
 		return ROUTE_PHASE_RESET_BEFORE_FINALE
-	return ROUTE_PHASE_RESET_BEFORE_FINALE
+	return ROUTE_PHASE_FINAL_STRETCH
 
 
 ## Rolls a hazard type from the current band's weights.
