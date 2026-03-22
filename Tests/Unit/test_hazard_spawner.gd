@@ -212,6 +212,100 @@ func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen
 	assert_eq(spawner.get_child_count(), 0)
 
 
+## Verifies tumbleweeds drift laterally across lanes instead of only falling straight down.
+func test_tumbleweed_when_spawned_then_drifts_sideways_toward_a_future_lane_target() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	spawner._rng.seed = 91
+	spawner._spawn_hazard(&"tumbleweed", 3)
+
+	var tumbleweed := spawner.get_child(0) as Node2D
+	var starting_position := tumbleweed.position
+	var target_lane_x := float(tumbleweed.get_meta("target_lane_x"))
+	var drift_ratio_x := float(tumbleweed.get_meta("crossing_scroll_ratio_x"))
+
+	assert_ne(drift_ratio_x, 0.0)
+	assert_true(absf(drift_ratio_x) >= HazardSpawnerType.TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MIN)
+	assert_true(absf(drift_ratio_x) <= HazardSpawnerType.TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MAX)
+	spawner._move_hazards(40.0)
+
+	assert_true(absf(tumbleweed.position.x - target_lane_x) < absf(starting_position.x - target_lane_x))
+	assert_eq(tumbleweed.position.y, starting_position.y + 40.0)
+
+
+## Verifies tumbleweeds rotate in the same signed direction as their drift and scale with travel distance.
+func test_tumbleweed_when_moving_then_rotation_matches_scroll_scaled_drift_speed() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	spawner._rng.seed = 91
+	spawner._spawn_hazard(&"tumbleweed", 3)
+
+	var tumbleweed := spawner.get_child(0) as Node2D
+	var rotation_per_scroll_unit := float(tumbleweed.get_meta("rotation_radians_per_scroll_unit"))
+	assert_ne(rotation_per_scroll_unit, 0.0)
+
+	spawner._move_hazards(40.0)
+
+	assert_almost_eq(tumbleweed.rotation, rotation_per_scroll_unit * 40.0, 0.0001)
+	assert_eq(sign(tumbleweed.rotation), sign(rotation_per_scroll_unit))
+
+
+## Verifies tumbleweeds roll with varying lateral speeds instead of one fixed drift rate.
+func test_tumbleweed_when_sampled_then_drift_speed_ranges_from_slow_to_fast() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var slowest_drift_ratio := INF
+	var fastest_drift_ratio := 0.0
+	for roll_index in range(60):
+		spawner._rng.seed = 2000 + roll_index
+		spawner._spawn_hazard(&"tumbleweed", 3)
+		var tumbleweed := spawner.get_child(spawner.get_child_count() - 1) as Node2D
+		var drift_ratio := absf(float(tumbleweed.get_meta("crossing_scroll_ratio_x")))
+		slowest_drift_ratio = minf(slowest_drift_ratio, drift_ratio)
+		fastest_drift_ratio = maxf(fastest_drift_ratio, drift_ratio)
+
+	assert_true(slowest_drift_ratio >= HazardSpawnerType.TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MIN)
+	assert_true(fastest_drift_ratio <= HazardSpawnerType.TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MAX)
+	assert_true(fastest_drift_ratio - slowest_drift_ratio > 0.20)
+
+
+## Verifies tumbleweeds get a small visual bounce without changing their gameplay position.
+func test_tumbleweed_when_moving_then_sprite_offset_bounces_within_configured_amplitude() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	spawner._rng.seed = 91
+	spawner._spawn_hazard(&"tumbleweed", 3)
+
+	var tumbleweed := spawner.get_child(0) as Sprite2D
+	var starting_position := tumbleweed.position
+	var bounce_amplitude := float(tumbleweed.get_meta("bounce_amplitude"))
+
+	spawner._move_hazards(20.0)
+
+	assert_eq(tumbleweed.position.y, starting_position.y + 20.0)
+	assert_true(absf(tumbleweed.offset.y) > 0.0)
+	assert_true(absf(tumbleweed.offset.y) <= bounce_amplitude)
+
+
+## Verifies livestock enters from off-road so its crossing reads as a full surprise pass.
+func test_livestock_when_spawned_then_starts_offroad_before_crossing_through_target_lane() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	spawner._rng.seed = 77
+	spawner._spawn_hazard(&"livestock", 2)
+
+	var livestock := spawner.get_child(0) as Node2D
+	var target_lane_x := float(livestock.get_meta("target_lane_x"))
+
+	assert_true(absf(livestock.position.x) > absf(target_lane_x))
+	assert_false(HazardSpawnerType.LANE_X_POSITIONS.has(livestock.position.x))
+
+
 func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)

@@ -633,7 +633,7 @@
 				},
 				{
 					"details": "Tune tumbleweeds and jacaklope so both create timing pressure rather than just occupying space, and write very thorough unit tests for their movement and encounter behavior.\n\nDone when: by playing several runs, tumbleweeds and Jackalope each create moving timing reads that feel different from static potholes and rocks.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Adjust spawn usage so the four hazards appear in those intended roles across a normal run, and write very thorough unit tests for the final role distribution and constraints.\n\nDone when: by playing a full run, the hazard mix shows all four roles in practice instead of feeling like four interchangeable blockers.",

@@ -9,6 +9,12 @@ const DEFAULT_DESPAWN_Y := 260.0
 const DEFAULT_HAZARD_TYPE := &"pothole"
 const PRESSURE_PAIR_PROGRESS_THRESHOLD := 0.72
 const PRESSURE_PAIR_Y_OFFSET := 56.0
+const TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MIN := 0.08
+const TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MAX := 0.50
+const TUMBLEWEED_BASE_ROTATION_RADIANS_PER_SCROLL_UNIT := 0.018
+const TUMBLEWEED_BOUNCE_AMPLITUDE := 5.5
+const TUMBLEWEED_BOUNCE_RADIANS_PER_SCROLL_UNIT := 0.04
+const TUMBLEWEED_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT := 0.75
 const HAZARD_SIDE_DESPAWN_X := 360.0
@@ -52,6 +58,8 @@ func _move_hazards(distance_delta: float) -> void:
 		if child is Node2D:
 			var hazard := child as Node2D
 			hazard.position += _get_hazard_motion(hazard, distance_delta)
+			hazard.rotation += _get_hazard_rotation_delta(hazard, distance_delta)
+			_update_hazard_bounce(hazard, distance_delta)
 
 
 ## Consumes scroll distance to spawn one or more planned hazard groups.
@@ -169,12 +177,35 @@ func _build_hazard_visual(hazard_type: StringName) -> Node2D:
 	return hazard
 
 
-## Returns the per-frame motion offset for one hazard, including livestock crossing drift.
+## Returns the per-frame motion offset for one hazard, including lateral drift on moving hazards.
 func _get_hazard_motion(hazard: Node2D, distance_delta: float) -> Vector2:
 	return Vector2(
 		float(hazard.get_meta("crossing_scroll_ratio_x", 0.0)) * distance_delta,
 		distance_delta
 	)
+
+
+## Returns the rotation delta for one hazard so moving hazards can visually match their travel speed.
+func _get_hazard_rotation_delta(hazard: Node2D, distance_delta: float) -> float:
+	return float(hazard.get_meta("rotation_radians_per_scroll_unit", 0.0)) * distance_delta
+
+
+## Applies visual-only bounce to hazards that opt into rolling motion without changing gameplay collision.
+func _update_hazard_bounce(hazard: Node2D, distance_delta: float) -> void:
+	var sprite := hazard as Sprite2D
+	if sprite == null:
+		return
+
+	var bounce_amplitude := float(hazard.get_meta("bounce_amplitude", 0.0))
+	var bounce_radians_per_scroll_unit := float(hazard.get_meta("bounce_radians_per_scroll_unit", 0.0))
+	if bounce_amplitude == 0.0 or bounce_radians_per_scroll_unit == 0.0:
+		sprite.offset.y = 0.0
+		return
+
+	var bounce_phase := float(hazard.get_meta("bounce_phase", 0.0))
+	bounce_phase += bounce_radians_per_scroll_unit * distance_delta
+	hazard.set_meta("bounce_phase", bounce_phase)
+	sprite.offset.y = sin(bounce_phase) * bounce_amplitude
 
 
 ## Resolves the spawn position for one hazard and configures any hazard-specific movement metadata.
@@ -184,10 +215,51 @@ func _resolve_spawn_position(
 	lane_index: int,
 	spawn_y: float
 ) -> Vector2:
+	if hazard_type == &"tumbleweed":
+		return _configure_tumbleweed_drift(hazard, lane_index, spawn_y)
 	if hazard_type != &"livestock":
 		return _get_lane_center_position(lane_index, spawn_y)
 
 	return _configure_livestock_crossing(hazard, lane_index, spawn_y)
+
+
+## Assigns lateral drift metadata so tumbleweeds sweep across the road and create timing reads.
+func _configure_tumbleweed_drift(hazard: Node2D, lane_index: int, spawn_y: float) -> Vector2:
+	var drift_direction := _get_tumbleweed_drift_direction(lane_index)
+	var drift_ratio_x := _roll_tumbleweed_drift_ratio()
+	var signed_drift_ratio_x := drift_ratio_x * float(drift_direction)
+	var drift_speed_multiplier := sqrt(1.0 + pow(drift_ratio_x, 2.0))
+	hazard.set_meta("crossing_direction", drift_direction)
+	hazard.set_meta("crossing_scroll_ratio_x", signed_drift_ratio_x)
+	hazard.set_meta(
+		"rotation_radians_per_scroll_unit",
+		TUMBLEWEED_BASE_ROTATION_RADIANS_PER_SCROLL_UNIT * drift_speed_multiplier * float(drift_direction)
+	)
+	hazard.set_meta("bounce_amplitude", TUMBLEWEED_BOUNCE_AMPLITUDE)
+	hazard.set_meta("bounce_radians_per_scroll_unit", TUMBLEWEED_BOUNCE_RADIANS_PER_SCROLL_UNIT * drift_speed_multiplier)
+	hazard.set_meta("bounce_phase", 0.0)
+	hazard.set_meta("target_lane_x", _get_tumbleweed_target_x(lane_index, spawn_y, signed_drift_ratio_x))
+	return _get_lane_center_position(lane_index, spawn_y)
+
+
+## Chooses a tumbleweed drift direction that keeps the hazard moving across the road instead of away from it.
+func _get_tumbleweed_drift_direction(lane_index: int) -> int:
+	if lane_index <= 1:
+		return 1
+	if lane_index >= LANE_X_POSITIONS.size() - 2:
+		return -1
+	return -1 if _rng.randi_range(0, 1) == 0 else 1
+
+
+## Rolls one tumbleweed lateral speed ratio so different tumbleweeds can arrive slowly or quickly.
+func _roll_tumbleweed_drift_ratio() -> float:
+	return _rng.randf_range(TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MIN, TUMBLEWEED_DRIFT_X_PER_SCROLL_UNIT_MAX)
+
+
+## Projects the tumbleweed's x position at the wagon line using the rolled lateral speed.
+func _get_tumbleweed_target_x(lane_index: int, spawn_y: float, signed_drift_ratio_x: float) -> float:
+	var travel_distance_to_target_y := absf(spawn_y - TUMBLEWEED_TARGET_Y)
+	return _get_lane_center_x(lane_index) + (signed_drift_ratio_x * travel_distance_to_target_y)
 
 
 ## Assigns crossing metadata so livestock enters from a roadside edge and passes through a target lane.
