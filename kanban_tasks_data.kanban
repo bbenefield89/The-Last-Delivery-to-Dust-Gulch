@@ -694,7 +694,7 @@
 				},
 				{
 					"details": "Add keyboard navigation and focus management to in-run overlays and menus, including onboarding, pause, and any confirmation flow the player may need during a run, and write very thorough unit or UI tests for open, navigate, confirm, and cancel behavior.\n\nDone when: by playing a run with only the keyboard, the player can dismiss onboarding, open pause with Escape, move between pause options, resume or restart from the menu, and back out of in-run menu flows without touching the mouse.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add keyboard navigation and default focus to the result and post-run flow, then verify the full start-to-finish loop remains mouse-free and write very thorough unit or UI tests for the final flow behavior.\n\nDone when: by completing or failing a run with only the keyboard, the player can use the result screen actions with the keyboard and return to the next intended state without needing pointer input anywhere in the full game loop.",

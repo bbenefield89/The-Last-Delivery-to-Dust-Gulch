@@ -298,6 +298,7 @@ func _ready() -> void:
 	_pause_return_button.pressed.connect(_on_pause_return_to_title_pressed)
 	_result_restart_button.pressed.connect(_on_result_restart_pressed)
 	_result_return_button.pressed.connect(_on_result_return_to_title_pressed)
+	_configure_pause_menu_navigation()
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
@@ -640,7 +641,7 @@ func _refresh_recovery_prompt() -> void:
 		_recovery_steps.add_child(_build_recovery_step(i))
 
 
-## Refreshes pause-menu visibility for the active run.
+## Refreshes onboarding visibility for the active run.
 func _refresh_onboarding_prompt() -> void:
 	if _onboarding_panel == null or _onboarding_title == null or _onboarding_body == null or _onboarding_hint == null:
 		return
@@ -660,6 +661,44 @@ func _refresh_onboarding_prompt() -> void:
 	_onboarding_hint.text = ONBOARDING_HINT
 
 
+## Configures explicit keyboard focus traversal for the pause menu buttons.
+func _configure_pause_menu_navigation() -> void:
+	if _pause_resume_button == null or _pause_restart_button == null or _pause_return_button == null:
+		return
+
+	_pause_resume_button.focus_mode = Control.FOCUS_ALL
+	_pause_restart_button.focus_mode = Control.FOCUS_ALL
+	_pause_return_button.focus_mode = Control.FOCUS_ALL
+
+	var resume_to_restart := _pause_resume_button.get_path_to(_pause_restart_button)
+	var resume_to_return := _pause_resume_button.get_path_to(_pause_return_button)
+	var restart_to_resume := _pause_restart_button.get_path_to(_pause_resume_button)
+	var restart_to_return := _pause_restart_button.get_path_to(_pause_return_button)
+	var return_to_resume := _pause_return_button.get_path_to(_pause_resume_button)
+	var return_to_restart := _pause_return_button.get_path_to(_pause_restart_button)
+
+	_pause_resume_button.focus_neighbor_top = resume_to_return
+	_pause_resume_button.focus_neighbor_bottom = resume_to_restart
+	_pause_resume_button.focus_neighbor_left = resume_to_return
+	_pause_resume_button.focus_neighbor_right = resume_to_restart
+	_pause_resume_button.focus_previous = resume_to_return
+	_pause_resume_button.focus_next = resume_to_restart
+
+	_pause_restart_button.focus_neighbor_top = restart_to_resume
+	_pause_restart_button.focus_neighbor_bottom = restart_to_return
+	_pause_restart_button.focus_neighbor_left = restart_to_resume
+	_pause_restart_button.focus_neighbor_right = restart_to_return
+	_pause_restart_button.focus_previous = restart_to_resume
+	_pause_restart_button.focus_next = restart_to_return
+
+	_pause_return_button.focus_neighbor_top = return_to_restart
+	_pause_return_button.focus_neighbor_bottom = return_to_resume
+	_pause_return_button.focus_neighbor_left = return_to_restart
+	_pause_return_button.focus_neighbor_right = return_to_resume
+	_pause_return_button.focus_previous = return_to_restart
+	_pause_return_button.focus_next = return_to_resume
+
+
 ## Refreshes pause-menu visibility for the active run.
 func _refresh_pause_menu() -> void:
 	if _pause_overlay == null or _pause_panel == null:
@@ -667,6 +706,18 @@ func _refresh_pause_menu() -> void:
 	var is_visible := _run_state != null and _run_state.result == RunStateType.RESULT_IN_PROGRESS and _pause_menu_open
 	_pause_overlay.visible = is_visible
 	_pause_panel.visible = is_visible
+	if (
+		is_visible
+		and _pause_resume_button != null
+		and _pause_restart_button != null
+		and _pause_return_button != null
+	):
+		if (
+			not _pause_resume_button.has_focus()
+			and not _pause_restart_button.has_focus()
+			and not _pause_return_button.has_focus()
+		):
+			_focus_default_pause_button()
 
 
 ## Refreshes the end-of-run result panel contents and visibility.
@@ -828,6 +879,9 @@ func _input(event: InputEvent) -> void:
 	if event != null and event.is_action_pressed(PAUSE_ACTION):
 		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
 			_set_pause_state(not _pause_menu_open)
+		return
+	if _pause_menu_open and event != null and event.is_action_pressed("ui_cancel", false, true):
+		_set_pause_state(false)
 		return
 	if _pause_menu_open:
 		if _handle_pause_menu_click(event):
@@ -1584,6 +1638,8 @@ func _should_dismiss_onboarding(event: InputEvent) -> bool:
 		return true
 	if event.is_action_pressed("ui_accept", false, true):
 		return true
+	if event.is_action_pressed("ui_cancel", false, true):
+		return true
 
 	var mouse_event := event as InputEventMouseButton
 	return mouse_event != null and mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed
@@ -1804,6 +1860,7 @@ func _on_result_return_to_title_pressed() -> void:
 	return_to_title_requested.emit()
 
 
+## Updates the pause state and keeps the keyboard focus anchored to the active pause menu.
 func _set_pause_state(paused: bool) -> void:
 	if _run_state == null:
 		return
@@ -1815,7 +1872,16 @@ func _set_pause_state(paused: bool) -> void:
 	if was_paused != _pause_menu_open and _pause_toggle_player != null:
 		_pause_toggle_player.play()
 	_refresh_pause_menu()
+	if _pause_menu_open and not was_paused:
+		_focus_default_pause_button()
 	_refresh_recovery_prompt()
+
+
+## Gives the pause menu a deterministic starting focus for keyboard-only play.
+func _focus_default_pause_button() -> void:
+	if _pause_resume_button == null:
+		return
+	_pause_resume_button.grab_focus()
 
 
 ## Resumes gameplay after playing the pause-menu click cue.

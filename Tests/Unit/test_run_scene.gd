@@ -16,6 +16,23 @@ func after_each() -> void:
 	_delete_test_best_run_file()
 
 
+## Sends a keyboard key press and release through the input pipeline for focus and menu tests.
+func _send_key_input(keycode_value: Key) -> void:
+	var press := InputEventKey.new()
+	press.keycode = keycode_value
+	press.physical_keycode = keycode_value
+	press.pressed = true
+	Input.parse_input_event(press)
+	await wait_process_frames(1)
+
+	var release := InputEventKey.new()
+	release.keycode = keycode_value
+	release.physical_keycode = keycode_value
+	release.pressed = false
+	Input.parse_input_event(release)
+	await wait_process_frames(1)
+
+
 func _dismiss_onboarding(scene: Node) -> void:
 	var dismiss_event := InputEventAction.new()
 	dismiss_event.action = &"steer_left"
@@ -372,6 +389,27 @@ func test_dismissing_onboarding_with_steer_input_starts_normal_gameplay() -> voi
 	assert_true(spawner.get_child_count() > 0)
 
 
+## Verifies the onboarding overlay can be dismissed using keyboard confirm input alone.
+func test_dismissing_onboarding_with_keyboard_confirm_starts_normal_gameplay() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	await _send_key_input(KEY_ENTER)
+	var distance_before_process := state.distance_remaining
+	scene._process(3.0)
+
+	var onboarding_panel: PanelContainer = scene.get_node("%OnboardingPanel")
+	var spawner = scene.get_node("%HazardSpawner")
+	assert_false(scene._onboarding_active)
+	assert_false(onboarding_panel.visible)
+	assert_true(state.distance_remaining < distance_before_process)
+	assert_true(spawner.get_child_count() > 0)
+
+
 func test_ready_registers_steering_input_actions() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -380,6 +418,84 @@ func test_ready_registers_steering_input_actions() -> void:
 	assert_true(InputMap.has_action("steer_left"))
 	assert_true(InputMap.has_action("steer_right"))
 	assert_true(InputMap.has_action("pause_run"))
+
+
+## Verifies Escape opens the pause menu and gives the resume button default focus.
+func test_pause_menu_when_opened_with_escape_then_resume_button_has_default_focus() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	await _send_key_input(KEY_ENTER)
+	await _send_key_input(KEY_ESCAPE)
+
+	var pause_overlay: Control = scene.get_node("%PauseOverlay")
+	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
+	var resume_button: Button = scene.get_node("%PauseResumeButton")
+	assert_true(scene._pause_menu_open)
+	assert_true(pause_overlay.visible)
+	assert_true(pause_panel.visible)
+	assert_true(resume_button.has_focus())
+
+
+## Verifies pause-menu keyboard navigation and confirm activate the expected action.
+func test_pause_menu_when_open_then_keyboard_navigation_and_restart_confirm_work() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	await _send_key_input(KEY_ENTER)
+	await _send_key_input(KEY_ESCAPE)
+
+	var resume_button: Button = scene.get_node("%PauseResumeButton")
+	var restart_button: Button = scene.get_node("%PauseRestartButton")
+	var return_button: Button = scene.get_node("%PauseReturnButton")
+	assert_true(resume_button.has_focus())
+
+	await _send_key_input(KEY_DOWN)
+	assert_true(restart_button.has_focus())
+	assert_false(resume_button.has_focus())
+	assert_false(return_button.has_focus())
+
+	await _send_key_input(KEY_DOWN)
+	assert_true(return_button.has_focus())
+	assert_false(resume_button.has_focus())
+	assert_false(restart_button.has_focus())
+
+	await _send_key_input(KEY_UP)
+	assert_true(restart_button.has_focus())
+
+	watch_signals(scene)
+	await _send_key_input(KEY_ENTER)
+	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
+
+	assert_signal_emitted(scene, "restart_requested")
+	assert_false(scene._pause_menu_open)
+
+
+## Verifies the existing cancel input closes the pause menu without needing a mouse click.
+func test_pause_menu_when_open_then_escape_closes_it() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	await _send_key_input(KEY_ENTER)
+	await _send_key_input(KEY_ESCAPE)
+	assert_true(scene._pause_menu_open)
+
+	await _send_key_input(KEY_ESCAPE)
+
+	var pause_overlay: Control = scene.get_node("%PauseOverlay")
+	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
+	assert_false(scene._pause_menu_open)
+	assert_false(pause_overlay.visible)
+	assert_false(pause_panel.visible)
 
 
 func test_process_moves_right_and_reduces_distance() -> void:
@@ -2214,7 +2330,7 @@ func test_pause_menu_toggles_tree_pause_and_visibility() -> void:
 	assert_true(pause_overlay.visible)
 	assert_true(pause_panel.visible)
 	assert_eq(pause_overlay.mouse_filter, Control.MOUSE_FILTER_STOP)
-	assert_false(resume_button.has_focus())
+	assert_true(resume_button.has_focus())
 	assert_true(pause_toggle_player.playing)
 	assert_eq(pause_toggle_player.stream, scene.PAUSE_TOGGLE_SOUND)
 
