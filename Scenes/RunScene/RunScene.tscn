@@ -295,17 +295,18 @@ theme_override_font_sizes/font_size = 14
 text = "Cargo --"
 
 [node name="BonusCalloutLayer" type="CanvasLayer" parent="." unique_id=752300011]
-layer = 1
 
 [node name="BonusCalloutPanel" type="Control" parent="BonusCalloutLayer" unique_id=1162117734]
 unique_name_in_owner = true
 visible = false
+layout_mode = 3
+anchors_preset = 0
 offset_right = 124.0
 offset_bottom = 24.0
 mouse_filter = 2
 
 [node name="BonusCalloutMargin" type="MarginContainer" parent="BonusCalloutLayer/BonusCalloutPanel" unique_id=160018409]
-layout_mode = 2
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -314,11 +315,11 @@ grow_vertical = 2
 [node name="BonusCalloutLabel" type="Label" parent="BonusCalloutLayer/BonusCalloutPanel/BonusCalloutMargin" unique_id=664986678]
 unique_name_in_owner = true
 layout_mode = 2
-horizontal_alignment = 1
-vertical_alignment = 1
 theme_override_colors/font_color = Color(0.952941, 0.8, 0.290196, 1)
 theme_override_font_sizes/font_size = 13
 text = "NEAR MISS +50"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="TouchLayer" type="CanvasLayer" parent="." unique_id=1837018594]
 unique_name_in_owner = true
@@ -469,7 +470,6 @@ alignment = 1
 
 [node name="PauseLayer" type="CanvasLayer" parent="." unique_id=1114754801]
 layer = 4
-visible = false
 
 [node name="PauseOverlay" type="Control" parent="PauseLayer" unique_id=357867026]
 unique_name_in_owner = true

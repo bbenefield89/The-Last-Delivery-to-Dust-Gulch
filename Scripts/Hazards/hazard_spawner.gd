@@ -85,7 +85,7 @@ func _prime_next_spawn() -> void:
 	if band.allows_pressure_pair and _route_progress_ratio >= PRESSURE_PAIR_PROGRESS_THRESHOLD:
 		var pressure_lane := _get_pressure_lane_index(lane_index)
 		if pressure_lane != lane_index:
-			plan.pressure_pair_type = _roll_hazard_type(band.weights)
+			plan.pressure_pair_type = _roll_pressure_pair_type(hazard_type, band.weights)
 			plan.pressure_pair_lane_index = pressure_lane
 	_next_spawn_plan = plan
 	_distance_until_next_spawn = _next_spawn_plan.spacing
@@ -118,10 +118,10 @@ func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DE
 ## Returns the current band definition for the active route progress.
 func _get_active_band() -> SpawnBand:
 	if _route_progress_ratio < 0.33:
-		return SpawnBand.new(500.0, 620.0, 8, 1, 3, 0, false)
+		return SpawnBand.new(500.0, 620.0, 8, 1, 2, 0, false)
 	if _route_progress_ratio < 0.66:
-		return SpawnBand.new(400.0, 520.0, 6, 2, 3, 1, false)
-	return SpawnBand.new(300.0, 420.0, 5, 3, 3, 1, true)
+		return SpawnBand.new(400.0, 520.0, 5, 2, 4, 1, false)
+	return SpawnBand.new(300.0, 420.0, 4, 2, 5, 1, true)
 
 
 ## Rolls a hazard type from the current band's weights.
@@ -135,6 +135,13 @@ func _roll_hazard_type(weights: HazardWeights) -> StringName:
 	if roll <= weights.pothole + weights.rock + weights.tumbleweed:
 		return &"tumbleweed"
 	return &"livestock"
+
+
+## Rolls a pressure-pair hazard that complements the primary hazard's gameplay role.
+func _roll_pressure_pair_type(primary_hazard_type: StringName, weights: HazardWeights) -> StringName:
+	if _is_static_hazard_type(primary_hazard_type):
+		return _roll_hazard_type(HazardWeights.new(0, 0, weights.tumbleweed, weights.livestock))
+	return _roll_hazard_type(HazardWeights.new(weights.pothole, weights.rock, 0, 0))
 
 
 ## Rolls band-specific spacing for the next spawn.
@@ -168,6 +175,11 @@ func _get_pressure_lane_index(primary_lane_index: int) -> int:
 	while pressure_lane_index == primary_lane_index:
 		pressure_lane_index = _roll_lane_index()
 	return pressure_lane_index
+
+
+## Returns whether the hazard's core role is static pressure instead of moving timing pressure.
+func _is_static_hazard_type(hazard_type: StringName) -> bool:
+	return hazard_type == &"pothole" or hazard_type == &"rock"
 
 ## Builds a readable hazard node for the requested hazard type.
 func _build_hazard_visual(hazard_type: StringName) -> Node2D:

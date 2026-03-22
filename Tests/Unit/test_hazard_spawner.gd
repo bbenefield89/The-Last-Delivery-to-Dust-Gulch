@@ -34,7 +34,7 @@ func test_progress_bands_define_expected_spacing_ranges_and_weights() -> void:
 	assert_eq(early_band.spacing_max, 620.0)
 	assert_eq(early_band.weights.pothole, 8)
 	assert_eq(early_band.weights.rock, 1)
-	assert_eq(early_band.weights.tumbleweed, 3)
+	assert_eq(early_band.weights.tumbleweed, 2)
 	assert_eq(early_band.weights.livestock, 0)
 	assert_false(early_band.allows_pressure_pair)
 
@@ -42,9 +42,9 @@ func test_progress_bands_define_expected_spacing_ranges_and_weights() -> void:
 	var mid_band = spawner._get_active_band()
 	assert_eq(mid_band.spacing_min, 400.0)
 	assert_eq(mid_band.spacing_max, 520.0)
-	assert_eq(mid_band.weights.pothole, 6)
+	assert_eq(mid_band.weights.pothole, 5)
 	assert_eq(mid_band.weights.rock, 2)
-	assert_eq(mid_band.weights.tumbleweed, 3)
+	assert_eq(mid_band.weights.tumbleweed, 4)
 	assert_eq(mid_band.weights.livestock, 1)
 	assert_false(mid_band.allows_pressure_pair)
 
@@ -52,9 +52,9 @@ func test_progress_bands_define_expected_spacing_ranges_and_weights() -> void:
 	var late_band = spawner._get_active_band()
 	assert_eq(late_band.spacing_min, 300.0)
 	assert_eq(late_band.spacing_max, 420.0)
-	assert_eq(late_band.weights.pothole, 5)
-	assert_eq(late_band.weights.rock, 3)
-	assert_eq(late_band.weights.tumbleweed, 3)
+	assert_eq(late_band.weights.pothole, 4)
+	assert_eq(late_band.weights.rock, 2)
+	assert_eq(late_band.weights.tumbleweed, 5)
 	assert_eq(late_band.weights.livestock, 1)
 	assert_true(late_band.allows_pressure_pair)
 
@@ -129,6 +129,10 @@ func test_late_band_rolls_add_pressure_pairs_but_earlier_bands_do_not() -> void:
 		assert_ne(late_plan.pressure_pair_lane_index, late_plan.lane_index)
 		assert_has(lane_centers, HazardSpawnerType.LANE_X_POSITIONS[late_plan.lane_index])
 		assert_has(lane_centers, HazardSpawnerType.LANE_X_POSITIONS[late_plan.pressure_pair_lane_index])
+		assert_ne(
+			spawner._is_static_hazard_type(late_plan.hazard_type),
+			spawner._is_static_hazard_type(late_plan.pressure_pair_type)
+		)
 		pressure_pair_lane_indices[late_plan.pressure_pair_lane_index] = true
 
 	assert_true(pressure_pair_lane_indices.size() > 1)
@@ -357,6 +361,47 @@ func test_spawn_bands_when_sampled_many_times_then_potholes_outnumber_rocks() ->
 		assert_true(pothole_count > rock_count)
 
 
+func test_spawn_usage_when_sampled_across_progress_bands_then_roles_follow_the_intended_mix() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var early_counts := _sample_primary_hazard_counts(spawner, 0.2, 600, 3000)
+	var mid_counts := _sample_primary_hazard_counts(spawner, 0.5, 600, 4000)
+	var late_counts := _sample_primary_hazard_counts(spawner, 0.85, 600, 5000)
+
+	assert_true(early_counts[&"pothole"] > early_counts[&"tumbleweed"])
+	assert_true(early_counts[&"tumbleweed"] > early_counts[&"rock"])
+	assert_eq(early_counts[&"livestock"], 0)
+
+	assert_true(mid_counts[&"pothole"] > mid_counts[&"tumbleweed"])
+	assert_true(mid_counts[&"tumbleweed"] > mid_counts[&"rock"])
+	assert_true(mid_counts[&"rock"] > mid_counts[&"livestock"])
+
+	assert_true(late_counts[&"tumbleweed"] > late_counts[&"pothole"])
+	assert_true(late_counts[&"pothole"] > late_counts[&"rock"])
+	assert_true(late_counts[&"rock"] >= late_counts[&"livestock"])
+
+
+func test_pressure_pairs_when_sampled_late_then_static_and_timing_roles_are_mixed() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var static_primary_count := 0
+	var timing_primary_count := 0
+	for roll_index in range(180):
+		var late_plan = _prime_seeded_plan(spawner, 6000 + roll_index, 0.85)
+		assert_true(late_plan.has_pressure_pair())
+		if spawner._is_static_hazard_type(late_plan.hazard_type):
+			static_primary_count += 1
+			assert_false(spawner._is_static_hazard_type(late_plan.pressure_pair_type))
+		else:
+			timing_primary_count += 1
+			assert_true(spawner._is_static_hazard_type(late_plan.pressure_pair_type))
+
+	assert_true(static_primary_count > 0)
+	assert_true(timing_primary_count > 0)
+
+
 func test_hazard_profiles_when_comparing_pothole_and_rock_then_rock_is_the_punishing_hit() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -366,3 +411,23 @@ func test_hazard_profiles_when_comparing_pothole_and_rock_then_rock_is_the_punis
 
 	assert_true(rock_profile["damage"] > pothole_profile["damage"])
 	assert_true(rock_profile["cargo_damage"] > pothole_profile["cargo_damage"])
+
+
+func _sample_primary_hazard_counts(
+	spawner: Node,
+	progress_ratio: float,
+	sample_count: int,
+	seed_offset: int
+) -> Dictionary:
+	var counts: Dictionary = {
+		&"pothole": 0,
+		&"rock": 0,
+		&"tumbleweed": 0,
+		&"livestock": 0,
+	}
+
+	for roll_index in range(sample_count):
+		var plan = _prime_seeded_plan(spawner, seed_offset + roll_index, progress_ratio)
+		counts[plan.hazard_type] += 1
+
+	return counts

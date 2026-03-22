@@ -12,20 +12,20 @@
 			"title": "Todo",
 			"tasks": [
 				"0ca1b626-31ec-4978-9352-36006543cbb9",
-				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6"
+				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6",
+				"4ff4b0c3-f6cc-4f2d-adba-302a991e4da7"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"e0958d3a-e763-454c-a978-271443797d74"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"e0958d3a-e763-454c-a978-271443797d74",
 				"18282a78-c593-4d8b-bb37-bcf2350354f8",
 				"66be59e9-0f83-45e7-b735-73b9394d78dc",
 				"677fbfae-de4a-4e95-891c-00ee0a7de59c",
@@ -637,7 +637,7 @@
 				},
 				{
 					"details": "Adjust spawn usage so the four hazards appear in those intended roles across a normal run, and write very thorough unit tests for the final role distribution and constraints.\n\nDone when: by playing a full run, the hazard mix shows all four roles in practice instead of feeling like four interchangeable blockers.",
-					"done": false
+					"done": true
 				}
 			]
 		},
@@ -677,6 +677,26 @@
 				},
 				{
 					"details": "Guarantee a final clear runway before the win trigger, and write very thorough unit tests for the post-gauntlet release segment.\n\nDone when: by surviving the last hazard beat, the player gets a short hazard-free stretch before success instead of another surprise obstacle immediately before the finish.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "4ff4b0c3-f6cc-4f2d-adba-302a991e4da7",
+			"title": "DG-31",
+			"description": "Task: Full keyboard navigation support across game menus and overlays.\n\nThe game already supports core keyboard gameplay inputs such as steering with A and D and pausing with Escape, but it is not yet fully playable without a mouse or touch input. Important menus and overlays still require pointer interaction, which breaks the goal of a complete keyboard-playable experience.\n\nThis ticket should make the game fully usable with the keyboard from title screen to end-of-run flow. Keep the existing keyboard gameplay controls and add proper keyboard navigation for the title screen, pause menu, results flow, onboarding overlays, and any other button-driven in-game menu the player needs to use during a normal run. Focus handling should be explicit and predictable: when a menu opens, one valid control should already be focused, the player should be able to move between options with the keyboard, activate the focused option with the usual confirm input, and back out with the existing cancel input where it makes sense.\n\nDo not redesign the menus visually in this ticket. This is an input and focus pass so the current UI can be completed entirely from the keyboard. Mouse and touch behavior should continue to work after the change.\n\nAffected files:\n- Scenes/TitleScreen/title_screen.gd\n- Scenes/RunScene/run_scene.gd\n- relevant menu and UI scenes used by the title, pause, onboarding, and result flows\n- Tests/Unit/test_run_scene.gd\n- any relevant UI-focused test files\n\nDone when: a player can launch the game and complete the full loop using only the keyboard, including starting a run, dismissing onboarding, pausing and resuming, restarting or returning from result screens, and moving through every required menu without needing the mouse.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add explicit default focus and keyboard navigation to the title screen and any pre-run menu flow the player must use before driving, and write very thorough unit or UI tests for the focus and activation behavior.\n\nDone when: by launching the game and keeping hands off the mouse, the player can move through the title or start flow with the keyboard, see a valid option focused by default, and start a run with the keyboard alone.",
+					"done": false
+				},
+				{
+					"details": "Add keyboard navigation and focus management to in-run overlays and menus, including onboarding, pause, and any confirmation flow the player may need during a run, and write very thorough unit or UI tests for open, navigate, confirm, and cancel behavior.\n\nDone when: by playing a run with only the keyboard, the player can dismiss onboarding, open pause with Escape, move between pause options, resume or restart from the menu, and back out of in-run menu flows without touching the mouse.",
+					"done": false
+				},
+				{
+					"details": "Add keyboard navigation and default focus to the result and post-run flow, then verify the full start-to-finish loop remains mouse-free and write very thorough unit or UI tests for the final flow behavior.\n\nDone when: by completing or failing a run with only the keyboard, the player can use the result screen actions with the keyboard and return to the next intended state without needing pointer input anywhere in the full game loop.",
 					"done": false
 				}
 			]
