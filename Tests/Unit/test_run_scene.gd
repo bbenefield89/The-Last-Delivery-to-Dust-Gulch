@@ -164,6 +164,46 @@ func test_route_phase_when_progress_enters_final_stretch_then_bad_luck_is_disabl
 	assert_false(scene._pending_bad_luck_trigger)
 
 
+## Verifies the run scene passes remaining distance into the spawner so the release runway can clear.
+func test_final_stretch_when_route_reaches_release_window_then_spawner_holds_clear_runway() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.route_distance = 10000.0
+	state.distance_remaining = (
+		scene._hazard_spawner.FINAL_STRETCH_RELEASE_DISTANCE
+		+ scene._hazard_spawner.FINAL_STRETCH_SPACING_MAX
+		+ 1.0
+	)
+	scene.setup(state)
+	_dismiss_onboarding(scene)
+
+	scene._bad_luck_rng.seed = 23
+	scene._process(0.0)
+
+	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
+	assert_not_null(scene._hazard_spawner._next_spawn_plan)
+
+	var planned_spacing: float = scene._hazard_spawner._next_spawn_plan.spacing
+	scene._process(planned_spacing / state.current_speed)
+
+	assert_true(scene._hazard_spawner.get_child_count() > 0)
+
+	var runway_delta: float = (
+		state.distance_remaining - scene._hazard_spawner.FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE
+	) / state.current_speed
+	scene._process(runway_delta)
+	await wait_process_frames(1)
+
+	assert_true(state.distance_remaining <= scene._hazard_spawner.FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE)
+	assert_eq(scene._hazard_spawner.get_child_count(), 0)
+	assert_eq(scene._hazard_spawner._next_spawn_plan, null)
+	assert_eq(scene._hazard_spawner._distance_until_next_spawn, 0.0)
+	assert_eq(scene._hazard_spawner._get_route_phase(0.98), scene._hazard_spawner.ROUTE_PHASE_FINAL_STRETCH)
+
+
 func test_dismissing_onboarding_when_run_starts_then_warm_up_callout_appears() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)

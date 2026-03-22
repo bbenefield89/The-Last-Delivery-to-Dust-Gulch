@@ -30,6 +30,13 @@ const ROUTE_PHASE_CLUTTER_BEAT_END := 0.80
 const ROUTE_PHASE_RESET_BEFORE_FINALE_END := 0.88
 const FINAL_STRETCH_SPACING_MIN := 180.0
 const FINAL_STRETCH_SPACING_MAX := 250.0
+const FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE := 240.0
+const FINAL_STRETCH_RELEASE_DISTANCE := (
+	FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE
+	+ DEFAULT_DESPAWN_Y
+	- (DEFAULT_SPAWN_Y - PRESSURE_PAIR_Y_OFFSET)
+	+ 1.0
+)
 const FINAL_STRETCH_POTHOLE_WEIGHT := 1
 const FINAL_STRETCH_ROCK_WEIGHT := 5
 const FINAL_STRETCH_TUMBLEWEED_WEIGHT := 4
@@ -60,10 +67,17 @@ func _ready() -> void:
 
 
 ## Advances active hazards and spawns new ones using the current route-progress band.
-func advance(distance_delta: float, route_progress_ratio: float = 0.0) -> void:
+func advance(
+	distance_delta: float,
+	route_progress_ratio: float = 0.0,
+	route_remaining_distance: float = INF,
+	route_distance: float = INF
+) -> void:
 	_route_progress_ratio = clamp(route_progress_ratio, 0.0, 1.0)
 	_sync_route_phase()
-	if _next_spawn_plan == null:
+	if _should_hold_final_stretch_release(route_remaining_distance, route_distance):
+		_clear_regular_spawn_schedule()
+	elif _next_spawn_plan == null:
 		_prime_next_spawn()
 	if _next_spawn_plan != null:
 		var active_spacing := _next_spawn_plan.spacing
@@ -133,6 +147,29 @@ func _sync_route_phase() -> void:
 		return
 
 	_active_route_phase = next_route_phase
+	_next_spawn_plan = null
+	_distance_until_next_spawn = 0.0
+
+
+## Returns whether the final stretch has entered the clear runway before the finish line.
+func _should_hold_final_stretch_release(route_remaining_distance: float, route_distance: float) -> bool:
+	return (
+		_get_route_phase(_route_progress_ratio) == ROUTE_PHASE_FINAL_STRETCH
+		and _supports_final_stretch_release(route_distance)
+		and route_remaining_distance <= FINAL_STRETCH_RELEASE_DISTANCE
+	)
+
+
+## Returns whether the current route is long enough to fit the full clear-runway guarantee.
+func _supports_final_stretch_release(route_distance: float) -> bool:
+	if not is_finite(route_distance):
+		return false
+
+	return route_distance * (1.0 - ROUTE_PHASE_RESET_BEFORE_FINALE_END) >= FINAL_STRETCH_RELEASE_DISTANCE
+
+
+## Clears the regular spawn scheduler so the final stretch can end without fresh hazards.
+func _clear_regular_spawn_schedule() -> void:
 	_next_spawn_plan = null
 	_distance_until_next_spawn = 0.0
 

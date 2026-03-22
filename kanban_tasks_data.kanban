@@ -17,9 +17,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -53,7 +51,8 @@
 				"b3e7a12f-4c91-4d5e-9f83-1d2e3f4a5b6c",
 				"8bfb1b88-1068-4af6-be5f-645a0b5f852d",
 				"35ee46bc-0b91-4e29-85b7-acb2a4270f34",
-				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0"
+				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
+				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6"
 			]
 		}
 	],
@@ -678,7 +677,7 @@
 				},
 				{
 					"details": "Guarantee a final clear runway before the win trigger, and write very thorough unit tests for the post-gauntlet release segment.\n\nDone when: by surviving the last hazard beat, the player gets a short hazard-free stretch before success instead of another surprise obstacle immediately before the finish.",
-					"done": false
+					"done": true
 				}
 			]
 		},

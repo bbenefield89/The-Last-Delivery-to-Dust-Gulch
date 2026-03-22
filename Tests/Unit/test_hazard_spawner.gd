@@ -299,6 +299,52 @@ func test_final_stretch_when_phase_changes_then_spawn_plan_resets_to_finale_prof
 	assert_true(spawner._next_spawn_plan.has_pressure_pair())
 
 
+## Verifies the final stretch stops spawning before the finish and preserves a clear runway.
+func test_final_stretch_when_route_remaining_distance_reaches_release_window_then_spawning_stops() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	spawner._rng.seed = 53
+	var route_distance := 10000.0
+	var remaining_distance_before_last_spawn: float = (
+		spawner.FINAL_STRETCH_RELEASE_DISTANCE
+		+ spawner.FINAL_STRETCH_SPACING_MAX
+		+ 1.0
+	)
+	spawner.advance(0.0, 0.9, remaining_distance_before_last_spawn, route_distance)
+
+	assert_not_null(spawner._next_spawn_plan)
+
+	var planned_spacing: float = spawner._next_spawn_plan.spacing
+	var remaining_distance_after_last_spawn: float = remaining_distance_before_last_spawn - planned_spacing
+	spawner.advance(
+		planned_spacing,
+		0.9,
+		remaining_distance_after_last_spawn,
+		route_distance
+	)
+
+	assert_true(spawner.get_child_count() > 0)
+
+	var release_travel_distance: float = max(
+		0.0,
+		remaining_distance_after_last_spawn - spawner.FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE
+	)
+	spawner.advance(
+		release_travel_distance,
+		0.98,
+		spawner.FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE,
+		route_distance
+	)
+	await wait_process_frames(1)
+
+	assert_eq(spawner.get_child_count(), 0)
+	assert_eq(spawner._next_spawn_plan, null)
+	assert_eq(spawner._distance_until_next_spawn, 0.0)
+	assert_true(spawner._supports_final_stretch_release(route_distance))
+	assert_eq(spawner._get_route_phase(0.98), spawner.ROUTE_PHASE_FINAL_STRETCH)
+
+
 func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)

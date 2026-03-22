@@ -511,7 +511,12 @@ func _process(delta: float) -> void:
 	)
 	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
 	_sync_route_phase()
-	_hazard_spawner.advance(_run_state.current_speed * delta, _run_state.get_delivery_progress_ratio())
+	_hazard_spawner.advance(
+		_run_state.current_speed * delta,
+		_run_state.get_delivery_progress_ratio(),
+		_run_state.distance_remaining,
+		_run_state.route_distance
+	)
 	_update_hazard_near_miss_tracking()
 	_apply_hazard_collisions()
 	_record_completed_hazard_dodges()
