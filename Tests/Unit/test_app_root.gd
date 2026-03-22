@@ -76,16 +76,30 @@ func test_app_root_restart_rebuilds_run_state_for_completed_run() -> void:
 	var carriage_sprite := app_root._run_scene.get_node(
 		"World/Wagon/CarriageSprite"
 	) as AnimatedSprite2D
+	var horse_left := app_root._run_scene.get_node(
+		"World/Wagon/HorseTeam/HorseLeft"
+	) as AnimatedSprite2D
+	var horse_right := app_root._run_scene.get_node(
+		"World/Wagon/HorseTeam/HorseRight"
+	) as AnimatedSprite2D
 	var shadow_sprite := app_root._run_scene.get_node(
 		"World/Wagon/Shadow"
 	) as AnimatedSprite2D
 	assert_not_null(carriage_sprite)
+	assert_not_null(horse_left)
+	assert_not_null(horse_right)
 	assert_not_null(shadow_sprite)
 	assert_not_null(carriage_sprite.sprite_frames)
+	assert_not_null(horse_left.sprite_frames)
+	assert_not_null(horse_right.sprite_frames)
 	assert_not_null(shadow_sprite.sprite_frames)
 	assert_true(carriage_sprite.sprite_frames.has_animation("default"))
+	assert_true(horse_left.sprite_frames.has_animation("default"))
+	assert_true(horse_right.sprite_frames.has_animation("default"))
 	assert_true(shadow_sprite.sprite_frames.has_animation("default"))
 	assert_true(carriage_sprite.is_playing())
+	assert_true(horse_left.is_playing())
+	assert_true(horse_right.is_playing())
 	assert_true(shadow_sprite.is_playing())
 
 
@@ -196,16 +210,30 @@ func test_app_root_when_returning_to_title_then_starting_again_keeps_animated_ca
 	var carriage_sprite := app_root._run_scene.get_node(
 		"World/Wagon/CarriageSprite"
 	) as AnimatedSprite2D
+	var horse_left := app_root._run_scene.get_node(
+		"World/Wagon/HorseTeam/HorseLeft"
+	) as AnimatedSprite2D
+	var horse_right := app_root._run_scene.get_node(
+		"World/Wagon/HorseTeam/HorseRight"
+	) as AnimatedSprite2D
 	var shadow_sprite := app_root._run_scene.get_node(
 		"World/Wagon/Shadow"
 	) as AnimatedSprite2D
 	assert_not_null(carriage_sprite)
+	assert_not_null(horse_left)
+	assert_not_null(horse_right)
 	assert_not_null(shadow_sprite)
 	assert_not_null(carriage_sprite.sprite_frames)
+	assert_not_null(horse_left.sprite_frames)
+	assert_not_null(horse_right.sprite_frames)
 	assert_not_null(shadow_sprite.sprite_frames)
 	assert_true(carriage_sprite.sprite_frames.has_animation("default"))
+	assert_true(horse_left.sprite_frames.has_animation("default"))
+	assert_true(horse_right.sprite_frames.has_animation("default"))
 	assert_true(shadow_sprite.sprite_frames.has_animation("default"))
 	assert_true(carriage_sprite.is_playing())
+	assert_true(horse_left.is_playing())
+	assert_true(horse_right.is_playing())
 	assert_true(shadow_sprite.is_playing())
 
 

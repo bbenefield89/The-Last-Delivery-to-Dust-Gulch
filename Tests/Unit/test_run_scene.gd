@@ -716,13 +716,21 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
 	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
+	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
+	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
 	var camera: Camera2D = scene.get_node("%Camera")
 
 	assert_eq(wagon.modulate, scene.WAGON_HIT_COLOR)
 	assert_not_null(carriage_sprite)
 	assert_eq(carriage_sprite.modulate, scene.WAGON_HIT_COLOR)
+	assert_not_null(horse_left)
+	assert_not_null(horse_right)
+	assert_eq(horse_left.modulate, scene.WAGON_HIT_COLOR)
+	assert_eq(horse_right.modulate, scene.WAGON_HIT_COLOR)
 	assert_ne(wagon.rotation, 0.0)
 	assert_eq(carriage_sprite.global_rotation, wagon.global_rotation)
+	assert_eq(horse_left.global_rotation, wagon.global_rotation)
+	assert_eq(horse_right.global_rotation, wagon.global_rotation)
 	assert_ne(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
 
@@ -742,13 +750,21 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
 	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
+	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
+	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
 	var camera: Camera2D = scene.get_node("%Camera")
 
 	assert_eq(wagon.modulate, scene.WAGON_BASE_COLOR)
 	assert_not_null(carriage_sprite)
 	assert_eq(carriage_sprite.modulate, scene.WAGON_BASE_COLOR)
+	assert_not_null(horse_left)
+	assert_not_null(horse_right)
+	assert_eq(horse_left.modulate, scene.WAGON_BASE_COLOR)
+	assert_eq(horse_right.modulate, scene.WAGON_BASE_COLOR)
 	assert_eq(wagon.rotation, 0.0)
 	assert_eq(carriage_sprite.global_rotation, wagon.global_rotation)
+	assert_eq(horse_left.global_rotation, wagon.global_rotation)
+	assert_eq(horse_right.global_rotation, wagon.global_rotation)
 	assert_eq(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
 

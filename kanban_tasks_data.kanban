@@ -736,7 +736,7 @@
 				},
 				{
 					"details": "Wire the animated horse nodes into the existing wagon presentation flow so normal gameplay, restart flow, return-to-title flow, and current wagon visual effects still work with the animated horse art. Keep both horses visually consistent with each other and write very thorough unit or scene tests for the affected behavior.\n\nDone when: by playing, restarting, and returning to the title, both horse animations keep working through the normal game flow and the wagon team still shows the expected hit, failure, and run-state presentation without obvious visual breakage.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Tune the horse animation playback for the shipped topdown view so the 4-frame loop reads like a pulling or running carriage team at gameplay scale without distracting jitter or over-animation, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by driving a normal run, both horses loop smoothly at game scale and look like part of the existing carriage team presentation rather than two static or mismatched sprites.",
