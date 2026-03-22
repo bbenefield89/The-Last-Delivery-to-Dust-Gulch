@@ -13,6 +13,23 @@ func after_each() -> void:
 	_delete_test_best_run_file()
 
 
+## Sends a single keyboard press and release through the input pipeline for focus tests.
+func _send_key_input(keycode_value: Key) -> void:
+	var press := InputEventKey.new()
+	press.keycode = keycode_value
+	press.physical_keycode = keycode_value
+	press.pressed = true
+	Input.parse_input_event(press)
+	await wait_process_frames(1)
+
+	var release := InputEventKey.new()
+	release.keycode = keycode_value
+	release.physical_keycode = keycode_value
+	release.pressed = false
+	Input.parse_input_event(release)
+	await wait_process_frames(1)
+
+
 func test_play_button_emits_play_requested() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
 	add_child_autofree(title_screen)
@@ -74,6 +91,71 @@ func test_title_screen_play_and_quit_buttons_play_ui_click_sound() -> void:
 	assert_true(ui_click_player.playing)
 	assert_eq(ui_click_player.stream, title_screen.UI_CLICK_SOUND)
 	await get_tree().create_timer(ui_click_player.stream.get_length(), false).timeout
+
+
+## Verifies the title screen lands keyboard focus on the primary action as soon as it opens.
+func test_title_screen_when_ready_then_play_button_has_default_focus() -> void:
+	var title_screen = TITLE_SCREEN_SCENE.instantiate()
+	add_child_autofree(title_screen)
+	await wait_process_frames(1)
+
+	var play_button: Button = title_screen.get_node("Panel/Margin/Content/Buttons/PlayButton")
+	var quit_button: Button = title_screen.get_node("Panel/Margin/Content/Buttons/QuitButton")
+
+	assert_true(play_button.has_focus())
+	assert_false(quit_button.has_focus())
+
+
+## Verifies the title buttons move focus in a predictable cycle with keyboard navigation.
+func test_title_screen_when_navigating_with_keyboard_then_focus_moves_between_buttons() -> void:
+	var title_screen = TITLE_SCREEN_SCENE.instantiate()
+	add_child_autofree(title_screen)
+	await wait_process_frames(1)
+
+	var play_button: Button = title_screen.get_node("Panel/Margin/Content/Buttons/PlayButton")
+	var quit_button: Button = title_screen.get_node("Panel/Margin/Content/Buttons/QuitButton")
+
+	await _send_key_input(KEY_DOWN)
+
+	assert_false(play_button.has_focus())
+	assert_true(quit_button.has_focus())
+
+	await _send_key_input(KEY_UP)
+
+	assert_true(play_button.has_focus())
+	assert_false(quit_button.has_focus())
+
+
+## Verifies keyboard confirm activates the focused play action.
+func test_title_screen_when_confirming_focused_play_button_then_play_requested_emits() -> void:
+	var title_screen = TITLE_SCREEN_SCENE.instantiate()
+	add_child_autofree(title_screen)
+	await wait_process_frames(1)
+
+	var ui_click_player: AudioStreamPlayer = title_screen.get_node("UIClickPlayer")
+	ui_click_player.stream = null
+
+	watch_signals(title_screen)
+	await _send_key_input(KEY_ENTER)
+
+	assert_signal_emitted(title_screen, "play_requested")
+
+
+## Verifies keyboard confirm activates the focused quit action.
+func test_title_screen_when_confirming_focused_quit_button_then_quit_requested_emits() -> void:
+	var title_screen = TITLE_SCREEN_SCENE.instantiate()
+	add_child_autofree(title_screen)
+	await wait_process_frames(1)
+
+	var quit_button: Button = title_screen.get_node("Panel/Margin/Content/Buttons/QuitButton")
+	var ui_click_player: AudioStreamPlayer = title_screen.get_node("UIClickPlayer")
+	ui_click_player.stream = null
+
+	quit_button.grab_focus()
+	watch_signals(title_screen)
+	await _send_key_input(KEY_ENTER)
+
+	assert_signal_emitted(title_screen, "quit_requested")
 
 
 func test_title_screen_starts_menu_music() -> void:

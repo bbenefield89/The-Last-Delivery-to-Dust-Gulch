@@ -14,6 +14,8 @@ var _navigation_click_in_progress: bool = false
 var _best_run_save_path: String = RunState.BEST_RUN_SAVE_PATH
 
 
+# Private Fields: OnReady
+
 @onready var _play_button: Button = $Panel/Margin/Content/Buttons/PlayButton
 @onready var _quit_button: Button = $Panel/Margin/Content/Buttons/QuitButton
 @onready var _best_run_summary: Label = %BestRunSummary
@@ -25,12 +27,14 @@ var _best_run_save_path: String = RunState.BEST_RUN_SAVE_PATH
 func _ready() -> void:
 	_play_button.pressed.connect(_on_play_pressed)
 	_quit_button.pressed.connect(_on_quit_pressed)
+	_configure_keyboard_navigation()
 	_refresh_best_run_summary()
 	_title_music_player.stream = TITLE_MUSIC
 	_title_music_player.volume_db = -12.0
 	_title_music_player.play()
 	_ui_click_player.stream = UI_CLICK_SOUND
 	_ui_click_player.volume_db = -9.0
+	call_deferred("_focus_default_button")
 
 
 ## Releases title-screen audio streams when the screen leaves the tree.
@@ -87,3 +91,36 @@ func _refresh_best_run_summary() -> void:
 		return
 
 	_best_run_summary.text = "Best Score: %d | Best Grade: %s" % [best_run.score, best_run.grade]
+
+
+## Configures explicit keyboard traversal between the title-screen options.
+func _configure_keyboard_navigation() -> void:
+	if _play_button == null or _quit_button == null:
+		return
+
+	_play_button.focus_mode = Control.FOCUS_ALL
+	_quit_button.focus_mode = Control.FOCUS_ALL
+
+	var play_to_quit := _play_button.get_path_to(_quit_button)
+	var quit_to_play := _quit_button.get_path_to(_play_button)
+
+	_play_button.focus_neighbor_left = play_to_quit
+	_play_button.focus_neighbor_right = play_to_quit
+	_play_button.focus_neighbor_top = play_to_quit
+	_play_button.focus_neighbor_bottom = play_to_quit
+	_play_button.focus_next = play_to_quit
+	_play_button.focus_previous = play_to_quit
+
+	_quit_button.focus_neighbor_left = quit_to_play
+	_quit_button.focus_neighbor_right = quit_to_play
+	_quit_button.focus_neighbor_top = quit_to_play
+	_quit_button.focus_neighbor_bottom = quit_to_play
+	_quit_button.focus_next = quit_to_play
+	_quit_button.focus_previous = quit_to_play
+
+
+## Gives the title screen a deterministic starting focus for keyboard-only play.
+func _focus_default_button() -> void:
+	if _play_button == null:
+		return
+	_play_button.grab_focus()

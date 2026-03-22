@@ -11,13 +11,14 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"4ff4b0c3-f6cc-4f2d-adba-302a991e4da7"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"4ff4b0c3-f6cc-4f2d-adba-302a991e4da7"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -689,7 +690,7 @@
 			"steps": [
 				{
 					"details": "Add explicit default focus and keyboard navigation to the title screen and any pre-run menu flow the player must use before driving, and write very thorough unit or UI tests for the focus and activation behavior.\n\nDone when: by launching the game and keeping hands off the mouse, the player can move through the title or start flow with the keyboard, see a valid option focused by default, and start a run with the keyboard alone.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add keyboard navigation and focus management to in-run overlays and menus, including onboarding, pause, and any confirmation flow the player may need during a run, and write very thorough unit or UI tests for open, navigate, confirm, and cancel behavior.\n\nDone when: by playing a run with only the keyboard, the player can dismiss onboarding, open pause with Escape, move between pause options, resume or restart from the menu, and back out of in-run menu flows without touching the mouse.",
