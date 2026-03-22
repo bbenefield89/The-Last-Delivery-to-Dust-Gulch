@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
 				"e0958d3a-e763-454c-a978-271443797d74",
 				"0ca1b626-31ec-4978-9352-36006543cbb9",
 				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6"
@@ -20,7 +19,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -608,7 +609,7 @@
 			"steps": [
 				{
 					"details": "Add a small local persistence path for best-run data that stores and reloads `Best Score` and `Best Grade` across app launches, and write very thorough unit tests for save and load behavior.\n\nDone when: by finishing a run, closing the game, and launching it again, the same best score and best grade are still shown on the title screen.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Update the result flow so a completed run compares against the stored best score, marks a new best only when the current score is strictly higher, and writes the new best values only in that case. Write very thorough unit tests for lower-score, tied-score, and higher-score outcomes.\n\nDone when: by playing three runs, one lower than the current best, one tied with it, and one higher than it, only the higher-scoring run replaces the saved best entry.",

@@ -1,6 +1,17 @@
 extends GutTest
 
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
+const TEST_BEST_RUN_SAVE_PATH := "user://dg30_test_best_run.cfg"
+
+
+## Clears the step-local best-run fixture before each persistence test path is used.
+func before_each() -> void:
+	_delete_test_best_run_file()
+
+
+## Clears the step-local best-run fixture after each persistence test completes.
+func after_each() -> void:
+	_delete_test_best_run_file()
 
 
 func test_defaults_match_expected_mvp_boot_values() -> void:
@@ -118,6 +129,53 @@ func test_delivery_grade_when_score_crosses_thresholds_then_expected_grade_is_re
 	failed_state.wagon_health = 20
 	failed_state.cargo_value = 10
 	assert_eq(failed_state.get_delivery_grade(), "F")
+
+
+## Verifies loading with no saved file returns an empty best-run snapshot.
+func test_best_run_load_when_file_is_missing_then_empty_snapshot_is_returned() -> void:
+	var best_run := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	assert_false(best_run.has_value)
+	assert_eq(best_run.score, 0)
+	assert_eq(best_run.grade, "")
+
+
+## Verifies a saved best-run snapshot round-trips the exact stored score and grade.
+func test_best_run_save_and_load_when_data_is_valid_then_snapshot_round_trips() -> void:
+	var save_result := RunStateType.save_best_run(
+		RunStateType.BestRunData.new(1565, "A", true),
+		TEST_BEST_RUN_SAVE_PATH
+	)
+	var best_run := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	assert_eq(save_result, OK)
+	assert_true(best_run.has_value)
+	assert_eq(best_run.score, 1565)
+	assert_eq(best_run.grade, "A")
+
+
+## Verifies invalid save requests are rejected instead of writing an empty best-run entry.
+func test_best_run_save_when_snapshot_has_no_value_then_invalid_parameter_is_returned() -> void:
+	var save_result := RunStateType.save_best_run(
+		RunStateType.BestRunData.new(),
+		TEST_BEST_RUN_SAVE_PATH
+	)
+
+	assert_eq(save_result, ERR_INVALID_PARAMETER)
+	assert_false(FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH))
+
+
+## Verifies malformed save data falls back to the default empty best-run snapshot.
+func test_best_run_load_when_save_file_is_missing_grade_then_empty_snapshot_is_returned() -> void:
+	var config := ConfigFile.new()
+	config.set_value(RunStateType.BEST_RUN_SECTION, RunStateType.BEST_RUN_SCORE_KEY, 1800)
+	assert_eq(config.save(TEST_BEST_RUN_SAVE_PATH), OK)
+
+	var best_run := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	assert_false(best_run.has_value)
+	assert_eq(best_run.score, 0)
+	assert_eq(best_run.grade, "")
 
 
 func test_configure_route_distance_updates_starting_distance() -> void:
@@ -285,3 +343,10 @@ func test_recovery_transients_clear_outcome_and_cooldown_over_time() -> void:
 	assert_eq(state.last_recovery_outcome, &"")
 	assert_eq(state.recovery_cooldown_remaining, 0.0)
 	assert_true(state.can_start_failure(&"horse_panic"))
+
+
+## Removes the persisted best-run fixture file when the test created one.
+func _delete_test_best_run_file() -> void:
+	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
+	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
+		DirAccess.remove_absolute(absolute_path)

@@ -38,6 +38,10 @@ const GRADE_A_MIN_SCORE := 1500
 const GRADE_B_MIN_SCORE := 1200
 const GRADE_C_MIN_SCORE := 900
 const GRADE_D_MIN_SCORE := 600
+const BEST_RUN_SAVE_PATH := "user://best_run.cfg"
+const BEST_RUN_SECTION := "best_run"
+const BEST_RUN_SCORE_KEY := "score"
+const BEST_RUN_GRADE_KEY := "grade"
 
 var route_distance: float = DEFAULT_ROUTE_DISTANCE
 var distance_remaining: float = DEFAULT_DISTANCE_REMAINING
@@ -316,3 +320,51 @@ func clear_recovery_sequence() -> void:
 	recovery_sequence = DEFAULT_RECOVERY_SEQUENCE.duplicate()
 	recovery_prompt_index = DEFAULT_RECOVERY_PROMPT_INDEX
 	recovery_time_remaining = DEFAULT_RECOVERY_TIME_REMAINING
+
+
+## Saves the current best-run snapshot to the local user data path.
+static func save_best_run(best_run: BestRunData, save_path: String = BEST_RUN_SAVE_PATH) -> int:
+	if best_run == null or not best_run.has_value:
+		return ERR_INVALID_PARAMETER
+
+	var config := ConfigFile.new()
+	config.set_value(BEST_RUN_SECTION, BEST_RUN_SCORE_KEY, best_run.score)
+	config.set_value(BEST_RUN_SECTION, BEST_RUN_GRADE_KEY, best_run.grade)
+	return config.save(save_path)
+
+
+## Loads the stored best-run snapshot from the local user data path when available.
+static func load_best_run(save_path: String = BEST_RUN_SAVE_PATH) -> BestRunData:
+	if not FileAccess.file_exists(save_path):
+		return BestRunData.new()
+
+	var config := ConfigFile.new()
+	if config.load(save_path) != OK:
+		return BestRunData.new()
+	if not config.has_section_key(BEST_RUN_SECTION, BEST_RUN_SCORE_KEY):
+		return BestRunData.new()
+	if not config.has_section_key(BEST_RUN_SECTION, BEST_RUN_GRADE_KEY):
+		return BestRunData.new()
+
+	var score_value: Variant = config.get_value(BEST_RUN_SECTION, BEST_RUN_SCORE_KEY)
+	var grade_value: Variant = config.get_value(BEST_RUN_SECTION, BEST_RUN_GRADE_KEY)
+	if typeof(score_value) != TYPE_INT or typeof(grade_value) != TYPE_STRING:
+		return BestRunData.new()
+
+	return BestRunData.new(score_value, grade_value, true)
+
+
+class BestRunData:
+	extends RefCounted
+	## Stores the persistent local best-run summary that survives app relaunches.
+
+	var score: int
+	var grade: String
+	var has_value: bool
+
+
+	## Builds a typed best-run snapshot for save/load and later comparison logic.
+	func _init(score_value: int = 0, grade_value: String = "", has_stored_value: bool = false) -> void:
+		score = score_value
+		grade = grade_value
+		has_value = has_stored_value
