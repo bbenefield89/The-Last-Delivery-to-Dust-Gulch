@@ -1661,6 +1661,7 @@ func test_result_panel_stays_hidden_during_active_run() -> void:
 ## Verifies the success result panel shows score and grade alongside the stat summary.
 func test_result_panel_includes_score_grade_and_small_stats_summary_for_success() -> void:
 	var scene = RUN_SCENE.instantiate()
+	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -1679,7 +1680,10 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 
 	var result_summary: Label = scene.get_node("%ResultSummary")
 	var result_stats: Label = scene.get_node("%ResultStats")
-	assert_false(result_summary.visible)
+	assert_true(result_summary.visible)
+	assert_string_contains(result_summary.text, "New Best Run!")
+	assert_string_contains(result_summary.text, "Best Score: 1565")
+	assert_string_contains(result_summary.text, "Best Grade: A")
 	assert_string_contains(result_stats.text, "Score: 1565")
 	assert_string_contains(result_stats.text, "Delivery Grade: A")
 	assert_string_contains(result_stats.text, "Health: 41")
@@ -1700,6 +1704,7 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 ## Verifies the collapse result panel uses the same score and grade wiring.
 func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	var scene = RUN_SCENE.instantiate()
+	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -1719,7 +1724,10 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	var result_summary: Label = scene.get_node("%ResultSummary")
 	var result_stats: Label = scene.get_node("%ResultStats")
 	assert_eq(result_title.text, "Wagon Collapsed")
-	assert_false(result_summary.visible)
+	assert_true(result_summary.visible)
+	assert_string_contains(result_summary.text, "New Best Run!")
+	assert_string_contains(result_summary.text, "Best Score: 400")
+	assert_string_contains(result_summary.text, "Best Grade: F")
 	assert_string_contains(result_stats.text, "Score: 400")
 	assert_string_contains(result_stats.text, "Delivery Grade: F")
 	assert_string_contains(result_stats.text, "Health: 20")
@@ -1750,8 +1758,13 @@ func test_result_flow_when_completed_score_is_lower_then_stored_best_run_is_unch
 	scene.setup(state)
 
 	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+	var result_summary: Label = scene.get_node("%ResultSummary")
 
 	assert_false(state.current_run_is_new_best)
+	assert_true(result_summary.visible)
+	assert_false(result_summary.text.contains("New Best Run!"))
+	assert_string_contains(result_summary.text, "Best Score: 1700")
+	assert_string_contains(result_summary.text, "Best Grade: A")
 	assert_eq(stored_best.score, 1700)
 	assert_eq(stored_best.grade, "A")
 
@@ -1775,14 +1788,18 @@ func test_result_flow_when_completed_score_is_higher_then_new_best_run_is_saved(
 	scene.setup(state)
 
 	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+	var result_summary: Label = scene.get_node("%ResultSummary")
 
 	assert_true(state.current_run_is_new_best)
+	assert_true(result_summary.visible)
+	assert_string_contains(result_summary.text, "New Best Run!")
 	assert_eq(stored_best.score, state.get_score())
 	assert_eq(stored_best.grade, state.get_delivery_grade())
 
 
 func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -> void:
 	var scene = RUN_SCENE.instantiate()
+	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -1800,7 +1817,8 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -
 	await wait_process_frames(1)
 
 	var viewport_rect: Rect2 = scene.get_viewport_rect()
-	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
+	var result_title: Label = scene.get_node("%ResultTitle")
+	var result_summary: Label = scene.get_node("%ResultSummary")
 	var result_stats: Label = scene.get_node("%ResultStats")
 	var restart_button: Button = scene.get_node(
 		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
@@ -1809,15 +1827,16 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -
 		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
 	)
 
-	assert_true(result_panel.get_global_rect().position.y >= viewport_rect.position.y)
-	assert_true(result_panel.get_global_rect().end.y <= viewport_rect.end.y)
-	assert_true(result_stats.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
-	assert_true(restart_button.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
-	assert_true(title_button.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
+	assert_true(result_title.get_global_rect().position.y >= viewport_rect.position.y)
+	assert_true(result_summary.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(result_stats.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(restart_button.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(title_button.get_global_rect().end.y <= viewport_rect.end.y)
 
 
 func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() -> void:
 	var scene = RUN_SCENE.instantiate()
+	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -1836,7 +1855,8 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() 
 	await wait_process_frames(1)
 
 	var viewport_rect: Rect2 = scene.get_viewport_rect()
-	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
+	var result_title: Label = scene.get_node("%ResultTitle")
+	var result_summary: Label = scene.get_node("%ResultSummary")
 	var result_stats: Label = scene.get_node("%ResultStats")
 	var restart_button: Button = scene.get_node(
 		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
@@ -1845,11 +1865,11 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() 
 		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
 	)
 
-	assert_true(result_panel.get_global_rect().position.y >= viewport_rect.position.y)
-	assert_true(result_panel.get_global_rect().end.y <= viewport_rect.end.y)
-	assert_true(result_stats.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
-	assert_true(restart_button.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
-	assert_true(title_button.get_global_rect().end.y <= result_panel.get_global_rect().end.y)
+	assert_true(result_title.get_global_rect().position.y >= viewport_rect.position.y)
+	assert_true(result_summary.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(result_stats.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(restart_button.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(title_button.get_global_rect().end.y <= viewport_rect.end.y)
 
 
 func test_result_panel_buttons_emit_restart_and_return_signals() -> void:

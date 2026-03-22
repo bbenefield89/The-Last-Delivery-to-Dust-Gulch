@@ -19,9 +19,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -52,7 +50,8 @@
 				"8f0f1b93-0c64-4299-9f64-cafd9f764de1",
 				"b3e7a12f-4c91-4d5e-9f83-1d2e3f4a5b6c",
 				"8bfb1b88-1068-4af6-be5f-645a0b5f852d",
-				"35ee46bc-0b91-4e29-85b7-acb2a4270f34"
+				"35ee46bc-0b91-4e29-85b7-acb2a4270f34",
+				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0"
 			]
 		}
 	],
@@ -617,7 +616,7 @@
 				},
 				{
 					"details": "Show the stored best score and best grade on the title screen and result screen, add a visible new-best indication to the result screen, and write very thorough unit and UI coverage for the display wiring.\n\nDone when: by launching the game and by finishing a run, the player can see the same saved best score and best grade in both places, and a new-best run visibly indicates that it set a new best.",
-					"done": false
+					"done": true
 				}
 			]
 		},

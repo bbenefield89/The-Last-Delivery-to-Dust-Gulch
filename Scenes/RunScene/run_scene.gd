@@ -584,8 +584,6 @@ func _refresh_result_screen() -> void:
 		return
 
 	_result_panel.visible = true
-	_result_summary.text = ""
-	_result_summary.visible = false
 	match _run_state.result:
 		RunStateType.RESULT_SUCCESS:
 			_result_title.text = "Delivered to Dust Gulch"
@@ -593,6 +591,9 @@ func _refresh_result_screen() -> void:
 			_result_title.text = "Wagon Collapsed"
 		_:
 			_result_title.text = "Run Complete"
+
+	_result_summary.text = _build_best_run_summary()
+	_result_summary.visible = not _result_summary.text.is_empty()
 
 	_result_stats.text = (
 		"Score: %d\n"
@@ -628,6 +629,21 @@ func _sync_completed_run_best_state() -> void:
 		return
 
 	_run_state.record_best_run_if_needed(_best_run_save_path)
+
+
+## Builds the compact best-run summary line set for the completed-run result panel.
+func _build_best_run_summary() -> String:
+	if _run_state == null:
+		return ""
+	if not _run_state.best_run.has_value:
+		return ""
+
+	var prefix := "New Best Run! | " if _run_state.current_run_is_new_best else ""
+	return "%sBest Score: %d | Best Grade: %s" % [
+		prefix,
+		_run_state.best_run.score,
+		_run_state.best_run.grade,
+	]
 
 
 ## Shows touch controls only while the run is actively playable on a supported runtime.

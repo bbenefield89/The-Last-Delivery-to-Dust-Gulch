@@ -1,6 +1,16 @@
 extends GutTest
 
 const TITLE_SCREEN_SCENE := preload("res://Scenes/TitleScreen/TitleScreen.tscn")
+const RunStateType := preload("res://Scripts/RunState/run_state.gd")
+const TEST_BEST_RUN_SAVE_PATH := "user://dg30_test_title_best_run.cfg"
+
+
+func before_each() -> void:
+	_delete_test_best_run_file()
+
+
+func after_each() -> void:
+	_delete_test_best_run_file()
 
 
 func test_play_button_emits_play_requested() -> void:
@@ -76,3 +86,34 @@ func test_title_screen_starts_menu_music() -> void:
 	assert_not_null(player.stream)
 	assert_true(player.playing)
 	assert_eq(ui_click_player.stream, title_screen.UI_CLICK_SOUND)
+
+
+func test_title_screen_when_no_best_run_exists_then_empty_summary_is_shown() -> void:
+	var title_screen = TITLE_SCREEN_SCENE.instantiate()
+	title_screen._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
+	add_child_autofree(title_screen)
+
+	var best_summary: Label = title_screen.get_node("%BestRunSummary")
+
+	assert_eq(best_summary.text, title_screen.BEST_RUN_EMPTY_TEXT)
+
+
+func test_title_screen_when_best_run_exists_then_score_and_grade_are_shown() -> void:
+	assert_eq(
+		RunStateType.save_best_run(RunStateType.BestRunData.new(2185, "S", true), TEST_BEST_RUN_SAVE_PATH),
+		OK
+	)
+	var title_screen = TITLE_SCREEN_SCENE.instantiate()
+	title_screen._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
+	add_child_autofree(title_screen)
+
+	var best_summary: Label = title_screen.get_node("%BestRunSummary")
+
+	assert_string_contains(best_summary.text, "Best Score: 2185")
+	assert_string_contains(best_summary.text, "Best Grade: S")
+
+
+func _delete_test_best_run_file() -> void:
+	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
+	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
+		DirAccess.remove_absolute(absolute_path)
