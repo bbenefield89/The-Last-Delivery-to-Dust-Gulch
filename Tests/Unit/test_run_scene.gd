@@ -3,6 +3,17 @@ extends GutTest
 const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const RecoverySequenceGeneratorType := preload("res://Scripts/Failures/recovery_sequence_generator.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
+const TEST_BEST_RUN_SAVE_PATH := "user://dg30_test_run_scene_best_run.cfg"
+
+
+## Clears the scene-level best-run fixture before each test uses the override save path.
+func before_each() -> void:
+	_delete_test_best_run_file()
+
+
+## Clears the scene-level best-run fixture after each test completes.
+func after_each() -> void:
+	_delete_test_best_run_file()
 
 
 func _dismiss_onboarding(scene: Node) -> void:
@@ -1720,6 +1731,56 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	assert_string_contains(result_stats.text, "Recovery Failures: 3")
 
 
+## Verifies the completed-run result flow does not overwrite a higher stored best score.
+func test_result_flow_when_completed_score_is_lower_then_stored_best_run_is_unchanged() -> void:
+	assert_eq(
+		RunStateType.save_best_run(RunStateType.BestRunData.new(1700, "A", true), TEST_BEST_RUN_SAVE_PATH),
+		OK
+	)
+	var scene = RUN_SCENE.instantiate()
+	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_COLLAPSED
+	state.distance_remaining = 375.0
+	state.cargo_value = 10
+	state.wagon_health = 20
+	scene.setup(state)
+
+	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	assert_false(state.current_run_is_new_best)
+	assert_eq(stored_best.score, 1700)
+	assert_eq(stored_best.grade, "A")
+
+
+## Verifies the completed-run result flow persists a strictly higher score as the new best run.
+func test_result_flow_when_completed_score_is_higher_then_new_best_run_is_saved() -> void:
+	assert_eq(
+		RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), TEST_BEST_RUN_SAVE_PATH),
+		OK
+	)
+	var scene = RUN_SCENE.instantiate()
+	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 0.0
+	state.cargo_value = 88
+	state.wagon_health = 54
+	scene.setup(state)
+
+	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	assert_true(state.current_run_is_new_best)
+	assert_eq(stored_best.score, state.get_score())
+	assert_eq(stored_best.grade, state.get_delivery_grade())
+
+
 func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2241,3 +2302,10 @@ func test_step3_panel_styles_use_western_palette() -> void:
 	assert_not_null(recovery_style)
 	assert_true(hud_style.bg_color.r < 0.3)
 	assert_true(recovery_style.border_color.g > 0.5)
+
+
+## Removes the persisted best-run fixture file when the test created one.
+func _delete_test_best_run_file() -> void:
+	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
+	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
+		DirAccess.remove_absolute(absolute_path)

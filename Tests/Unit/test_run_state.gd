@@ -178,6 +178,73 @@ func test_best_run_load_when_save_file_is_missing_grade_then_empty_snapshot_is_r
 	assert_eq(best_run.grade, "")
 
 
+## Verifies a lower finished score leaves the stored best run unchanged.
+func test_record_best_run_when_current_score_is_lower_then_existing_best_is_kept() -> void:
+	assert_eq(
+		RunStateType.save_best_run(RunStateType.BestRunData.new(1500, "A", true), TEST_BEST_RUN_SAVE_PATH),
+		OK
+	)
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 125.0
+	state.wagon_health = 41
+	state.cargo_value = 72
+	state.load_persisted_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	var did_set_new_best := state.record_best_run_if_needed(TEST_BEST_RUN_SAVE_PATH)
+	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	assert_false(did_set_new_best)
+	assert_false(state.current_run_is_new_best)
+	assert_eq(stored_best.score, 1500)
+	assert_eq(stored_best.grade, "A")
+
+
+## Verifies a tied finished score does not replace the existing best run.
+func test_record_best_run_when_current_score_ties_then_existing_best_is_kept() -> void:
+	assert_eq(
+		RunStateType.save_best_run(RunStateType.BestRunData.new(1565, "A", true), TEST_BEST_RUN_SAVE_PATH),
+		OK
+	)
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 0.0
+	state.wagon_health = 41
+	state.cargo_value = 72
+	state.load_persisted_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	var did_set_new_best := state.record_best_run_if_needed(TEST_BEST_RUN_SAVE_PATH)
+	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	assert_false(did_set_new_best)
+	assert_false(state.current_run_is_new_best)
+	assert_eq(state.get_score(), 1565)
+	assert_eq(stored_best.score, 1565)
+	assert_eq(stored_best.grade, "A")
+
+
+## Verifies a higher finished score replaces the stored best run and marks the run as new best.
+func test_record_best_run_when_current_score_is_higher_then_best_run_is_replaced() -> void:
+	assert_eq(
+		RunStateType.save_best_run(RunStateType.BestRunData.new(1400, "B", true), TEST_BEST_RUN_SAVE_PATH),
+		OK
+	)
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 0.0
+	state.wagon_health = 50
+	state.cargo_value = 80
+	state.load_persisted_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	var did_set_new_best := state.record_best_run_if_needed(TEST_BEST_RUN_SAVE_PATH)
+	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+
+	assert_true(did_set_new_best)
+	assert_true(state.current_run_is_new_best)
+	assert_eq(stored_best.score, state.get_score())
+	assert_eq(stored_best.grade, state.get_delivery_grade())
+
+
 func test_configure_route_distance_updates_starting_distance() -> void:
 	var state := RunStateType.new()
 

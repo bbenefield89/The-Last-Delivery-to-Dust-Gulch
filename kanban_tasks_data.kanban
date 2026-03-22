@@ -613,7 +613,7 @@
 				},
 				{
 					"details": "Update the result flow so a completed run compares against the stored best score, marks a new best only when the current score is strictly higher, and writes the new best values only in that case. Write very thorough unit tests for lower-score, tied-score, and higher-score outcomes.\n\nDone when: by playing three runs, one lower than the current best, one tied with it, and one higher than it, only the higher-scoring run replaces the saved best entry.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Show the stored best score and best grade on the title screen and result screen, add a visible new-best indication to the result screen, and write very thorough unit and UI coverage for the display wiring.\n\nDone when: by launching the game and by finishing a run, the player can see the same saved best score and best grade in both places, and a new-best run visibly indicates that it set a new best.",

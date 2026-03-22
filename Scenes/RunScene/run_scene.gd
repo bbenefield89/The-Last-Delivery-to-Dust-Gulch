@@ -150,6 +150,7 @@ var _has_mobile_web_runtime_override := false
 var _mobile_web_runtime_override := false
 var _has_touchscreen_available_override := false
 var _touchscreen_available_override := false
+var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGenerator.new()
 
 @onready var _backdrop: Sprite2D = $World/Backdrop
@@ -214,6 +215,9 @@ var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGe
 ## Binds a fresh run state and resets transient scene-only UI flow.
 func setup(run_state: RunStateType) -> void:
 	_run_state = run_state
+	_run_state.load_persisted_best_run(_best_run_save_path)
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		_run_state.record_best_run_if_needed(_best_run_save_path)
 	_onboarding_active = true
 	_pause_menu_open = false
 	_bonus_callout_text = ""
@@ -449,6 +453,7 @@ func _process(delta: float) -> void:
 	_advance_failure_triggers(delta)
 	_check_for_loss()
 	_check_for_success()
+	_sync_completed_run_best_state()
 	_tick_bonus_callout(delta)
 	_update_impact_feedback(delta)
 	_update_wagon_visual()
@@ -610,7 +615,19 @@ func _refresh_result_screen() -> void:
 		_run_state.near_misses,
 		_run_state.perfect_recoveries,
 		_run_state.recovery_failures,
-	]
+	]	
+
+
+## Persists a newly completed run exactly once when it beats the stored best score.
+func _sync_completed_run_best_state() -> void:
+	if _run_state == null:
+		return
+	if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
+		return
+	if _last_announced_result == _run_state.result:
+		return
+
+	_run_state.record_best_run_if_needed(_best_run_save_path)
 
 
 ## Shows touch controls only while the run is actively playable on a supported runtime.

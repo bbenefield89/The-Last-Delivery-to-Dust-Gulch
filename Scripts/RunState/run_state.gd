@@ -68,6 +68,8 @@ var hazards_dodged: int = DEFAULT_HAZARDS_DODGED
 var near_misses: int = DEFAULT_NEAR_MISSES
 var perfect_recoveries: int = DEFAULT_PERFECT_RECOVERIES
 var recovery_failures: int = DEFAULT_RECOVERY_FAILURES
+var best_run: BestRunData = BestRunData.new()
+var current_run_is_new_best: bool = false
 
 
 func reset_for_new_run() -> void:
@@ -95,6 +97,7 @@ func reset_for_new_run() -> void:
 	near_misses = DEFAULT_NEAR_MISSES
 	perfect_recoveries = DEFAULT_PERFECT_RECOVERIES
 	recovery_failures = DEFAULT_RECOVERY_FAILURES
+	current_run_is_new_best = false
 
 
 func get_distance_traveled() -> float:
@@ -159,6 +162,30 @@ func get_delivery_grade() -> String:
 	if score >= GRADE_D_MIN_SCORE:
 		return "D"
 	return "F"
+
+
+## Loads the persisted best-run snapshot into this run-state instance for later result comparison.
+func load_persisted_best_run(save_path: String = BEST_RUN_SAVE_PATH) -> void:
+	best_run = load_best_run(save_path)
+
+
+## Finalizes best-run comparison for a completed run and persists only a strictly higher score.
+func record_best_run_if_needed(save_path: String = BEST_RUN_SAVE_PATH) -> bool:
+	current_run_is_new_best = false
+	if result == RESULT_IN_PROGRESS:
+		return false
+
+	if not best_run.has_value:
+		best_run = load_best_run(save_path)
+	var current_score := get_score()
+	if best_run.has_value and current_score <= best_run.score:
+		return false
+
+	best_run = BestRunData.new(current_score, get_delivery_grade(), true)
+	current_run_is_new_best = save_best_run(best_run, save_path) == OK
+	if not current_run_is_new_best:
+		best_run = load_best_run(save_path)
+	return current_run_is_new_best
 
 
 func configure_route_distance(value: float) -> void:
