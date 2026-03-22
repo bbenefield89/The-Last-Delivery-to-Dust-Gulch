@@ -237,14 +237,36 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	scene._process(0.0)
 	await wait_process_frames(1)
 
-	assert_eq(state.wagon_health, 90)
-	assert_eq(state.cargo_value, 96)
+	assert_eq(state.wagon_health, 94)
+	assert_eq(state.cargo_value, 98)
 	assert_eq(state.last_hit_hazard, &"pothole")
+	assert_eq(state.active_failure, &"wheel_loose")
+	assert_eq(state.current_failure.source_hazard, &"pothole")
 
 	var pothole_impact_player: AudioStreamPlayer = scene.get_node("%PotholeImpactPlayer")
 	var fallback_impact_player: AudioStreamPlayer = scene.get_node("%ImpactPlayer")
 	assert_true(pothole_impact_player.playing)
 	assert_false(fallback_impact_player.playing)
+
+
+func test_rock_collision_when_it_hits_then_it_causes_the_heavier_wheel_loose_punishment() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
+	_spawn_test_hazard(scene, &"rock")
+	await wait_process_frames(1)
+	scene._process(0.0)
+	await wait_process_frames(1)
+
+	assert_eq(state.wagon_health, 82)
+	assert_eq(state.cargo_value, 91)
+	assert_eq(state.last_hit_hazard, &"rock")
+	assert_eq(state.active_failure, &"wheel_loose")
+	assert_eq(state.current_failure.source_hazard, &"rock")
 
 
 func test_near_miss_when_hazard_passes_close_without_collision_then_bonus_and_callout_are_awarded_once() -> void:

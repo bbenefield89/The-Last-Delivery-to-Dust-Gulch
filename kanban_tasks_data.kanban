@@ -11,7 +11,6 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"e0958d3a-e763-454c-a978-271443797d74",
 				"0ca1b626-31ec-4978-9352-36006543cbb9",
 				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6"
 			]
@@ -19,7 +18,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"e0958d3a-e763-454c-a978-271443797d74"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -623,15 +624,15 @@
 		{
 			"uuid": "e0958d3a-e763-454c-a978-271443797d74",
 			"title": "DG-25",
-			"description": "Task: Obstacle role differentiation pass.\n\nThe game has multiple hazards, but they still need clearer arcade roles so each one tests a different driving skill instead of feeling like interchangeable blockers. This ticket is a design-and-balance pass over the current hazard set after DG-20 lands.\n\nLock these roles for the current hazard set:\n- Pothole: common lane-commit hazard; static; lowest damage; used as filler pressure.\n- Rock: rarer hard blocker; static; highest damage; used as the main do not be in this lane anchor.\n- Tumbleweed: medium-frequency moving hazard; drifts laterally during its scroll lifetime; used for timing pressure.\n- Livestock: rare full crossing hazard; used for surprise timing checks.\n\nThis ticket should tune hazard behavior and spawn usage to support those roles. Do not add new hazard types or new failure types here.\n\nAffected files:\n- Scripts/Hazards/hazard_spawner.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_hazard_spawner.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: a player can distinguish the gameplay role of potholes, rocks, tumbleweeds, and livestock during normal runs, the hazard mix supports those roles consistently, and the supporting unit coverage is very thorough.",
+			"description": "Task: Obstacle role differentiation pass.\n\nThe game has multiple hazards, but they still need clearer arcade roles so each one tests a different driving skill instead of feeling like interchangeable blockers. This ticket is a design-and-balance pass over the current hazard set after DG-20 lands.\n\nLock these roles for the current hazard set:\n- Pothole: common lane-commit hazard; static; lowest damage; used as filler pressure.\n- Rock: rarer hard blocker; static; highest damage; used as the main do not be in this lane anchor.\n- Tumbleweed: medium-frequency moving hazard; drifts laterally during its scroll lifetime; used for timing pressure.\n- Jackalope: rare full crossing hazard; used for surprise timing checks.\n\nThis ticket should tune hazard behavior and spawn usage to support those roles. Do not add new hazard types or new failure types here.\n\nAffected files:\n- Scripts/Hazards/hazard_spawner.gd\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_hazard_spawner.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: a player can distinguish the gameplay role of potholes, rocks, tumbleweeds, and livestock during normal runs, the hazard mix supports those roles consistently, and the supporting unit coverage is very thorough.",
 			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
 			"steps": [
 				{
 					"details": "Tune potholes and rocks so potholes read as the common lower-damage filler hazard and rocks read as the rarer higher-danger blocker, and write very thorough unit tests for the updated spawn and collision expectations.\n\nDone when: by playing several runs, potholes appear more often than rocks, potholes feel like the safer collision, and rocks consistently read as the hazard to avoid most urgently.",
-					"done": false
+					"done": true
 				},
 				{
-					"details": "Tune tumbleweeds and livestock so both create timing pressure rather than just occupying space, and write very thorough unit tests for their movement and encounter behavior.\n\nDone when: by playing several runs, tumbleweeds and livestock each create moving timing reads that feel different from static potholes and rocks.",
+					"details": "Tune tumbleweeds and jacaklope so both create timing pressure rather than just occupying space, and write very thorough unit tests for their movement and encounter behavior.\n\nDone when: by playing several runs, tumbleweeds and Jackalope each create moving timing reads that feel different from static potholes and rocks.",
 					"done": false
 				},
 				{

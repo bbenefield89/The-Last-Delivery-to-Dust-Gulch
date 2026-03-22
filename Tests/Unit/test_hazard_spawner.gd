@@ -30,32 +30,32 @@ func test_progress_bands_define_expected_spacing_ranges_and_weights() -> void:
 
 	spawner._route_progress_ratio = 0.0
 	var early_band = spawner._get_active_band()
-	assert_eq(early_band.spacing_min, 520.0)
-	assert_eq(early_band.spacing_max, 660.0)
-	assert_eq(early_band.weights.pothole, 6)
-	assert_eq(early_band.weights.rock, 2)
-	assert_eq(early_band.weights.tumbleweed, 4)
+	assert_eq(early_band.spacing_min, 500.0)
+	assert_eq(early_band.spacing_max, 620.0)
+	assert_eq(early_band.weights.pothole, 8)
+	assert_eq(early_band.weights.rock, 1)
+	assert_eq(early_band.weights.tumbleweed, 3)
 	assert_eq(early_band.weights.livestock, 0)
 	assert_false(early_band.allows_pressure_pair)
 
 	spawner._route_progress_ratio = 0.5
 	var mid_band = spawner._get_active_band()
-	assert_eq(mid_band.spacing_min, 420.0)
-	assert_eq(mid_band.spacing_max, 560.0)
-	assert_eq(mid_band.weights.pothole, 4)
-	assert_eq(mid_band.weights.rock, 3)
+	assert_eq(mid_band.spacing_min, 400.0)
+	assert_eq(mid_band.spacing_max, 520.0)
+	assert_eq(mid_band.weights.pothole, 6)
+	assert_eq(mid_band.weights.rock, 2)
 	assert_eq(mid_band.weights.tumbleweed, 3)
-	assert_eq(mid_band.weights.livestock, 2)
+	assert_eq(mid_band.weights.livestock, 1)
 	assert_false(mid_band.allows_pressure_pair)
 
 	spawner._route_progress_ratio = 0.8
 	var late_band = spawner._get_active_band()
-	assert_eq(late_band.spacing_min, 320.0)
-	assert_eq(late_band.spacing_max, 460.0)
-	assert_eq(late_band.weights.pothole, 4)
-	assert_eq(late_band.weights.rock, 5)
+	assert_eq(late_band.spacing_min, 300.0)
+	assert_eq(late_band.spacing_max, 420.0)
+	assert_eq(late_band.weights.pothole, 5)
+	assert_eq(late_band.weights.rock, 3)
 	assert_eq(late_band.weights.tumbleweed, 3)
-	assert_eq(late_band.weights.livestock, 2)
+	assert_eq(late_band.weights.livestock, 1)
 	assert_true(late_band.allows_pressure_pair)
 
 
@@ -82,16 +82,16 @@ func test_seeded_spawn_rolls_keep_spacing_inside_band_ranges() -> void:
 
 	for roll_index in range(12):
 		var early_plan = _prime_seeded_plan(spawner, 100 + roll_index, 0.1)
-		assert_true(early_plan.spacing >= 520.0)
-		assert_true(early_plan.spacing <= 660.0)
+		assert_true(early_plan.spacing >= 500.0)
+		assert_true(early_plan.spacing <= 620.0)
 
 		var mid_plan = _prime_seeded_plan(spawner, 200 + roll_index, 0.5)
-		assert_true(mid_plan.spacing >= 420.0)
-		assert_true(mid_plan.spacing <= 560.0)
+		assert_true(mid_plan.spacing >= 400.0)
+		assert_true(mid_plan.spacing <= 520.0)
 
 		var late_plan = _prime_seeded_plan(spawner, 300 + roll_index, 0.9)
-		assert_true(late_plan.spacing >= 320.0)
-		assert_true(late_plan.spacing <= 460.0)
+		assert_true(late_plan.spacing >= 300.0)
+		assert_true(late_plan.spacing <= 420.0)
 
 
 func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
@@ -242,5 +242,33 @@ func test_collect_collisions_reports_profile_damage_for_intersecting_hazard() ->
 	)
 	assert_eq(collisions.size(), 1)
 	assert_eq(collisions[0]["type"], &"pothole")
-	assert_eq(collisions[0]["damage"], 10)
-	assert_eq(collisions[0]["cargo_damage"], 4)
+	assert_eq(collisions[0]["damage"], 6)
+	assert_eq(collisions[0]["cargo_damage"], 2)
+
+
+func test_spawn_bands_when_sampled_many_times_then_potholes_outnumber_rocks() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	for progress_ratio in [0.1, 0.5, 0.85]:
+		var pothole_count := 0
+		var rock_count := 0
+		for roll_index in range(240):
+			var plan = _prime_seeded_plan(spawner, 1600 + roll_index + int(progress_ratio * 1000.0), progress_ratio)
+			if plan.hazard_type == &"pothole":
+				pothole_count += 1
+			elif plan.hazard_type == &"rock":
+				rock_count += 1
+
+		assert_true(pothole_count > rock_count)
+
+
+func test_hazard_profiles_when_comparing_pothole_and_rock_then_rock_is_the_punishing_hit() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var pothole_profile: Dictionary = spawner._get_hazard_profile(&"pothole")
+	var rock_profile: Dictionary = spawner._get_hazard_profile(&"rock")
+
+	assert_true(rock_profile["damage"] > pothole_profile["damage"])
+	assert_true(rock_profile["cargo_damage"] > pothole_profile["cargo_damage"])

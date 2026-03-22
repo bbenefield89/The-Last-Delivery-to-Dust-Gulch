@@ -110,10 +110,10 @@ func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DE
 ## Returns the current band definition for the active route progress.
 func _get_active_band() -> SpawnBand:
 	if _route_progress_ratio < 0.33:
-		return SpawnBand.new(520.0, 660.0, 6, 2, 4, 0, false)
+		return SpawnBand.new(500.0, 620.0, 8, 1, 3, 0, false)
 	if _route_progress_ratio < 0.66:
-		return SpawnBand.new(420.0, 560.0, 4, 3, 3, 2, false)
-	return SpawnBand.new(320.0, 460.0, 4, 5, 3, 2, true)
+		return SpawnBand.new(400.0, 520.0, 6, 2, 3, 1, false)
+	return SpawnBand.new(300.0, 420.0, 5, 3, 3, 1, true)
 
 
 ## Rolls a hazard type from the current band's weights.
@@ -223,8 +223,8 @@ func _get_hazard_profile(hazard_type: StringName) -> Dictionary:
 		&"rock":
 			return {
 				"texture": rock_texture,
-				"damage": 15,
-				"cargo_damage": 7,
+				"damage": 18,
+				"cargo_damage": 9,
 				"size": Vector2(36.0, 36.0),
 			}
 		&"tumbleweed":
@@ -244,8 +244,8 @@ func _get_hazard_profile(hazard_type: StringName) -> Dictionary:
 		_:
 			return {
 				"texture": pothole_texture,
-				"damage": 10,
-				"cargo_damage": 4,
+				"damage": 6,
+				"cargo_damage": 2,
 				"size": Vector2(32.0, 24.0),
 			}
 
