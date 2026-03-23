@@ -18,6 +18,8 @@ const LIVESTOCK_CROSSING_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT := 0.75
 const LIVESTOCK_ANIMATION_FPS := 6.0
 const LIVESTOCK_SHEET_FRAME_SIZE := Vector2i(48, 32)
+const LIVESTOCK_VISUAL_CENTER_OFFSET_X := 7.0
+const LIVESTOCK_COLLISION_SIZE := Vector2(36.0, 32.0)
 const LIVESTOCK_SHEET_FRAMES: Array[Rect2i] = [
 	Rect2i(0, 0, LIVESTOCK_SHEET_FRAME_SIZE.x, LIVESTOCK_SHEET_FRAME_SIZE.y),
 	Rect2i(
@@ -438,17 +440,23 @@ func _get_tumbleweed_target_x(lane_index: int, spawn_y: float, signed_drift_rati
 ## Assigns crossing metadata so livestock enters from a roadside edge and passes through a target lane.
 func _configure_livestock_crossing(hazard: Node2D, lane_index: int, spawn_y: float) -> Vector2:
 	var crossing_direction := _roll_livestock_crossing_direction()
+	var visual_center_offset_x := _get_livestock_visual_center_offset_x(crossing_direction)
 	hazard.scale.x = float(crossing_direction)
 	hazard.set_meta("crossing_direction", crossing_direction)
 	hazard.set_meta(
 		"crossing_scroll_ratio_x",
 		LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT * float(crossing_direction)
 	)
-	hazard.set_meta("target_lane_x", _get_lane_center_x(lane_index))
+	hazard.set_meta("target_lane_x", _get_lane_center_x(lane_index) + visual_center_offset_x)
 	return Vector2(
-		_get_livestock_spawn_x(lane_index, spawn_y, crossing_direction),
+		_get_livestock_spawn_x(lane_index, spawn_y, crossing_direction) + visual_center_offset_x,
 		spawn_y
 	)
+
+
+## Returns the signed horizontal offset that centers the visible jackalope body on the crossing line.
+func _get_livestock_visual_center_offset_x(crossing_direction: int) -> float:
+	return LIVESTOCK_VISUAL_CENTER_OFFSET_X * float(crossing_direction)
 
 
 ## Rolls whether a livestock hazard crosses left-to-right or right-to-left.
@@ -484,7 +492,7 @@ func _get_hazard_profile(hazard_type: StringName) -> Dictionary:
 				"texture": livestock_texture,
 				"damage": 12,
 				"cargo_damage": 5,
-				"size": Vector2(48.0, 32.0),
+				"size": LIVESTOCK_COLLISION_SIZE,
 			}
 		_:
 			return {

@@ -758,7 +758,7 @@
 				},
 				{
 					"details": "Update the jackalope hazard integration so the wider 48x32 animated presentation still lines up with the current crossing path, lane target, and collision expectations during live play. If the hazard's visual footprint or placement needs a small adjustment to stay coherent with the existing gameplay, include that here, and write very thorough unit or scene tests for the affected behavior.\n\nDone when: by encountering jackalope crossings during a run, the animated jackalope enters and crosses the road cleanly, still feels fair to dodge, and does not look offset from where the game treats the hazard as dangerous.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Tune the jackalope animation playback for the shipped gameplay view so the bounding loop reads clearly at run speed without distracting jitter, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by seeing multiple jackalope hazards over normal play, the animated jackalope looks like a clean fast crossing hazard at game scale rather than a static sprite or a noisy flicker.",

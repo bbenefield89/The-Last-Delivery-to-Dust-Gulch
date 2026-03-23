@@ -512,6 +512,47 @@ func test_livestock_hazard_uses_animated_sheet_frames() -> void:
 	assert_eq(frame_3.get_size(), Vector2(48.0, 32.0))
 
 
+## Confirms the jackalope keeps its lane target centered on the visible animal instead of the raw sheet frame.
+func test_livestock_hazard_uses_directional_crossing_offset_to_center_the_body_on_the_lane() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	spawner._rng.seed = 77
+	spawner._spawn_hazard(&"livestock", 2)
+
+	var livestock := spawner.get_child(0) as AnimatedSprite2D
+	var crossing_direction := int(livestock.get_meta("crossing_direction"))
+	var lane_index := int(livestock.get_meta("lane_index"))
+	var target_lane_x := float(livestock.get_meta("target_lane_x"))
+	var lane_center_x: float = HazardSpawnerType.LANE_X_POSITIONS[lane_index]
+	var expected_offset_x := (
+		HazardSpawnerType.LIVESTOCK_VISUAL_CENTER_OFFSET_X * float(crossing_direction)
+	)
+	var crossing_distance := (
+		absf(HazardSpawnerType.DEFAULT_SPAWN_Y - HazardSpawnerType.LIVESTOCK_CROSSING_TARGET_Y)
+		* HazardSpawnerType.LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT
+	)
+
+	assert_ne(crossing_direction, 0)
+	assert_eq(target_lane_x, lane_center_x + expected_offset_x)
+	assert_eq(
+		livestock.position.x,
+		lane_center_x - (crossing_distance * float(crossing_direction)) + expected_offset_x
+	)
+	assert_eq(absf(livestock.position.x - target_lane_x), crossing_distance)
+
+
+## Confirms the livestock hazard uses a tighter collision footprint that matches the visible jackalope body.
+func test_livestock_hazard_uses_tighter_collision_size_matching_the_body() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var profile: Dictionary = spawner._get_hazard_profile(&"livestock")
+
+	assert_eq(profile["size"], spawner.LIVESTOCK_COLLISION_SIZE)
+	assert_eq(profile["size"], Vector2(36.0, 32.0))
+
+
 ## Verifies livestock crosses toward the road and cleans itself up after leaving the playable area.
 func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen() -> void:
 	var spawner := _create_seeded_spawner()
@@ -524,7 +565,7 @@ func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen
 	var starting_position := livestock.position
 	var target_lane_x := float(livestock.get_meta("target_lane_x"))
 
-	assert_has(HazardSpawnerType.LANE_X_POSITIONS, target_lane_x)
+	assert_ne(target_lane_x, HazardSpawnerType.LANE_X_POSITIONS[int(livestock.get_meta("lane_index"))])
 	spawner._move_hazards(40.0)
 
 	assert_true(absf(livestock.position.x - target_lane_x) < absf(starting_position.x - target_lane_x))
@@ -628,7 +669,7 @@ func test_livestock_when_spawned_then_starts_offroad_before_crossing_through_tar
 	var target_lane_x := float(livestock.get_meta("target_lane_x"))
 
 	assert_true(absf(livestock.position.x) > absf(target_lane_x))
-	assert_false(HazardSpawnerType.LANE_X_POSITIONS.has(livestock.position.x))
+	assert_false(HazardSpawnerType.LANE_X_POSITIONS.has(target_lane_x))
 
 
 func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
