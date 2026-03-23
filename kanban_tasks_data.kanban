@@ -19,7 +19,7 @@
                        "uuid":  "c670d77d-01d6-45a7-aa5b-94f564b959c3",
                        "title":  "Doing",
                        "tasks":  [
-                                     "f1ed9a74-0f24-4257-9578-518912255330"
+
                                  ]
                    },
                    {
@@ -60,7 +60,8 @@
                                      "ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
                                      "c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6",
                                      "3ba0474f-0b7e-4edc-895f-f1ac5ada835e",
-                                     "64b6e69a-a31a-4af1-ad0a-15ef0d940d11"
+                                     "64b6e69a-a31a-4af1-ad0a-15ef0d940d11",
+                                     "f1ed9a74-0f24-4257-9578-518912255330"
                                  ]
                    }
                ],
@@ -797,7 +798,7 @@
                                     },
                                     {
                                         "details":  "Remove the current run flow\u0027s live dependency on the old top-level Scripts layout and make the architecture contract visible in the repo. Keep scene-owned files in Scenes, keep systems under Systems/\u003cOwner\u003e, keep owner-specific support types near their owner, and leave top-level Enums reserved for genuinely generic cross-cutting enums only.\n\nDone when: no active scene, script, or test for the current run flow still points at res://Scripts/..., the folder layout visibly matches the agreed structure, and a reviewer can start a run from the title screen and return to the title screen without any behavior change.",
-                                        "done":  false
+                                        "done":  true
                                     }
                                 ]
                   },

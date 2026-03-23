@@ -309,6 +309,17 @@ Recommended gameplay data concepts:
 
 These should stay practical. The point is to keep logic understandable, testable, and tunable.
 
+Repository ownership contract:
+
+- Keep actual scenes under `Scenes/`.
+- Keep each scene and its primary script as siblings in the owning scene folder.
+- Keep reusable runtime owners under `Systems/<Owner>/`.
+- If a system is node-backed, keep its scene and script as siblings in that owning system folder.
+- If a system is a pure helper, it may contain only its `.gd` file in the owning system folder.
+- Keep owner-specific support code and enums near the owner that uses them.
+- Reserve top-level `Enums/` only for genuinely cross-cutting shared enums.
+- Do not use a top-level `Scripts/` folder for active runtime code.
+
 ## Production Priorities
 
 1. Make the primary delivery run fun, fair, and replayable on mobile.

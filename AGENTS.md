@@ -178,12 +178,17 @@ Write gameplay code so it can support future automated validation without forcin
 
 ## Project Structure
 
-- Organize the project by vertical slice or feature ownership, not by broad file type buckets like global `Scenes` or `Scripts` folders.
-- Keep files with the slice that owns them. Example: wagon scenes, scripts, data, and assets belong under a wagon-related slice folder.
-- When a slice grows, split by role inside that slice using folders such as `/Scenes`, `/Scripts`, `/Data`, and `/Enums`.
-- Put enum files in an `/Enums` folder inside the owning slice.
+- Keep actual game scenes under the top-level `Scenes/` folder.
+- Keep each scene and its primary script as siblings inside the owning scene folder. Example: `Scenes/RunScene/RunScene.tscn` and `Scenes/RunScene/run_scene.gd`.
+- Keep reusable runtime owners under `Systems/<Owner>/`.
+- If a system is node-backed, keep its scene and script as siblings in the same owning `Systems/<Owner>/` folder.
+- If a system is a pure helper, it may contain only the `.gd` file in its owning `Systems/<Owner>/` folder.
+- Keep owner-specific support types, constants, data, and enums near the owner that uses them.
+- Put owner-specific enum files in an `Enums/` folder under that owner when they need their own file.
+- Reserve top-level `Enums/` only for genuinely generic cross-cutting enums.
+- Do not reintroduce a top-level `Scripts/` folder for active project code.
 - Use a shared folder only for code or assets that are genuinely shared by multiple slices. Do not use it as a dumping ground.
-- Start small. If a slice only has one or two files, keep the structure flat until more subdivision improves readability.
+- Start small. If an owner only has one or two files, keep the structure flat until more subdivision improves readability.
 
 ## Godot Script References
 
