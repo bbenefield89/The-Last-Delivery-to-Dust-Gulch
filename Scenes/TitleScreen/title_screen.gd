@@ -3,6 +3,7 @@ extends Control
 const TITLE_MUSIC := preload("res://Assets/Audio/Confronting The Man In Black.ogg")
 const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
 const BEST_RUN_EMPTY_TEXT := "Best Run: None yet"
+const RunStateType := preload("res://Systems/RunState/run_state.gd")
 
 signal play_requested
 signal quit_requested
@@ -11,7 +12,7 @@ signal quit_requested
 # Private Fields
 
 var _navigation_click_in_progress: bool = false
-var _best_run_save_path: String = RunState.BEST_RUN_SAVE_PATH
+var _best_run_save_path: String = RunStateType.BEST_RUN_SAVE_PATH
 
 
 # Private Fields: OnReady
@@ -85,7 +86,7 @@ func _refresh_best_run_summary() -> void:
 	if _best_run_summary == null:
 		return
 
-	var best_run := RunState.load_best_run(_best_run_save_path)
+	var best_run := RunStateType.load_best_run(_best_run_save_path)
 	if not best_run.has_value:
 		_best_run_summary.text = BEST_RUN_EMPTY_TEXT
 		return

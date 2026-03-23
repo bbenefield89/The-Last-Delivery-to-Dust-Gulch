@@ -2,7 +2,7 @@ extends Node
 
 const TITLE_SCENE := preload("res://Scenes/TitleScreen/TitleScreen.tscn")
 const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
-const RunStateType := preload("res://Scripts/RunState/run_state.gd")
+const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const RESTART_ACTION := "restart_run"
 const RETURN_TO_TITLE_ACTION := "return_to_title"
 
@@ -89,3 +89,4 @@ func _ensure_return_to_title_action() -> void:
 	event.physical_keycode = KEY_T
 	if not InputMap.action_has_event(RETURN_TO_TITLE_ACTION, event):
 		InputMap.action_add_event(RETURN_TO_TITLE_ACTION, event)
+

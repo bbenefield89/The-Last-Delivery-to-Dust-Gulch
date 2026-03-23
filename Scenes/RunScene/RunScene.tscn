@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://v3sqh1pw8m2l"]
 
 [ext_resource type="Script" uid="uid://cdm6b62edidaa" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
-[ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Scripts/Hazards/hazard_spawner.gd" id="2_ok7u7"]
+[ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Systems/HazardSpawner/hazard_spawner.gd" id="2_ok7u7"]
 [ext_resource type="Texture2D" uid="uid://c87jx435lsdui" path="res://Assets/Tilesets/Carriage/Carriage-32x64.png" id="3_qapb8"]
 [ext_resource type="Texture2D" uid="uid://d0fxmc8h746io" path="res://Assets/Tilesets/Horse/Horse-16x48-Sheet.png" id="4_rn5qx"]
 [ext_resource type="Texture2D" uid="uid://bsmtbkgrqdt63" path="res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png" id="5_vvclu"]
@@ -631,3 +631,4 @@ text = "Restart"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Title"
+

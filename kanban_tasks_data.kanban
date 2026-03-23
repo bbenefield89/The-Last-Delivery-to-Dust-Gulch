@@ -11,7 +11,6 @@
                        "uuid":  "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
                        "title":  "Todo",
                        "tasks":  [
-                                     "f1ed9a74-0f24-4257-9578-518912255330",
                                      "0e19ba26-061c-4130-bc02-b783323f21af",
                                      "d34d8801-e9aa-4926-9ee8-5c369500c9b6"
                                  ]
@@ -20,7 +19,7 @@
                        "uuid":  "c670d77d-01d6-45a7-aa5b-94f564b959c3",
                        "title":  "Doing",
                        "tasks":  [
-
+                                     "f1ed9a74-0f24-4257-9578-518912255330"
                                  ]
                    },
                    {
@@ -794,7 +793,7 @@
                       "steps":  [
                                     {
                                         "details":  "Move the current reusable runtime code into the exact agreed Systems ownership folders and update every affected scene, script, and test reference to the new paths. The move must follow this concrete map: hazard spawner to Systems/HazardSpawner/hazard_spawner.gd, run state to Systems/RunState/run_state.gd, failure state to Systems/RunState/failure_state.gd, and recovery sequence generator to Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd. Fold very thorough unit and smoke coverage updates into this step so the moved code still loads through the normal game flow.\n\nDone when: a reviewer can inspect the repo tree and see those files at the agreed paths, then launch the game, reach the title screen, start a run, and observe the same gameplay with no missing-script or missing-resource errors.",
-                                        "done":  false
+                                        "done":  true
                                     },
                                     {
                                         "details":  "Remove the current run flow\u0027s live dependency on the old top-level Scripts layout and make the architecture contract visible in the repo. Keep scene-owned files in Scenes, keep systems under Systems/\u003cOwner\u003e, keep owner-specific support types near their owner, and leave top-level Enums reserved for genuinely generic cross-cutting enums only.\n\nDone when: no active scene, script, or test for the current run flow still points at res://Scripts/..., the folder layout visibly matches the agreed structure, and a reviewer can start a run from the title screen and return to the title screen without any behavior change.",

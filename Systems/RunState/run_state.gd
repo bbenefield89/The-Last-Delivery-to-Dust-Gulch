@@ -1,7 +1,7 @@
 extends RefCounted
 class_name RunState
 
-const FailureStateType := preload("res://Scripts/Failures/failure_state.gd")
+const FailureStateType := preload("res://Systems/RunState/failure_state.gd")
 
 const RESULT_IN_PROGRESS := &"in_progress"
 const RESULT_SUCCESS := &"success"
@@ -395,3 +395,4 @@ class BestRunData:
 		score = score_value
 		grade = grade_value
 		has_value = has_stored_value
+

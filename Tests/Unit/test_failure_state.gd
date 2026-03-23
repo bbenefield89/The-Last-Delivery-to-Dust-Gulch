@@ -1,6 +1,6 @@
 extends GutTest
 
-const FailureStateType := preload("res://Scripts/Failures/failure_state.gd")
+const FailureStateType := preload("res://Systems/RunState/failure_state.gd")
 
 
 func test_failure_state_records_type_source_and_trigger_progress() -> void:
@@ -10,3 +10,4 @@ func test_failure_state_records_type_source_and_trigger_progress() -> void:
 	assert_eq(failure.source_hazard, &"rock")
 	assert_eq(failure.trigger_progress_ratio, 0.6)
 	assert_eq(failure.elapsed_time, 0.0)
+

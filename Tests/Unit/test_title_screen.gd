@@ -1,7 +1,7 @@
 extends GutTest
 
 const TITLE_SCREEN_SCENE := preload("res://Scenes/TitleScreen/TitleScreen.tscn")
-const RunStateType := preload("res://Scripts/RunState/run_state.gd")
+const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const TEST_BEST_RUN_SAVE_PATH := "user://dg30_test_title_best_run.cfg"
 
 
@@ -199,3 +199,4 @@ func _delete_test_best_run_file() -> void:
 	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
 	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
 		DirAccess.remove_absolute(absolute_path)
+

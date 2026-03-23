@@ -2,9 +2,9 @@ extends GutTest
 
 const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png")
-const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
-const RecoverySequenceGeneratorType := preload("res://Scripts/Failures/recovery_sequence_generator.gd")
-const RunStateType := preload("res://Scripts/RunState/run_state.gd")
+const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
+const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
+const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const TEST_BEST_RUN_SAVE_PATH := "user://dg30_test_run_scene_best_run.cfg"
 
 
@@ -3055,3 +3055,4 @@ func _delete_test_best_run_file() -> void:
 	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
 	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
 		DirAccess.remove_absolute(absolute_path)
+

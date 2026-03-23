@@ -1,6 +1,6 @@
 extends GutTest
 
-const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
+const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
 const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png")
 const ROCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png")
 const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png")
@@ -878,3 +878,4 @@ func _sample_primary_hazard_counts(
 		counts[plan.hazard_type] += 1
 
 	return counts
+

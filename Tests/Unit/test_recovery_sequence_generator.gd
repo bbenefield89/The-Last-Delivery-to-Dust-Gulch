@@ -1,6 +1,6 @@
 extends GutTest
 
-const RecoverySequenceGeneratorType := preload("res://Scripts/Failures/recovery_sequence_generator.gd")
+const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
 
 
 func _generate_sequence_with_seed(seed: int, progress: float, prompt_pool: Array[StringName]) -> Array[StringName]:
@@ -65,3 +65,4 @@ func test_generate_sequence_when_pool_has_two_prompts_then_repeated_prompts_are_
 			break
 
 	assert_true(found_repeat)
+

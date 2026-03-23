@@ -3,8 +3,9 @@ extends Node2D
 signal restart_requested
 signal return_to_title_requested
 
-const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
-const RunStateType := preload("res://Scripts/RunState/run_state.gd")
+const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
+const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
+const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const CARRIAGE_SHEET_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png")
 const CARRIAGE_SHEET_FRAMES: Array[Rect2i] = [
@@ -190,7 +191,7 @@ var _mobile_web_runtime_override := false
 var _has_touchscreen_available_override := false
 var _touchscreen_available_override := false
 var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
-var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGenerator.new()
+var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
 
 @onready var _backdrop: Sprite2D = $World/Backdrop
 @onready var _road: Sprite2D = $World/Road
@@ -2052,3 +2053,4 @@ func _on_touch_pause_button_pressed() -> void:
 	if not _should_show_touch_controls():
 		return
 	_set_pause_state(true)
+

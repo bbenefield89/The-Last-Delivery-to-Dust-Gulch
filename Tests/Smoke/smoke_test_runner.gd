@@ -1,7 +1,7 @@
 extends SceneTree
 
 const APP_ROOT_SCENE := preload("res://Scenes/AppRoot/AppRoot.tscn")
-const RUN_STATE_SCRIPT := preload("res://Scripts/RunState/run_state.gd")
+const RUN_STATE_SCRIPT := preload("res://Systems/RunState/run_state.gd")
 
 
 func _click_control(control: Control) -> void:
@@ -310,3 +310,4 @@ func _assert_return_to_title_path(app_root: Node, label: String) -> bool:
 		quit(1)
 		return false
 	return true
+
