@@ -2916,6 +2916,33 @@ func test_step1_hazard_spawner_uses_animated_jackalope_sheet_resource() -> void:
 	assert_eq(spawner.livestock_texture, LIVESTOCK_TEXTURE)
 
 
+## Confirms spawned jackalopes keep the final readable playback cadence in the shipped run scene.
+func test_step3_livestock_hazards_play_at_the_final_readable_speed_in_scene() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var spawner := scene.get_node("%HazardSpawner") as HazardSpawnerType
+	assert_not_null(spawner)
+
+	for lane_index in [1, 3, 5]:
+		spawner._spawn_hazard(&"livestock", lane_index)
+
+	for child in spawner.get_children():
+		var livestock := child as AnimatedSprite2D
+		assert_not_null(livestock)
+		assert_not_null(livestock.sprite_frames)
+		assert_true(livestock.sprite_frames.has_animation("default"))
+		assert_eq(livestock.sprite_frames.get_frame_count("default"), 4)
+		assert_eq(
+			livestock.sprite_frames.get_animation_speed("default"),
+			spawner.LIVESTOCK_ANIMATION_FPS
+		)
+		assert_eq(livestock.sprite_frames.get_animation_loop("default"), true)
+		assert_eq(livestock.speed_scale, 1.0)
+		assert_true(livestock.is_playing())
+
+
 ## Confirms the wagon rig still applies the existing presentation state while the carriage animates.
 func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	var scene = RUN_SCENE.instantiate()

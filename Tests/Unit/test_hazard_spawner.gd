@@ -512,6 +512,30 @@ func test_livestock_hazard_uses_animated_sheet_frames() -> void:
 	assert_eq(frame_3.get_size(), Vector2(48.0, 32.0))
 
 
+## Confirms multiple spawned jackalopes all use the final readable playback cadence.
+func test_livestock_hazards_when_spawned_multiple_times_then_play_at_the_final_readable_speed() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	for roll_index in range(3):
+		spawner._rng.seed = 900 + roll_index
+		spawner._spawn_hazard(&"livestock", roll_index * 2)
+
+	for child in spawner.get_children():
+		var livestock := child as AnimatedSprite2D
+		assert_not_null(livestock)
+		assert_not_null(livestock.sprite_frames)
+		assert_true(livestock.sprite_frames.has_animation("default"))
+		assert_eq(livestock.sprite_frames.get_frame_count("default"), 4)
+		assert_eq(
+			livestock.sprite_frames.get_animation_speed("default"),
+			spawner.LIVESTOCK_ANIMATION_FPS
+		)
+		assert_eq(livestock.sprite_frames.get_animation_loop("default"), true)
+		assert_eq(livestock.speed_scale, 1.0)
+		assert_true(livestock.is_playing())
+
+
 ## Confirms the jackalope keeps its lane target centered on the visible animal instead of the raw sheet frame.
 func test_livestock_hazard_uses_directional_crossing_offset_to_center_the_body_on_the_lane() -> void:
 	var spawner := _create_seeded_spawner()

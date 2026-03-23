@@ -18,7 +18,6 @@
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
-				"3ba0474f-0b7e-4edc-895f-f1ac5ada835e"
 			]
 		},
 		{
@@ -57,7 +56,8 @@
 				"8bfb1b88-1068-4af6-be5f-645a0b5f852d",
 				"35ee46bc-0b91-4e29-85b7-acb2a4270f34",
 				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
-				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6"
+				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6",
+				"3ba0474f-0b7e-4edc-895f-f1ac5ada835e"
 			]
 		}
 	],
@@ -762,7 +762,7 @@
 				},
 				{
 					"details": "Tune the jackalope animation playback for the shipped gameplay view so the bounding loop reads clearly at run speed without distracting jitter, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by seeing multiple jackalope hazards over normal play, the animated jackalope looks like a clean fast crossing hazard at game scale rather than a static sprite or a noisy flicker.",
-					"done": false
+					"done": true
 				}
 			]
 		},
