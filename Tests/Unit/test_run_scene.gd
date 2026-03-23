@@ -2831,6 +2831,38 @@ func test_step3_cohesion_nodes_exist_on_wagon() -> void:
 	assert_true(scene.has_node("World/Wagon/HorseTeam/HorseRight"))
 
 
+## Confirms the horse team sits closer to the wagon without the drawn-on harness lines.
+func test_step1_horse_team_is_pulled_closer_to_wagon() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var horse_team: Node2D = scene.get_node("World/Wagon/HorseTeam")
+	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
+	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
+
+	assert_not_null(wagon)
+	assert_not_null(horse_team)
+	assert_not_null(horse_left)
+	assert_not_null(horse_right)
+	assert_false(scene.has_node("World/Wagon/HorseTeam/HarnessLeft"))
+	assert_false(scene.has_node("World/Wagon/HorseTeam/HarnessRight"))
+	assert_eq(horse_team.position, Vector2(0.0, -38.0))
+	assert_eq(horse_left.position, Vector2(-8.0, 0.0))
+	assert_eq(horse_right.position, Vector2(8.0, 0.0))
+	assert_eq(horse_left.global_position, Vector2(-8.0, -38.0))
+	assert_eq(horse_right.global_position, Vector2(8.0, -38.0))
+	assert_eq(
+		horse_left.global_position.y - wagon.polygon[0].y,
+		-10.0
+	)
+	assert_eq(
+		horse_right.global_position.y - wagon.polygon[1].y,
+		-10.0
+	)
+
+
 ## Confirms the animated horse sprites are wired to the exported sheet slices.
 func test_step1_horse_sprites_use_animated_sheet_frames() -> void:
 	var scene = RUN_SCENE.instantiate()

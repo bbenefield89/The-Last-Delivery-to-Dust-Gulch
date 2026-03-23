@@ -105,23 +105,13 @@ position = Vector2(0, 5)
 [node name="CarriageSprite" type="AnimatedSprite2D" parent="World/Wagon" unique_id=355649902]
 
 [node name="HorseTeam" type="Node2D" parent="World/Wagon" unique_id=1666748263]
-position = Vector2(0, -54)
+position = Vector2(0, -38)
 
 [node name="HorseLeft" type="AnimatedSprite2D" parent="World/Wagon/HorseTeam" unique_id=1813804162]
 position = Vector2(-8, 0)
 
 [node name="HorseRight" type="AnimatedSprite2D" parent="World/Wagon/HorseTeam" unique_id=1874504157]
 position = Vector2(8, 0)
-
-[node name="HarnessLeft" type="Line2D" parent="World/Wagon/HorseTeam" unique_id=1283736362]
-points = PackedVector2Array(0, 30, -8, 8)
-width = 2.0
-default_color = Color(0.717647, 0.611765, 0.403922, 1)
-
-[node name="HarnessRight" type="Line2D" parent="World/Wagon/HorseTeam" unique_id=1196817422]
-points = PackedVector2Array(0, 30, 8, 8)
-width = 2.0
-default_color = Color(0.717647, 0.611765, 0.403922, 1)
 
 [node name="DustTrail" type="CPUParticles2D" parent="World/Wagon" unique_id=1637724448]
 unique_name_in_owner = true

@@ -11,13 +11,13 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"64b6e69a-a31a-4af1-ad0a-15ef0d940d11"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
+				"64b6e69a-a31a-4af1-ad0a-15ef0d940d11"
 			]
 		},
 		{
@@ -774,7 +774,7 @@
 			"steps": [
 				{
 					"details": "Move the horse team closer to the wagon in the run scene, starting from roughly a 16 px pullback, and update any harness or related rig positioning needed so the carriage and horses still connect cleanly. Write very thorough unit or scene tests for the adjusted placement.\n\nDone when: by starting a run, the horses sit noticeably closer to the wagon and the harness still appears to connect the team cleanly instead of stretching awkwardly across a long gap.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Verify and tune the updated horse-to-wagon spacing across the normal run presentation, including steering, failure presentation, restart flow, and return-to-title flow, and write very thorough unit or scene tests for any affected behavior.\n\nDone when: by driving, taking hits, restarting, and returning to the title, the horse team keeps the tighter spacing without clipping into the wagon or looking disconnected during the normal game flow.",
