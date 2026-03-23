@@ -4,7 +4,7 @@ const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png")
 const ROCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png")
 const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png")
-const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Jackalope/Jackalope-32x32.png")
+const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png")
 
 
 func _create_seeded_spawner() -> Node:
@@ -466,7 +466,7 @@ func test_route_phase_when_sampled_then_moving_hazards_start_after_warm_up() -> 
 	assert_true(reset_counts[&"tumbleweed"] > 0)
 
 
-func test_each_hazard_type_uses_a_distinct_readable_sprite() -> void:
+func test_static_hazard_types_use_distinct_readable_sprites() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
@@ -485,6 +485,33 @@ func test_each_hazard_type_uses_a_distinct_readable_sprite() -> void:
 	assert_ne(pothole.texture, tumbleweed.texture)
 
 
+## Confirms livestock hazards use the exported jackalope sheet as a looping animation.
+func test_livestock_hazard_uses_animated_sheet_frames() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var livestock := spawner._build_hazard_visual(&"livestock") as AnimatedSprite2D
+	autofree(livestock)
+
+	assert_not_null(livestock)
+	assert_not_null(livestock.sprite_frames)
+	assert_true(livestock.sprite_frames.has_animation("default"))
+	assert_eq(livestock.sprite_frames.get_frame_count("default"), 4)
+	assert_eq(livestock.sprite_frames.get_animation_speed("default"), spawner.LIVESTOCK_ANIMATION_FPS)
+	assert_eq(livestock.sprite_frames.get_animation_loop("default"), true)
+	assert_true(livestock.is_playing())
+
+	var frame_0 := livestock.sprite_frames.get_frame_texture("default", 0) as AtlasTexture
+	var frame_3 := livestock.sprite_frames.get_frame_texture("default", 3) as AtlasTexture
+
+	assert_not_null(frame_0)
+	assert_not_null(frame_3)
+	assert_eq(frame_0.atlas, LIVESTOCK_TEXTURE)
+	assert_eq(frame_3.atlas, LIVESTOCK_TEXTURE)
+	assert_eq(frame_0.get_size(), Vector2(48.0, 32.0))
+	assert_eq(frame_3.get_size(), Vector2(48.0, 32.0))
+
+
 ## Verifies livestock crosses toward the road and cleans itself up after leaving the playable area.
 func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen() -> void:
 	var spawner := _create_seeded_spawner()
@@ -493,7 +520,7 @@ func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen
 	spawner._rng.seed = 77
 	spawner._spawn_hazard(&"livestock", 1)
 
-	var livestock := spawner.get_child(0) as Node2D
+	var livestock := spawner.get_child(0) as AnimatedSprite2D
 	var starting_position := livestock.position
 	var target_lane_x := float(livestock.get_meta("target_lane_x"))
 
@@ -597,7 +624,7 @@ func test_livestock_when_spawned_then_starts_offroad_before_crossing_through_tar
 	spawner._rng.seed = 77
 	spawner._spawn_hazard(&"livestock", 2)
 
-	var livestock := spawner.get_child(0) as Node2D
+	var livestock := spawner.get_child(0) as AnimatedSprite2D
 	var target_lane_x := float(livestock.get_meta("target_lane_x"))
 
 	assert_true(absf(livestock.position.x) > absf(target_lane_x))

@@ -1,6 +1,8 @@
 extends GutTest
 
 const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
+const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png")
+const HazardSpawnerType := preload("res://Scripts/Hazards/hazard_spawner.gd")
 const RecoverySequenceGeneratorType := preload("res://Scripts/Failures/recovery_sequence_generator.gd")
 const RunStateType := preload("res://Scripts/RunState/run_state.gd")
 const TEST_BEST_RUN_SAVE_PATH := "user://dg30_test_run_scene_best_run.cfg"
@@ -2901,6 +2903,17 @@ func test_step1_carriage_sprite_uses_animated_sheet_frames() -> void:
 	assert_eq(frame_1.get_size(), Vector2(32, 64))
 	assert_true(carriage_sprite.is_playing())
 	assert_eq(carriage_sprite.speed_scale, 1.0)
+
+
+## Confirms the run scene wires the jackalope hazard to the exported 48x32 sheet resource.
+func test_step1_hazard_spawner_uses_animated_jackalope_sheet_resource() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var spawner := scene.get_node("%HazardSpawner") as HazardSpawnerType
+	assert_not_null(spawner)
+	assert_eq(spawner.livestock_texture, LIVESTOCK_TEXTURE)
 
 
 ## Confirms the wagon rig still applies the existing presentation state while the carriage animates.

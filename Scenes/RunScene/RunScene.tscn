@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://bsmtbkgrqdt63" path="res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png" id="5_vvclu"]
 [ext_resource type="Texture2D" uid="uid://de6ppq0376jbi" path="res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png" id="6_kd7yq"]
 [ext_resource type="Texture2D" uid="uid://bfo6dckq6e7jq" path="res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png" id="7_l2yxu"]
-[ext_resource type="Texture2D" uid="uid://cdsip07mntb51" path="res://Assets/Tilesets/Hazards/Jackalope/Jackalope-32x32.png" id="8_13xg3"]
+[ext_resource type="Texture2D" uid="uid://b6jwsfx6gt1pw" path="res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png" id="8_13xg3"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hud_panel"]
 bg_color = Color(0.235294, 0.180392, 0.117647, 0.88)

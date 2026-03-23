@@ -11,13 +11,14 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"3ba0474f-0b7e-4edc-895f-f1ac5ada835e"
+				"64b6e69a-a31a-4af1-ad0a-15ef0d940d11"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
+				"3ba0474f-0b7e-4edc-895f-f1ac5ada835e"
 			]
 		},
 		{
@@ -753,7 +754,7 @@
 			"steps": [
 				{
 					"details": "Add the exported 48x32 animated jackalope asset to the hazard tileset folder, import it cleanly into Godot, and update the hazard presentation so jackalope hazards use the animated sheet instead of the old static texture. Update any visual sizing or frame configuration needed for the wider sheet, and write very thorough unit or scene tests for the animation resource wiring.\n\nDone when: by playing until a jackalope hazard appears, the jackalope is shown with the new animated art instead of a single still frame.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Update the jackalope hazard integration so the wider 48x32 animated presentation still lines up with the current crossing path, lane target, and collision expectations during live play. If the hazard's visual footprint or placement needs a small adjustment to stay coherent with the existing gameplay, include that here, and write very thorough unit or scene tests for the affected behavior.\n\nDone when: by encountering jackalope crossings during a run, the animated jackalope enters and crosses the road cleanly, still feels fair to dodge, and does not look offset from where the game treats the hazard as dangerous.",
@@ -761,6 +762,22 @@
 				},
 				{
 					"details": "Tune the jackalope animation playback for the shipped gameplay view so the bounding loop reads clearly at run speed without distracting jitter, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by seeing multiple jackalope hazards over normal play, the animated jackalope looks like a clean fast crossing hazard at game scale rather than a static sprite or a noisy flicker.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "64b6e69a-a31a-4af1-ad0a-15ef0d940d11",
+			"title": "DG-35",
+			"description": "Task: Pull the horse team closer to the wagon in the run scene.\n\nIn the current topdown carriage rig, the horses sit too far ahead of the wagon and the team reads visually disconnected in motion. The harness gap looks longer than it should, which makes the carriage and horse team feel less like one unit. Tighten that spacing by moving the horses closer to the wagon, using roughly 16 px as the starting adjustment unless a slightly smaller or larger final value looks better in the live game view.\n\nKeep this as a presentation and layout adjustment only. Do not change the gameplay collision footprint, steering behavior, hazard balance, or run pacing. Update the current wagon rig so the horses, carriage, and harness still line up cleanly after the spacing change and continue to look correct during normal driving, failure presentation, restart, and return flows.\n\nAffected files:\n- Scenes/RunScene/RunScene.tscn\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: by launching the game and playing a normal run, the horses sit visibly closer to the wagon than before, the team reads as one connected carriage rig, the harness still lines up cleanly, and the spacing change does not introduce obvious overlap or presentation breakage during normal play.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Move the horse team closer to the wagon in the run scene, starting from roughly a 16 px pullback, and update any harness or related rig positioning needed so the carriage and horses still connect cleanly. Write very thorough unit or scene tests for the adjusted placement.\n\nDone when: by starting a run, the horses sit noticeably closer to the wagon and the harness still appears to connect the team cleanly instead of stretching awkwardly across a long gap.",
+					"done": false
+				},
+				{
+					"details": "Verify and tune the updated horse-to-wagon spacing across the normal run presentation, including steering, failure presentation, restart flow, and return-to-title flow, and write very thorough unit or scene tests for any affected behavior.\n\nDone when: by driving, taking hits, restarting, and returning to the title, the horse team keeps the tighter spacing without clipping into the wagon or looking disconnected during the normal game flow.",
 					"done": false
 				}
 			]

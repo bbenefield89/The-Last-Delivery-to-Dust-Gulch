@@ -16,6 +16,29 @@ const TUMBLEWEED_BOUNCE_RADIANS_PER_SCROLL_UNIT := 0.04
 const TUMBLEWEED_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT := 0.75
+const LIVESTOCK_ANIMATION_FPS := 6.0
+const LIVESTOCK_SHEET_FRAME_SIZE := Vector2i(48, 32)
+const LIVESTOCK_SHEET_FRAMES: Array[Rect2i] = [
+	Rect2i(0, 0, LIVESTOCK_SHEET_FRAME_SIZE.x, LIVESTOCK_SHEET_FRAME_SIZE.y),
+	Rect2i(
+		LIVESTOCK_SHEET_FRAME_SIZE.x,
+		0,
+		LIVESTOCK_SHEET_FRAME_SIZE.x,
+		LIVESTOCK_SHEET_FRAME_SIZE.y
+	),
+	Rect2i(
+		LIVESTOCK_SHEET_FRAME_SIZE.x * 2,
+		0,
+		LIVESTOCK_SHEET_FRAME_SIZE.x,
+		LIVESTOCK_SHEET_FRAME_SIZE.y
+	),
+	Rect2i(
+		LIVESTOCK_SHEET_FRAME_SIZE.x * 3,
+		0,
+		LIVESTOCK_SHEET_FRAME_SIZE.x,
+		LIVESTOCK_SHEET_FRAME_SIZE.y
+	),
+]
 const HAZARD_SIDE_DESPAWN_X := 360.0
 const ROUTE_PHASE_WARM_UP := &"warm_up"
 const ROUTE_PHASE_FIRST_TROUBLE := &"first_trouble"
@@ -288,10 +311,43 @@ func _is_static_hazard_type(hazard_type: StringName) -> bool:
 
 ## Builds a readable hazard node for the requested hazard type.
 func _build_hazard_visual(hazard_type: StringName) -> Node2D:
+	if hazard_type == &"livestock":
+		return _build_livestock_hazard_visual()
+
 	var profile := _get_hazard_profile(hazard_type)
 	var hazard := Sprite2D.new()
 	hazard.texture = profile["texture"]
 	return hazard
+
+
+## Builds the animated jackalope hazard so the livestock crossing reads as a bounding animal.
+func _build_livestock_hazard_visual() -> AnimatedSprite2D:
+	var hazard := AnimatedSprite2D.new()
+	hazard.sprite_frames = _build_livestock_sprite_frames()
+	hazard.animation = &"default"
+	hazard.frame = 0
+	hazard.play()
+	return hazard
+
+
+## Builds the four-frame livestock animation from the exported jackalope sheet.
+func _build_livestock_sprite_frames() -> SpriteFrames:
+	var sprite_frames := SpriteFrames.new()
+	sprite_frames.set_animation_loop(&"default", true)
+	sprite_frames.set_animation_speed(&"default", LIVESTOCK_ANIMATION_FPS)
+
+	for frame_region in LIVESTOCK_SHEET_FRAMES:
+		sprite_frames.add_frame(&"default", _make_livestock_sheet_frame(frame_region))
+
+	return sprite_frames
+
+
+## Creates a single atlas frame that slices the livestock sheet to one animation cell.
+func _make_livestock_sheet_frame(region: Rect2i) -> AtlasTexture:
+	var atlas_texture := AtlasTexture.new()
+	atlas_texture.atlas = livestock_texture
+	atlas_texture.region = region
+	return atlas_texture
 
 
 ## Returns the per-frame motion offset for one hazard, including lateral drift on moving hazards.
@@ -428,7 +484,7 @@ func _get_hazard_profile(hazard_type: StringName) -> Dictionary:
 				"texture": livestock_texture,
 				"damage": 12,
 				"cargo_damage": 5,
-				"size": Vector2(32.0, 32.0),
+				"size": Vector2(48.0, 32.0),
 			}
 		_:
 			return {
