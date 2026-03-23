@@ -2850,6 +2850,8 @@ func test_step1_horse_sprites_use_animated_sheet_frames() -> void:
 	assert_eq(horse_right.sprite_frames.get_animation_speed("default"), scene.HORSE_ANIMATION_FPS)
 	assert_eq(horse_left.sprite_frames.get_animation_loop("default"), true)
 	assert_eq(horse_right.sprite_frames.get_animation_loop("default"), true)
+	assert_eq(horse_left.speed_scale, 1.0)
+	assert_eq(horse_right.speed_scale, 1.0)
 
 	var left_frame_0 := horse_left.sprite_frames.get_frame_texture("default", 0) as AtlasTexture
 	var left_frame_3 := horse_left.sprite_frames.get_frame_texture("default", 3) as AtlasTexture
@@ -2946,6 +2948,8 @@ func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	assert_eq(horse_right.sprite_frames.get_animation_loop("default"), true)
 	assert_true(horse_left.is_playing())
 	assert_true(horse_right.is_playing())
+	assert_eq(horse_left.speed_scale, 1.0)
+	assert_eq(horse_right.speed_scale, 1.0)
 
 
 func test_step3_panel_styles_use_western_palette() -> void:

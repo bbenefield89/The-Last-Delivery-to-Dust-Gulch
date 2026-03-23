@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cdsip07mntb51"
-path="res://.godot/imported/Jackalope-32x32.png-1b1e879766f6eaccabef1207fab26adb.ctex"
+uid="uid://b6jwsfx6gt1pw"
+path="res://.godot/imported/Jackalope-48x32-Sheet.png-37173daba1f587f0536d017ced87aab9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Tilesets/Hazards/Jackalope/Jackalope-32x32.png"
-dest_files=["res://.godot/imported/Jackalope-32x32.png-1b1e879766f6eaccabef1207fab26adb.ctex"]
+source_file="res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png"
+dest_files=["res://.godot/imported/Jackalope-48x32-Sheet.png-37173daba1f587f0536d017ced87aab9.ctex"]
 
 [params]
 

@@ -11,19 +11,20 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
+				"3ba0474f-0b7e-4edc-895f-f1ac5ada835e"
 			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
-				"16467d80-07e9-4a7c-8693-453bd6eb1804"
 			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"16467d80-07e9-4a7c-8693-453bd6eb1804",
 				"037b4f73-bbb7-4e50-a02e-168e0499b67b",
 				"4ff4b0c3-f6cc-4f2d-adba-302a991e4da7",
 				"0ca1b626-31ec-4978-9352-36006543cbb9",
@@ -740,6 +741,26 @@
 				},
 				{
 					"details": "Tune the horse animation playback for the shipped topdown view so the 4-frame loop reads like a pulling or running carriage team at gameplay scale without distracting jitter or over-animation, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by driving a normal run, both horses loop smoothly at game scale and look like part of the existing carriage team presentation rather than two static or mismatched sprites.",
+					"done": true
+				}
+			]
+		},
+		{
+			"uuid": "3ba0474f-0b7e-4edc-895f-f1ac5ada835e",
+			"title": "DG-34",
+			"description": "Task: Replace the current static jackalope hazard art with the new 48x32 animated jackalope sheet.\n\nThe run scene currently uses one static jackalope texture for the livestock crossing hazard. The new jackalope art now uses a wider 48x32 animated sheet so the crossing hazard can read as a fast bounding animal instead of a still image sliding across the road. This is an art-integration ticket, not a hazard-design rewrite. Keep the current hazard role, crossing behavior, spawn timing, damage, collision expectations, and run balance unchanged unless a small size or placement adjustment is required to keep the new art aligned with the existing gameplay.\n\nUse the new animated 48x32 jackalope sheet in the hazard presentation so the jackalope visibly animates during normal crossing behavior. Because the new art is wider than the old 32x32 sheet, update the visual presentation and any supporting size or placement wiring needed so the animated hazard still enters, crosses, and reads correctly at gameplay scale. Keep the implementation scoped to the jackalope hazard presentation only unless a small supporting scene or script update is required to make that animation play correctly.\n\nAffected files:\n- Assets/Tilesets/Hazards/Jackalope/*\n- Scripts/Hazards/hazard_spawner.gd\n- Scenes/RunScene/RunScene.tscn\n- Scenes/RunScene/run_scene.gd\n- Tests/Unit/test_hazard_spawner.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: by launching the game and playing normal runs, jackalope hazards visibly animate with the new 48x32 sheet during their crossing behavior, their on-road placement still matches the existing hazard lane reads, collisions and crossings still behave normally, and the wider art does not introduce obvious visual or gameplay breakage.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add the exported 48x32 animated jackalope asset to the hazard tileset folder, import it cleanly into Godot, and update the hazard presentation so jackalope hazards use the animated sheet instead of the old static texture. Update any visual sizing or frame configuration needed for the wider sheet, and write very thorough unit or scene tests for the animation resource wiring.\n\nDone when: by playing until a jackalope hazard appears, the jackalope is shown with the new animated art instead of a single still frame.",
+					"done": false
+				},
+				{
+					"details": "Update the jackalope hazard integration so the wider 48x32 animated presentation still lines up with the current crossing path, lane target, and collision expectations during live play. If the hazard's visual footprint or placement needs a small adjustment to stay coherent with the existing gameplay, include that here, and write very thorough unit or scene tests for the affected behavior.\n\nDone when: by encountering jackalope crossings during a run, the animated jackalope enters and crosses the road cleanly, still feels fair to dodge, and does not look offset from where the game treats the hazard as dangerous.",
+					"done": false
+				},
+				{
+					"details": "Tune the jackalope animation playback for the shipped gameplay view so the bounding loop reads clearly at run speed without distracting jitter, and write very thorough unit or scene tests for the final playback configuration.\n\nDone when: by seeing multiple jackalope hazards over normal play, the animated jackalope looks like a clean fast crossing hazard at game scale rather than a static sprite or a noisy flicker.",
 					"done": false
 				}
 			]

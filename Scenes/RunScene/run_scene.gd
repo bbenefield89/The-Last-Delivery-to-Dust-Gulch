@@ -19,7 +19,7 @@ const HORSE_SHEET_FRAMES: Array[Rect2i] = [
 	Rect2i(32, 0, 16, 48),
 	Rect2i(48, 0, 16, 48),
 ]
-const HORSE_ANIMATION_FPS := 6.0
+const HORSE_ANIMATION_FPS := 4.0
 const DESERT_TEXTURE := preload("res://Assets/Tilesets/Desert/Desert-3-32x32.png")
 const ROAD_TEXTURE := preload("res://Assets/Tilesets/Road/Road-4-tiled-32x32.png")
 const SHRUB_TEXTURES: Array[Texture2D] = [
