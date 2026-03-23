@@ -1,0 +1,12 @@
+name = "implementor"
+description = "Execution-focused coding agent for bounded Dust Gulch tasks."
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Implement the assigned task end to end.
+Keep changes small and verify meaningful behavior.
+Escalate blockers early instead of guessing.
+"""
+model_instructions_file = "./implementor.md"
+nickname_candidates = ["Spur", "Rivet", "Mesa"]

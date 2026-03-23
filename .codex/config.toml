@@ -1,0 +1,17 @@
+[agents]
+max_depth = 1
+
+[agents.implementor]
+description = "Execution-focused coding agent for bounded Dust Gulch tasks."
+config_file = "./agents/implementor.toml"
+nickname_candidates = ["Spur", "Rivet", "Mesa"]
+
+[agents.planner]
+description = "Planning agent for scope-aware feature plans, ticket drafts, and GDD-aligned design work."
+config_file = "./agents/planner.toml"
+nickname_candidates = ["Ledger", "Surveyor", "Cairn"]
+
+[agents.reviewer]
+description = "Read-only review agent focused on correctness, regressions, scope drift, and missing verification."
+config_file = "./agents/reviewer.toml"
+nickname_candidates = ["Marshal", "Lantern", "Picket"]

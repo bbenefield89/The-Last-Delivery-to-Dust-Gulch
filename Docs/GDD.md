@@ -2,54 +2,44 @@
 
 ## Overview
 
-`Last Delivery to Dust Gulch` is a 2D top-down western stagecoach survival runner built for `Mini Jam 206: Western`.
+`Last Delivery to Dust Gulch` is a polished mobile-forward 2D top-down western stagecoach survival runner.
 
-The game is designed around the jam limitation `Everything going wrong`.
+The player drives a fragile stagecoach through a dangerous desert route and tries to reach Dust Gulch before the wagon, horses, and cargo fall apart. The game is not about combat. Its core tension comes from readable hazard dodging, bad-luck pressure, and fast recovery from cascading wagon failures.
 
-The player must drive a stagecoach through a dangerous desert route and reach Dust Gulch before the wagon, horses, or cargo completely fall apart. The main gameplay is not combat. The core tension comes from avoiding hazards, surviving bad luck, and rapidly recovering from cascading wagon failures.
+The release direction is a premium-feeling, replayable mobile game with short, finishable runs, strong atmosphere, and clear player-facing feedback.
 
-This MVP is intentionally scoped for a solo developer working in a 72-hour jam, with sourced pixel art and audio where possible.
+## Product Direction
 
-## Jam Fit
-
-- Theme: `Western`
-- Required limitation: `Everything going wrong`
-- Jam structure: `72-hour jam`
-
-This concept fits the jam because the player is constantly reacting to failures:
-
-- wheels come loose
-- cargo spills
-- horses panic
-- the wagon jams
-- the road becomes more dangerous over time
-
-The western theme is expressed through the stagecoach fantasy, desert route, frontier hazards, signage, and overall art direction.
+- Platform priority: mobile-first
+- Session shape: short, finite delivery runs
+- Core promise: survive the route, keep the wagon together, and limp into town
+- Tone: tense, readable, dusty, a little chaotic
+- Design philosophy: easy to read, quick to restart, hard to master
 
 ## High-Level Pitch
 
-You are a stagecoach driver making one desperate final delivery to Dust Gulch. The road is bad, the wagon is fragile, and every problem creates another one. Dodge hazards, recover from breakdowns, keep the team moving, and limp into town with as much cargo and dignity left as possible.
+You are a stagecoach driver making one desperate delivery to Dust Gulch. The road is bad, the wagon is fragile, and every problem creates another one. Dodge hazards, recover from breakdowns, protect your cargo, and drag yourself across the finish line before the whole rig collapses.
 
-## MVP Pillars
+## Release Pillars
 
-1. Readable top-down wagon driving
-2. Constant pressure from hazards
-3. Short emergency recovery actions when things go wrong
-4. Strong western flavor with low asset overhead
-5. Polished, finishable solo jam scope
+1. Readable top-down driving that feels good on touch screens
+2. Constant but fair pressure from hazards and bad luck
+3. Recovery sequences that create panic without becoming frustrating QTE spam
+4. Strong western identity through art, audio, and UI framing
+5. Short runs with a clear arc, a clear ending, and immediate replay value
 
 ## Core Game Loop
 
 1. Start a delivery run.
 2. Drive along a scrolling desert road toward Dust Gulch.
 3. Dodge hazards such as potholes, rocks, tumbleweeds, and livestock.
-4. Take damage or trigger a failure when the wagon hits hazards or scripted bad-luck events occur.
-5. Complete a short recovery sequence to get moving again.
-6. Repeat until the player reaches Dust Gulch or the wagon collapses.
+4. Take damage or trigger a failure when the wagon hits hazards or bad-luck events occur.
+5. Complete a short recovery sequence to regain control and keep moving.
+6. Reach Dust Gulch for success or collapse before the finish and try again.
 
 ## Player Experience
 
-The game should feel tense, readable, and a little chaotic. The player is not meant to feel fully in control. The fun comes from improvising under pressure and barely holding the run together.
+The game should feel tense, readable, and slightly out of control in a good way. The player is not meant to feel perfectly safe or perfectly precise. The fun comes from improvising under pressure and barely holding the run together.
 
 The intended emotional arc is:
 
@@ -60,8 +50,36 @@ The intended emotional arc is:
 - desperate final stretch
 - either a messy success or total breakdown
 
-The final stretch should stay readable but not fully scripted. It should use a sharper late-run hazard profile with bad luck suspended,
-while still keeping enough RNG that repeated runs do not end on the exact same pattern.
+The final stretch should stay readable but not fully scripted. It should use a sharper late-run hazard profile with timed bad luck suspended, while still preserving enough RNG that repeated runs do not end on the exact same pattern.
+
+## Platform and Session Goals
+
+### Target Platforms
+
+- primary: mobile
+- secondary: desktop and web for testing, marketing, and optional release support
+
+### Session Length
+
+The primary mode should use finite delivery runs rather than endless survival.
+
+Recommended timing:
+
+- first-session failures: `45 to 75 seconds`
+- typical failed runs: `45 to 90 seconds`
+- successful runs: `90 to 150 seconds`
+- absolute upper bound for the core mode: about `150 seconds`
+
+The default experience should feel built for repeat play in short mobile sessions. Runs should end with a clear result, score, and reason to queue up another attempt immediately.
+
+### Run Structure
+
+1. Start on the route out in the desert.
+2. Survive a ramping sequence of hazards and failures.
+3. Reach Dust Gulch for success.
+4. Show a concise results screen with score, grade, and notable stats.
+
+Endless survival is not the primary mode. If an endless variant exists later, it should be treated as a separate challenge mode or a post-finish bonus stretch, not the default structure of the game.
 
 ## Camera and Controls
 
@@ -74,11 +92,11 @@ while still keeping enough RNG that repeated runs do not end on the exact same p
 
 ### Controls
 
-- `Left / Right` or `A / D` to steer
-- optional `Up / Down` or `W / S` for acceleration and braking only if it remains simple
+- desktop: `Left / Right` or `A / D` to steer
+- mobile: left and right touch steering with a simple pause affordance
 - recovery sequences use short directional or button prompts
 
-Controls must remain arcade-simple. If acceleration/braking makes the game worse, cut it and keep only steering plus recovery inputs.
+Controls must remain arcade-simple. The game should be immediately understandable on a phone and should not depend on complex multi-button inputs.
 
 ## Core Systems
 
@@ -92,6 +110,7 @@ Driving should support:
 - hazard avoidance
 - collision feedback
 - speed pressure
+- touch-friendly readability
 
 ### Hazards
 
@@ -104,24 +123,24 @@ Initial hazard set:
 - tumbleweeds
 - livestock crossing the road
 
-Hazards should be visually exaggerated for readability. Each one should be understandable at a glance.
+Hazards should be visually exaggerated for readability. Each one should be understandable at a glance on a mobile-sized screen.
 
 ### Failures
 
-Failures are the main expression of `Everything going wrong`.
+Failures are the main expression of "everything going wrong."
 
-MVP failure types:
+Planned failure types:
 
 - `Wheel Loose`
 - `Horse Panic`
 - `Cargo Spill`
 - `Axle Jam`
 
-Only one failure should be active at a time in the MVP.
+Only one failure should be active at a time unless the design intentionally expands beyond the current readability target.
 
 ### Recovery Sequences
 
-Recovery sequences are brief emergency actions, not hard fail QTE traps.
+Recovery sequences are brief emergency actions, not punishing QTE traps.
 
 Goals for recovery sequences:
 
@@ -146,23 +165,6 @@ Recovery failures should cause:
 
 They should not immediately end the run unless the wagon is already near collapse.
 
-## Run Structure
-
-The MVP should use a single short stage with a clear destination rather than an endless mode.
-
-Recommended run length:
-
-- `1 to 3 minutes`
-
-Run flow:
-
-1. Start on the route out in the desert.
-2. Survive a ramping sequence of hazards and failures.
-3. Reach Dust Gulch for success.
-4. Show a simple results screen.
-
-This is better for a jam than endless survival because it creates a clear win state, makes balancing easier, and gives the game a stronger sense of completion.
-
 ## Progression and Difficulty
 
 Difficulty should escalate over the course of a single run.
@@ -172,9 +174,19 @@ Escalation methods:
 - hazards become more frequent
 - hazard combinations become meaner
 - failures occur closer together
-- visibility pressure or path tightness increases slightly
+- path pressure tightens slightly
 
-Avoid adding multiple complex difficulty systems. The game only needs enough escalation to support a short, satisfying run.
+The game should rely on a clean authored run arc instead of stacking too many overlapping progression systems.
+
+### Replay Motivation
+
+Replayability should come from:
+
+- better survival and routing
+- stronger finish scores and grades
+- improved cargo and health preservation
+- more consistent recovery performance
+- optional challenge content added later
 
 ## Win and Loss Conditions
 
@@ -185,23 +197,36 @@ Avoid adding multiple complex difficulty systems. The game only needs enough esc
 ### Lose
 
 - wagon health reaches zero
-- cargo or wagon state crosses a critical failure threshold
-- optionally, horse condition fully breaks down if this is represented in MVP
+- cargo or wagon state crosses a critical failure threshold if represented in the live rules
 
 Loss conditions should be simple and clearly communicated.
 
 ## Scoring
 
-Scoring is optional but recommended if it stays light.
+Scoring is part of the shipped experience.
 
-Simple scoring factors:
+Core score factors:
 
-- cargo remaining
+- route completion
 - wagon health remaining
-- total delivery completion
-- time bonus or cleanliness bonus
+- cargo value remaining
+- bonus awards such as near misses and perfect recoveries
 
-If scoring threatens scope, keep only a binary success/failure result with a few end-of-run stats.
+The game should also surface a delivery grade so the player gets a clean summary of run quality, not just raw points.
+
+## UI Direction
+
+The UI should prioritize readability over decoration.
+
+Key qualities:
+
+- readable at a glance under pressure
+- western flavor through typography, color, and framing
+- strong HUD hierarchy for health, cargo, and progress
+- recovery overlays that feel urgent without obscuring prompts
+- concise results presentation suited to mobile replay loops
+
+Keep the center gameplay area clear. Push persistent HUD elements to the edges and corners. Any touch controls must stay legible without crowding the road.
 
 ## Art Direction
 
@@ -219,33 +244,28 @@ The goal is not realism. The goal is clarity and atmosphere.
 
 ### Asset Strategy
 
-Source as much as possible from Itch or similar libraries:
+Use sourced assets where they fit the style and save production time, then create the minimum custom glue needed for cohesion:
 
 - environment tiles
-- props
 - hazard sprites
-- UI frames if useful
-- possibly wagon, horse, and animal sprites
-
-Create only the custom glue assets needed for cohesion:
-
+- wagon and horse presentation
 - HUD elements
 - failure overlays
 - route markers
-- result screen elements
+- results presentation
 
 ### Animation Priorities
 
 Only animate what matters most:
 
 - wagon movement
-- wheel wobble or damage indication
+- horse motion
 - dust trails
 - impact feedback
-- horse panic state
-- simple failure and recovery feedback
+- hazard crossing motion
+- failure and recovery feedback
 
-Avoid any feature that requires a large bespoke animation workload.
+Avoid animation scope that does not materially improve readability or feel.
 
 ## Audio Direction
 
@@ -261,22 +281,21 @@ Priority sounds:
 - cargo rattling
 - animal noises
 
-Music is optional. If included, keep it light and repetitive. Strong sound effects are more important than a complex soundtrack.
+Music should support the western tone without overwhelming gameplay readability. Sound effects and clear state-change cues matter more than soundtrack complexity.
 
-## Out of Scope for MVP
+## Out of Scope
 
-The following are intentionally excluded unless the game is already stable and polished:
+The following are intentionally excluded unless the release plan changes:
 
 - active combat
-- bandit shootouts
+- bandit shootouts as a major gameplay pillar
 - on-foot exploration
 - branching routes
-- upgrades or meta progression
-- multiple levels
-- narrative-heavy dialogue systems
 - large inventory or survival systems
+- narrative-heavy dialogue systems
+- endless mode as the primary game mode
 
-Bandits may appear only as flavor or simple environmental pressure if they can be added cheaply.
+These can be reconsidered later, but they are not part of the current core release direction.
 
 ## Technical Shape
 
@@ -288,99 +307,66 @@ Recommended gameplay data concepts:
 - `RecoverySequence`: input pattern, time limit, success effect, fail penalty
 - `RoadChunkConfig`: hazard mix and intensity settings
 
-These do not need to be overengineered. They exist to keep the game logic clean and make balancing easier.
+These should stay practical. The point is to keep logic understandable, testable, and tunable.
 
-## MVP Build Order
+## Production Priorities
 
-### Day 1
+1. Make the primary delivery run fun, fair, and replayable on mobile.
+2. Improve clarity, readability, and UX before expanding feature count.
+3. Tighten hazard pacing, failure tuning, and recovery feel.
+4. Finish the visual and audio cohesion pass.
+5. Expand content only after the core run quality is consistently strong.
 
-- implement wagon movement
-- create scrolling road
-- add 3 basic hazards
-- add collisions and wagon health
-- get a playable start-to-finish route working
+## Release Acceptance Criteria
 
-### Day 2
+The core game is ready for release candidate evaluation when:
 
-- add failure system
-- implement 2 to 4 recovery sequences
-- tune pacing and hazard density
-- add end-of-run success/failure screens
+- the player can start, complete, fail, and restart runs reliably
+- the primary run loop feels good on mobile controls
+- hazards are readable and avoidable on a mobile screen
+- the intended failure and recovery systems are clear and fair
+- success and failure states are clearly presented
+- a complete run is fun, readable, and usually resolves inside `90 to 150 seconds`
+- score, grade, and best-run persistence all work consistently
 
-### Day 3
-
-- add juice and polish
-- improve feedback, particles, and sound
-- tighten art cohesion
-- rebalance run length and fairness
-- package and submit
-
-## Acceptance Criteria
-
-The MVP is complete when:
-
-- the player can start a run and reach Dust Gulch
-- hazards are readable and avoidable
-- at least 3 distinct hazard types are present
-- at least 2 distinct failure types are implemented
-- at least 2 recovery sequences are playable
-- success and failure states are clearly shown
-- the full run is fun, readable, and completable in 1 to 3 minutes
-
-## Final Recommendation
-
-This concept was selected because it gives the best chance of a finished, polished solo jam submission while still strongly expressing the western theme and the `Everything going wrong` limitation.
-
-If extra time remains after the MVP is stable, the best upgrade path is:
-
-1. add more failure types
-2. improve visual/audio polish
-3. add lightweight scoring and replayability
-
-Do not add combat unless the rest of the game is already finished and solid.
-
-## Post-Jam Art Direction
-
-The MVP shipped with procedurally drawn placeholder visuals (Polygon2D shapes). The post-jam goal is a full pixel art pass replacing all placeholder geometry with proper sprites.
+## Current Resolution and Art Production Target
 
 ### Target Resolution
 
-**640×360** — the standard low-resolution 16:9 pixel art canvas for 32×32 tile games.
+**640x360** is the standard low-resolution 16:9 pixel-art canvas for the current production target.
 
-- Scales 2× to 1280×720 and 3× to 1920×1080 cleanly
-- Replaces the jam viewport of 1152×648 entirely
-- Godot project settings: viewport 640×360, stretch mode `viewport`, stretch aspect `keep`, nearest-neighbor texture filtering
+- Scales cleanly to common desktop and capture sizes
+- Supports readable 32x32 world art
+- Keeps the playfield compact enough to reason about for touch-friendly layouts
+- Godot project settings should use viewport scaling with nearest-neighbor texture filtering
 
 ### Tile Grid
 
-**32×32 pixels per tile.**
+**32x32 pixels per tile.**
 
-- Game canvas: 20 tiles wide × 11 tiles tall
+- Game canvas: 20 tiles wide by 11 tiles tall
 - All art assets designed on the 32px grid
-- Sprites scaled up via Godot's viewport scaling — no per-sprite scale overrides needed
+- Sprites scaled up via viewport scaling rather than per-sprite scale hacks
 
 ### Approximate Tile Budgets
 
 | Element | Size in tiles | Pixels |
 |---|---|---|
-| Wagon body | 1×2 | 32×64 |
-| Horse pair | 2×3 | 32×48 (two 16×48 horses side by side) |
-| Hazard (pothole) | 1×1 | 32×32 |
-| Hazard (rock) | 1×1 | 32×32 |
-| Tumbleweed | 1×1 | 32×32 |
+| Wagon body | 1x2 | 32x64 |
+| Horse pair | 2x3 | 32x48 |
+| Hazard (pothole) | 1x1 | 32x32 |
+| Hazard (rock) | 1x1 | 32x32 |
+| Tumbleweed | 1x1 | 32x32 |
 | Road width (total) | ~6 tiles | ~192 px |
 | Desert each side | ~7 tiles | ~224 px |
 
-### What Needs Replacing
+### World Presentation Requirements
 
-- **Wagon + horses** — Polygon2D → Sprite2D
-- **Hazards** — Polygon2D → Sprite2D (pothole, rock, tumbleweed)
-- **Road surface** — Polygon2D → tiled texture or scrolling sprite
-- **Road edge stripes** — Polygon2D → baked into road tile or separate sprite
-- **Desert background** — Polygon2D → tiled background texture
-- **Scrub clusters** — procedural Polygon2D → sprite instances
-- **Road signs** — procedural Polygon2D + Label → sprite
+- Wagon and horses should use proper sprite presentation, not placeholder geometry
+- Hazards should use readable sprite art and motion cues
+- Road and desert should use textured world art rather than flat debug geometry
+- Roadside dressing should support the setting without cluttering the play space
 
 ### Code Impact
 
-All world-space constants in `run_scene.gd` will need to be set to correct values for the new 640×360 coordinate space. Read each constant and set it to what makes sense for the new canvas — do not mechanically scale old values. `WAGON_COLLISION_SIZE` should be set to the actual sprite footprint (32×64). Speed and scroll values should be tuned for feel at the new resolution.
+World-space constants in `run_scene.gd` should be tuned for the production camera and feel, not mechanically scaled from earlier placeholder values. Collision sizes should reflect real sprite footprints. Speed and scroll values should be tuned around gameplay readability and session pacing.
