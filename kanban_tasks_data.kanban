@@ -17,7 +17,6 @@
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
-				"64b6e69a-a31a-4af1-ad0a-15ef0d940d11"
 			]
 		},
 		{
@@ -57,7 +56,8 @@
 				"35ee46bc-0b91-4e29-85b7-acb2a4270f34",
 				"ab42368b-712b-424c-a1d9-5ab1ad86e1c0",
 				"c5dc9f10-5d4e-4f6e-bae1-f4bd0a9aa3d6",
-				"3ba0474f-0b7e-4edc-895f-f1ac5ada835e"
+				"3ba0474f-0b7e-4edc-895f-f1ac5ada835e",
+				"64b6e69a-a31a-4af1-ad0a-15ef0d940d11"
 			]
 		}
 	],
@@ -778,7 +778,7 @@
 				},
 				{
 					"details": "Verify and tune the updated horse-to-wagon spacing across the normal run presentation, including steering, failure presentation, restart flow, and return-to-title flow, and write very thorough unit or scene tests for any affected behavior.\n\nDone when: by driving, taking hits, restarting, and returning to the title, the horse team keeps the tighter spacing without clipping into the wagon or looking disconnected during the normal game flow.",
-					"done": false
+					"done": true
 				}
 			]
 		}

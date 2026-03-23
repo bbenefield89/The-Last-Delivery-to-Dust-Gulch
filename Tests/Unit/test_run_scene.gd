@@ -507,6 +507,9 @@ func test_process_moves_right_and_reduces_distance() -> void:
 
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
+	var horse_team: Node2D = scene.get_node("World/Wagon/HorseTeam")
+	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
+	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
 
 	Input.action_press("steer_right")
 	scene._process(0.5)
@@ -518,6 +521,9 @@ func test_process_moves_right_and_reduces_distance() -> void:
 		RunStateType.DEFAULT_DISTANCE_REMAINING - (RunStateType.DEFAULT_FORWARD_SPEED * 0.5),
 		0.01
 	)
+	assert_eq(horse_team.position, Vector2(0.0, -38.0))
+	assert_eq(horse_left.position, Vector2(-8.0, 0.0))
+	assert_eq(horse_right.position, Vector2(8.0, 0.0))
 
 
 func test_process_clamps_lateral_position_to_road_bounds() -> void:
@@ -717,12 +723,14 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	scene._process(0.05)
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var horse_team: Node2D = scene.get_node("World/Wagon/HorseTeam")
 	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
 	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
 	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
 	var camera: Camera2D = scene.get_node("%Camera")
 
 	assert_eq(wagon.modulate, scene.WAGON_HIT_COLOR)
+	assert_eq(horse_team.position, Vector2(0.0, -38.0))
 	assert_not_null(carriage_sprite)
 	assert_eq(carriage_sprite.modulate, scene.WAGON_HIT_COLOR)
 	assert_not_null(horse_left)
@@ -751,12 +759,14 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 	scene._process(0.4)
 
 	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var horse_team: Node2D = scene.get_node("World/Wagon/HorseTeam")
 	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
 	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
 	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
 	var camera: Camera2D = scene.get_node("%Camera")
 
 	assert_eq(wagon.modulate, scene.WAGON_BASE_COLOR)
+	assert_eq(horse_team.position, Vector2(0.0, -38.0))
 	assert_not_null(carriage_sprite)
 	assert_eq(carriage_sprite.modulate, scene.WAGON_BASE_COLOR)
 	assert_not_null(horse_left)

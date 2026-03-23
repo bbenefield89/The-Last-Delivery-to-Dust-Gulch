@@ -82,12 +82,16 @@ func test_app_root_restart_rebuilds_run_state_for_completed_run() -> void:
 	var horse_right := app_root._run_scene.get_node(
 		"World/Wagon/HorseTeam/HorseRight"
 	) as AnimatedSprite2D
+	var horse_team := app_root._run_scene.get_node(
+		"World/Wagon/HorseTeam"
+	) as Node2D
 	var shadow_sprite := app_root._run_scene.get_node(
 		"World/Wagon/Shadow"
 	) as AnimatedSprite2D
 	assert_not_null(carriage_sprite)
 	assert_not_null(horse_left)
 	assert_not_null(horse_right)
+	assert_not_null(horse_team)
 	assert_not_null(shadow_sprite)
 	assert_not_null(carriage_sprite.sprite_frames)
 	assert_not_null(horse_left.sprite_frames)
@@ -101,6 +105,11 @@ func test_app_root_restart_rebuilds_run_state_for_completed_run() -> void:
 	assert_true(horse_left.is_playing())
 	assert_true(horse_right.is_playing())
 	assert_true(shadow_sprite.is_playing())
+	assert_eq(horse_team.position, Vector2(0.0, -38.0))
+	assert_eq(horse_left.position, Vector2(-8.0, 0.0))
+	assert_eq(horse_right.position, Vector2(8.0, 0.0))
+	assert_false(app_root._run_scene.has_node("World/Wagon/HorseTeam/HarnessLeft"))
+	assert_false(app_root._run_scene.has_node("World/Wagon/HorseTeam/HarnessRight"))
 
 
 func test_app_root_quit_request_is_wired_from_title_screen() -> void:
@@ -216,12 +225,16 @@ func test_app_root_when_returning_to_title_then_starting_again_keeps_animated_ca
 	var horse_right := app_root._run_scene.get_node(
 		"World/Wagon/HorseTeam/HorseRight"
 	) as AnimatedSprite2D
+	var horse_team := app_root._run_scene.get_node(
+		"World/Wagon/HorseTeam"
+	) as Node2D
 	var shadow_sprite := app_root._run_scene.get_node(
 		"World/Wagon/Shadow"
 	) as AnimatedSprite2D
 	assert_not_null(carriage_sprite)
 	assert_not_null(horse_left)
 	assert_not_null(horse_right)
+	assert_not_null(horse_team)
 	assert_not_null(shadow_sprite)
 	assert_not_null(carriage_sprite.sprite_frames)
 	assert_not_null(horse_left.sprite_frames)
@@ -235,6 +248,11 @@ func test_app_root_when_returning_to_title_then_starting_again_keeps_animated_ca
 	assert_true(horse_left.is_playing())
 	assert_true(horse_right.is_playing())
 	assert_true(shadow_sprite.is_playing())
+	assert_eq(horse_team.position, Vector2(0.0, -38.0))
+	assert_eq(horse_left.position, Vector2(-8.0, 0.0))
+	assert_eq(horse_right.position, Vector2(8.0, 0.0))
+	assert_false(app_root._run_scene.has_node("World/Wagon/HorseTeam/HarnessLeft"))
+	assert_false(app_root._run_scene.has_node("World/Wagon/HorseTeam/HarnessRight"))
 
 
 func test_app_root_clears_tree_pause_when_restarting_or_returning_to_title() -> void:
