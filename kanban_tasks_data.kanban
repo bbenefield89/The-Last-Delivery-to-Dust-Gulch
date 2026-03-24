@@ -834,7 +834,7 @@
                                     },
                                     {
                                         "details":  "Extract HUD refresh, onboarding, recovery prompts, pause flow, result flow, and touch-control visibility into an explicit owned system such as Systems/RunUiPresenter/run_ui_presenter.gd. Keep any owner-specific support types with that system and fold very thorough coverage for the extracted UI behavior into the same step.\n\nDone when: by playing on desktop and touch-capable play paths, the same HUD, onboarding card, recovery overlay, pause menu, result screen, and touch controls appear at the right times and remain usable, while that UI logic now lives under Systems/RunUiPresenter instead of directly in run_scene.gd.",
-                                        "done":  false
+                                        "done":  true
                                     },
                                     {
                                         "details":  "Extract runtime audio setup and presentation into an explicit owned system such as Systems/RunAudioPresenter/run_audio_presenter.gd, wire RunScene through it, and fold very thorough coverage for the extracted audio-state rules into the same step. Keep RunScene in Scenes/RunScene and do not reintroduce a global Scripts folder during the cleanup.\n\nDone when: by playing a run normally, the same music, impact sounds, failure ambients, pause cues, and result cues still occur in the same situations, and run_scene.gd mainly coordinates explicit Systems owners instead of directly owning their audio behavior.",

@@ -8,6 +8,7 @@ const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGe
 const RunDirectorType := preload("res://Systems/RunDirector/run_director.gd")
 const RunHazardResolverType := preload("res://Systems/RunHazardResolver/run_hazard_resolver.gd")
 const RunPresentationType := preload("res://Systems/RunPresentation/run_presentation.gd")
+const RunUiPresenterType := preload("res://Systems/RunUiPresenter/run_ui_presenter.gd")
 const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const CARRIAGE_SHEET_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png")
@@ -120,57 +121,46 @@ const NEAR_MISS_MAX_HORIZONTAL_CLEARANCE := 12.0
 const BONUS_CALLOUT_DURATION := 1.1
 const BONUS_CALLOUT_START_OFFSET := Vector2(0.0, -64.0)
 const BONUS_CALLOUT_END_OFFSET := Vector2(0.0, -82.0)
-const RECOVERY_STEP_ROW_MAX_WIDTH := 240.0
-const RECOVERY_STEP_MIN_WIDTH := 36.0
-const RECOVERY_STEP_HEIGHT := 60.0
-const RECOVERY_STEP_MAX_WIDTH := 72.0
-const RECOVERY_STEP_FONT_SIZE_RATIO := 0.52
-const RECOVERY_STEP_MIN_FONT_SIZE := 24
-const RECOVERY_STEP_MAX_FONT_SIZE := 38
-const RECOVERY_STEP_SPACING := 4
-const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := 3
+const RECOVERY_STEP_ROW_MAX_WIDTH := RunUiPresenterType.RECOVERY_STEP_ROW_MAX_WIDTH
+const RECOVERY_STEP_MIN_WIDTH := RunUiPresenterType.RECOVERY_STEP_MIN_WIDTH
+const RECOVERY_STEP_HEIGHT := RunUiPresenterType.RECOVERY_STEP_HEIGHT
+const RECOVERY_STEP_MAX_WIDTH := RunUiPresenterType.RECOVERY_STEP_MAX_WIDTH
+const RECOVERY_STEP_FONT_SIZE_RATIO := RunUiPresenterType.RECOVERY_STEP_FONT_SIZE_RATIO
+const RECOVERY_STEP_MIN_FONT_SIZE := RunUiPresenterType.RECOVERY_STEP_MIN_FONT_SIZE
+const RECOVERY_STEP_MAX_FONT_SIZE := RunUiPresenterType.RECOVERY_STEP_MAX_FONT_SIZE
+const RECOVERY_STEP_SPACING := RunUiPresenterType.RECOVERY_STEP_SPACING
+const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := RunUiPresenterType.RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
 const ROADSIDE_DECOR_SPACING := RunPresentationType.ROADSIDE_DECOR_SPACING
 const ROADSIDE_DECOR_COUNT := RunPresentationType.ROADSIDE_DECOR_COUNT
 const WAGON_COLLISION_SIZE := Vector2(32.0, 64.0)
-const RECOVERY_STEP_PENDING_COLOR := Color(0.25098, 0.203922, 0.145098, 0.92)
-const RECOVERY_STEP_ACTIVE_COLOR := Color(0.780392, 0.623529, 0.317647, 0.98)
-const RECOVERY_STEP_DONE_COLOR := Color(0.419608, 0.54902, 0.290196, 0.95)
+const RECOVERY_STEP_PENDING_COLOR := RunUiPresenterType.RECOVERY_STEP_PENDING_COLOR
+const RECOVERY_STEP_ACTIVE_COLOR := RunUiPresenterType.RECOVERY_STEP_ACTIVE_COLOR
+const RECOVERY_STEP_DONE_COLOR := RunUiPresenterType.RECOVERY_STEP_DONE_COLOR
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
 const DUST_BASE_AMOUNT_RATIO := RunPresentationType.DUST_BASE_AMOUNT_RATIO
-const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
-const ONBOARDING_BODY := (
-	"Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, "
-	+ "and hold the wagon together until you reach Dust Gulch."
-)
-const ONBOARDING_HINT := "Press Left, Right, Enter, or click to begin the run."
+const ONBOARDING_TITLE := RunUiPresenterType.ONBOARDING_TITLE
+const ONBOARDING_BODY := RunUiPresenterType.ONBOARDING_BODY
+const ONBOARDING_HINT := RunUiPresenterType.ONBOARDING_HINT
 const WAGON_LOOP_START_SECONDS := 5.0
 const WAGON_LOOP_END_SECONDS := 10.0
 
 var _run_state: RunStateType
 var _run_presentation: RunPresentationType = RunPresentationType.new()
+var _run_ui_presenter: RunUiPresenterType = RunUiPresenterType.new()
 var _run_director: RefCounted = RunDirectorType.new()
 var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var _navigation_click_in_progress := false
 var _tumbleweed_impact_serial := 0
-var _pause_menu_open := false
-var _onboarding_active := false
 var _bonus_callout_text := ""
 var _bonus_callout_remaining := 0.0
 var _bonus_callout_anchor_world_position := Vector2.ZERO
 var _phase_callout_text := ""
 var _phase_callout_remaining := 0.0
-var _touch_controls_enabled_for_runtime := false
-var _has_native_mobile_runtime_override := false
-var _native_mobile_runtime_override := false
-var _has_mobile_web_runtime_override := false
-var _mobile_web_runtime_override := false
-var _has_touchscreen_available_override := false
-var _touchscreen_available_override := false
 var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
 
@@ -242,8 +232,8 @@ func setup(run_state: RunStateType) -> void:
 	_run_state.load_persisted_best_run(_best_run_save_path)
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_run_state.record_best_run_if_needed(_best_run_save_path)
-	_onboarding_active = true
-	_pause_menu_open = false
+	_run_ui_presenter.bind_run_state(_run_state)
+	_run_ui_presenter.reset_for_new_run()
 	_bonus_callout_text = ""
 	_bonus_callout_remaining = 0.0
 	_bonus_callout_anchor_world_position = Vector2.ZERO
@@ -284,6 +274,38 @@ func _ready() -> void:
 		_dust_trail,
 		SHRUB_TEXTURES,
 		SIGN_TEXTURE
+	)
+	_run_ui_presenter.configure_scene_nodes(
+		_run_state,
+		_health_bar,
+		_health_label,
+		_distance_bar,
+		_distance_band_markers,
+		_cargo_label,
+		_touch_layer,
+		_touch_left_button,
+		_touch_right_button,
+		_touch_pause_button,
+		_onboarding_panel,
+		_onboarding_title,
+		_onboarding_body,
+		_onboarding_hint,
+		_pause_overlay,
+		_pause_panel,
+		_pause_resume_button,
+		_pause_restart_button,
+		_pause_return_button,
+		_recovery_panel,
+		_recovery_title,
+		_recovery_hint,
+		_recovery_steps,
+		_result_panel,
+		_result_title,
+		_result_summary,
+		_result_stats,
+		_result_restart_button,
+		_result_return_button,
+		ARROW_FONT
 	)
 	_configure_environment_art()
 	_ensure_scroll_visuals()
@@ -435,22 +457,11 @@ func _make_touch_button_stylebox(background_color: Color = RECOVERY_STEP_PENDING
 
 ## Rebuilds the distance bar markers from the authored route-band thresholds.
 func _configure_distance_bar_band_markers() -> void:
-	if _distance_band_markers == null:
-		return
-
-	for child in _distance_band_markers.get_children():
-		child.queue_free()
-
-	for boundary in DISTANCE_BAR_BAND_BOUNDARIES:
-		var marker := ColorRect.new()
-		marker.color = DISTANCE_BAR_MARKER_COLOR
-		marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		marker.anchor_left = boundary
-		marker.anchor_right = boundary
-		marker.anchor_bottom = 1.0
-		marker.offset_left = -DISTANCE_BAR_MARKER_HALF_WIDTH
-		marker.offset_right = DISTANCE_BAR_MARKER_HALF_WIDTH
-		_distance_band_markers.add_child(marker)
+	_run_ui_presenter.configure_distance_bar_band_markers(
+		DISTANCE_BAR_BAND_BOUNDARIES,
+		DISTANCE_BAR_MARKER_COLOR,
+		DISTANCE_BAR_MARKER_HALF_WIDTH
+	)
 
 
 ## Stops transient input/audio state when the run scene leaves the tree.
@@ -485,7 +496,7 @@ func _process(delta: float) -> void:
 		_refresh_bonus_callout()
 		_refresh_phase_callout()
 		return
-	if _pause_menu_open:
+	if _run_ui_presenter.pause_menu_open:
 		_refresh_onboarding_prompt()
 		_refresh_bonus_callout()
 		_tick_phase_callout(delta)
@@ -511,7 +522,7 @@ func _process(delta: float) -> void:
 		_refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
-	if _onboarding_active:
+	if _run_ui_presenter.onboarding_active:
 		_tick_bonus_callout(delta)
 		_tick_phase_callout(delta)
 		_run_presentation.advance_scroll(_run_state.current_speed, delta)
@@ -593,27 +604,7 @@ func _process(delta: float) -> void:
 
 ## Refreshes the compact run HUD values from the bound run state.
 func _refresh_status() -> void:
-	if (
-		_health_bar == null
-		or _health_label == null
-		or _distance_bar == null
-		or _cargo_label == null
-	):
-		return
-
-	if _run_state == null:
-		_health_bar.value = 0.0
-		_health_label.text = "--"
-		_distance_bar.value = 0.0
-		_cargo_label.text = "Cargo --"
-		return
-
-	_health_bar.max_value = 100.0
-	_health_bar.value = _run_state.wagon_health
-	_health_label.text = "%d" % _run_state.wagon_health
-	_distance_bar.max_value = 100.0
-	_distance_bar.value = _run_state.get_delivery_progress_ratio() * 100.0
-	_cargo_label.text = "Cargo %d" % _run_state.cargo_value
+	_run_ui_presenter.refresh_status()
 
 
 ## Shows a short in-run score callout while a bonus announcement is active.
@@ -661,190 +652,32 @@ func _refresh_phase_callout() -> void:
 
 ## Shows only the active recovery sequence prompt when gameplay allows it.
 func _refresh_recovery_prompt() -> void:
-	if _recovery_panel == null or _recovery_steps == null or _recovery_title == null or _recovery_hint == null:
-		return
-	if _run_state == null:
-		_recovery_panel.visible = false
-		return
-
-	var has_recovery := (
-		_run_state.result == RunStateType.RESULT_IN_PROGRESS
-		and not _pause_menu_open
-		and _run_state.has_active_recovery_sequence()
-	)
-	_recovery_panel.visible = has_recovery
-	if not has_recovery:
-		for child in _recovery_steps.get_children():
-			child.queue_free()
-		return
-
-	for child in _recovery_steps.get_children():
-		child.queue_free()
-
-	_recovery_title.text = _get_recovery_title(_run_state.active_failure)
-	_recovery_hint.text = _get_recovery_hint(_run_state.active_failure)
-	_recovery_steps.custom_minimum_size.x = RECOVERY_STEP_ROW_MAX_WIDTH
-	_recovery_steps.add_theme_constant_override("separation", RECOVERY_STEP_SPACING)
-
-	for i in range(_run_state.recovery_sequence.size()):
-		_recovery_steps.add_child(_build_recovery_step(i))
+	_run_ui_presenter.refresh_recovery_prompt()
 
 
 ## Refreshes onboarding visibility for the active run.
 func _refresh_onboarding_prompt() -> void:
-	if _onboarding_panel == null or _onboarding_title == null or _onboarding_body == null or _onboarding_hint == null:
-		return
-
-	var is_visible := (
-		_run_state != null
-		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
-		and _onboarding_active
-		and not _pause_menu_open
-	)
-	_onboarding_panel.visible = is_visible
-	if not is_visible:
-		return
-
-	_onboarding_title.text = ONBOARDING_TITLE
-	_onboarding_body.text = ONBOARDING_BODY
-	_onboarding_hint.text = ONBOARDING_HINT
+	_run_ui_presenter.refresh_onboarding_prompt()
 
 
 ## Configures explicit keyboard focus traversal for the pause menu buttons.
 func _configure_pause_menu_navigation() -> void:
-	if _pause_resume_button == null or _pause_restart_button == null or _pause_return_button == null:
-		return
-
-	_pause_resume_button.focus_mode = Control.FOCUS_ALL
-	_pause_restart_button.focus_mode = Control.FOCUS_ALL
-	_pause_return_button.focus_mode = Control.FOCUS_ALL
-
-	var resume_to_restart := _pause_resume_button.get_path_to(_pause_restart_button)
-	var resume_to_return := _pause_resume_button.get_path_to(_pause_return_button)
-	var restart_to_resume := _pause_restart_button.get_path_to(_pause_resume_button)
-	var restart_to_return := _pause_restart_button.get_path_to(_pause_return_button)
-	var return_to_resume := _pause_return_button.get_path_to(_pause_resume_button)
-	var return_to_restart := _pause_return_button.get_path_to(_pause_restart_button)
-
-	_pause_resume_button.focus_neighbor_top = resume_to_return
-	_pause_resume_button.focus_neighbor_bottom = resume_to_restart
-	_pause_resume_button.focus_neighbor_left = resume_to_return
-	_pause_resume_button.focus_neighbor_right = resume_to_restart
-	_pause_resume_button.focus_previous = resume_to_return
-	_pause_resume_button.focus_next = resume_to_restart
-
-	_pause_restart_button.focus_neighbor_top = restart_to_resume
-	_pause_restart_button.focus_neighbor_bottom = restart_to_return
-	_pause_restart_button.focus_neighbor_left = restart_to_resume
-	_pause_restart_button.focus_neighbor_right = restart_to_return
-	_pause_restart_button.focus_previous = restart_to_resume
-	_pause_restart_button.focus_next = restart_to_return
-
-	_pause_return_button.focus_neighbor_top = return_to_restart
-	_pause_return_button.focus_neighbor_bottom = return_to_resume
-	_pause_return_button.focus_neighbor_left = return_to_restart
-	_pause_return_button.focus_neighbor_right = return_to_resume
-	_pause_return_button.focus_previous = return_to_restart
-	_pause_return_button.focus_next = return_to_resume
+	_run_ui_presenter.configure_pause_menu_navigation()
 
 
 ## Configures explicit keyboard focus traversal for the result screen buttons.
 func _configure_result_menu_navigation() -> void:
-	if _result_restart_button == null or _result_return_button == null:
-		return
-
-	_result_restart_button.focus_mode = Control.FOCUS_ALL
-	_result_return_button.focus_mode = Control.FOCUS_ALL
-
-	var restart_to_return := _result_restart_button.get_path_to(_result_return_button)
-	var return_to_restart := _result_return_button.get_path_to(_result_restart_button)
-
-	_result_restart_button.focus_neighbor_top = restart_to_return
-	_result_restart_button.focus_neighbor_bottom = restart_to_return
-	_result_restart_button.focus_neighbor_left = restart_to_return
-	_result_restart_button.focus_neighbor_right = restart_to_return
-	_result_restart_button.focus_previous = restart_to_return
-	_result_restart_button.focus_next = restart_to_return
-
-	_result_return_button.focus_neighbor_top = return_to_restart
-	_result_return_button.focus_neighbor_bottom = return_to_restart
-	_result_return_button.focus_neighbor_left = return_to_restart
-	_result_return_button.focus_neighbor_right = return_to_restart
-	_result_return_button.focus_previous = return_to_restart
-	_result_return_button.focus_next = return_to_restart
+	_run_ui_presenter.configure_result_menu_navigation()
 
 
 ## Refreshes pause-menu visibility for the active run.
 func _refresh_pause_menu() -> void:
-	if _pause_overlay == null or _pause_panel == null:
-		return
-	var is_visible := _run_state != null and _run_state.result == RunStateType.RESULT_IN_PROGRESS and _pause_menu_open
-	_pause_overlay.visible = is_visible
-	_pause_panel.visible = is_visible
-	if (
-		is_visible
-		and _pause_resume_button != null
-		and _pause_restart_button != null
-		and _pause_return_button != null
-	):
-		if (
-			not _pause_resume_button.has_focus()
-			and not _pause_restart_button.has_focus()
-			and not _pause_return_button.has_focus()
-		):
-			_focus_default_pause_button()
+	_run_ui_presenter.refresh_pause_menu()
 
 
 ## Refreshes the end-of-run result panel contents and visibility.
 func _refresh_result_screen() -> void:
-	if _result_panel == null or _result_title == null or _result_summary == null or _result_stats == null:
-		return
-	if _run_state == null or _run_state.result == RunStateType.RESULT_IN_PROGRESS:
-		_result_panel.visible = false
-		_result_summary.visible = false
-		return
-
-	_result_panel.visible = true
-	match _run_state.result:
-		RunStateType.RESULT_SUCCESS:
-			_result_title.text = "Delivered to Dust Gulch"
-		RunStateType.RESULT_COLLAPSED:
-			_result_title.text = "Wagon Collapsed"
-		_:
-			_result_title.text = "Run Complete"
-
-	_result_summary.text = _build_best_run_summary()
-	_result_summary.visible = not _result_summary.text.is_empty()
-
-	_result_stats.text = (
-		"Score: %d\n"
-		+ "Delivery Grade: %s\n"
-		+ "Health: %d\n"
-		+ "Cargo: %d\n"
-		+ "Distance traveled: %.0f / %.0f\n"
-		+ "Hazards Dodged: %d\n"
-		+ "Near Misses: %d\n"
-		+ "Perfect Recoveries: %d\n"
-		+ "Recovery Failures: %d"
-	) % [
-		_run_state.get_score(),
-		_run_state.get_delivery_grade(),
-		_run_state.wagon_health,
-		_run_state.cargo_value,
-		_run_state.get_distance_traveled(),
-		_run_state.route_distance,
-		_run_state.hazards_dodged,
-		_run_state.near_misses,
-		_run_state.perfect_recoveries,
-		_run_state.recovery_failures,
-	]	
-	if (
-		_result_restart_button != null
-		and _result_return_button != null
-		and not _result_restart_button.has_focus()
-		and not _result_return_button.has_focus()
-	):
-		_focus_default_result_button()
+	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
 
 
 ## Persists a newly completed run exactly once when it beats the stored best score.
@@ -876,81 +709,40 @@ func _build_best_run_summary() -> String:
 
 ## Shows touch controls only while the run is actively playable on a supported runtime.
 func _refresh_touch_controls() -> void:
-	if _touch_layer == null:
-		return
-
-	_refresh_touch_controls_runtime_state()
-	var was_visible := _touch_layer.visible
-	var is_visible := _should_show_touch_controls()
-	if was_visible and not is_visible:
+	var was_visible := false if _touch_layer == null else _touch_layer.visible
+	_run_ui_presenter.refresh_touch_controls()
+	if was_visible and not _run_ui_presenter.should_show_touch_controls():
 		_release_touch_steer_actions()
-	_touch_layer.visible = is_visible
-	if _touch_left_button != null:
-		_touch_left_button.disabled = not is_visible
-	if _touch_right_button != null:
-		_touch_right_button.disabled = not is_visible
-	if _touch_pause_button != null:
-		_touch_pause_button.disabled = not is_visible
 
 
 ## Enables touch controls automatically for native mobile and touch-capable mobile web runtimes.
 func _refresh_touch_controls_runtime_state() -> void:
-	if _touch_controls_enabled_for_runtime:
-		return
-	if _is_native_mobile_runtime():
-		_touch_controls_enabled_for_runtime = true
-		return
-	if _is_mobile_web_runtime() and _is_touchscreen_available():
-		_touch_controls_enabled_for_runtime = true
+	_run_ui_presenter.refresh_touch_controls()
 
 
 ## Returns whether the current runtime is a native Android or iOS build.
 func _is_native_mobile_runtime() -> bool:
-	if _has_native_mobile_runtime_override:
-		return _native_mobile_runtime_override
-	return OS.has_feature("android") or OS.has_feature("ios")
+	return _run_ui_presenter.is_native_mobile_runtime()
 
 
 ## Returns whether the current runtime is a web export hosted on Android or iOS.
 func _is_mobile_web_runtime() -> bool:
-	if _has_mobile_web_runtime_override:
-		return _mobile_web_runtime_override
-	return OS.has_feature("web_android") or OS.has_feature("web_ios")
+	return _run_ui_presenter.is_mobile_web_runtime()
 
 
 ## Returns whether the active runtime currently reports touchscreen capability.
 func _is_touchscreen_available() -> bool:
-	if _has_touchscreen_available_override:
-		return _touchscreen_available_override
-	return DisplayServer.is_touchscreen_available()
+	return _run_ui_presenter.is_touchscreen_available()
 
 
 ## Returns whether the touch layer should currently be visible and interactive.
 func _should_show_touch_controls() -> bool:
-	return (
-		_touch_controls_enabled_for_runtime
-		and _run_state != null
-		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
-		and not _pause_menu_open
-	)
+	return _run_ui_presenter.should_show_touch_controls()
 
 
 ## Reveals touch controls after the first real touch on mobile web runtimes with delayed capability reporting.
 func _reveal_touch_controls_from_first_touch(event: InputEvent) -> void:
-	if event == null or _touch_controls_enabled_for_runtime:
-		return
-	if not _is_mobile_web_runtime():
-		return
-
-	var screen_touch_event := event as InputEventScreenTouch
-	if screen_touch_event != null and screen_touch_event.pressed:
-		_touch_controls_enabled_for_runtime = true
-		_refresh_touch_controls()
-		return
-
-	if event is InputEventScreenDrag:
-		_touch_controls_enabled_for_runtime = true
-		_refresh_touch_controls()
+	_run_ui_presenter.reveal_touch_controls_from_first_touch(event)
 
 
 ## Routes pause, onboarding, and recovery input for the run scene.
@@ -960,19 +752,19 @@ func _input(event: InputEvent) -> void:
 		return
 	if event != null and event.is_action_pressed(PAUSE_ACTION):
 		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
-			_set_pause_state(not _pause_menu_open)
+			_set_pause_state(not _run_ui_presenter.pause_menu_open)
 		return
-	if _pause_menu_open and event != null and event.is_action_pressed("ui_cancel", false, true):
+	if _run_ui_presenter.pause_menu_open and event != null and event.is_action_pressed("ui_cancel", false, true):
 		_set_pause_state(false)
 		return
-	if _pause_menu_open:
+	if _run_ui_presenter.pause_menu_open:
 		if _handle_pause_menu_click(event):
 			return
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 			return
-	if _onboarding_active:
+	if _run_ui_presenter.onboarding_active:
 		if _should_dismiss_onboarding(event):
-			_onboarding_active = false
+			_run_ui_presenter.onboarding_active = false
 			_refresh_onboarding_prompt()
 			if _run_director.route_phase_callout_zone == ROUTE_PHASE_WARM_UP:
 				_show_phase_callout(_get_route_phase_display_name(_run_director.route_phase_callout_zone))
@@ -1272,6 +1064,65 @@ func _set_process_mode_recursive(node: Node, mode: ProcessMode) -> void:
 		_set_process_mode_recursive(child, mode)
 
 
+## Preserves compatibility for legacy scene-state property access now owned by extracted presenters.
+func _get(property: StringName) -> Variant:
+	match property:
+		&"_onboarding_active":
+			return _run_ui_presenter.onboarding_active
+		&"_pause_menu_open":
+			return _run_ui_presenter.pause_menu_open
+		&"_touch_controls_enabled_for_runtime":
+			return _run_ui_presenter.touch_controls_enabled_for_runtime
+		&"_has_native_mobile_runtime_override":
+			return _run_ui_presenter.has_native_mobile_runtime_override
+		&"_native_mobile_runtime_override":
+			return _run_ui_presenter.native_mobile_runtime_override
+		&"_has_mobile_web_runtime_override":
+			return _run_ui_presenter.has_mobile_web_runtime_override
+		&"_mobile_web_runtime_override":
+			return _run_ui_presenter.mobile_web_runtime_override
+		&"_has_touchscreen_available_override":
+			return _run_ui_presenter.has_touchscreen_available_override
+		&"_touchscreen_available_override":
+			return _run_ui_presenter.touchscreen_available_override
+		_:
+			return null
+
+
+## Preserves compatibility for legacy scene-state overrides now owned by extracted presenters.
+func _set(property: StringName, value: Variant) -> bool:
+	match property:
+		&"_onboarding_active":
+			_run_ui_presenter.onboarding_active = bool(value)
+			return true
+		&"_pause_menu_open":
+			_run_ui_presenter.pause_menu_open = bool(value)
+			return true
+		&"_touch_controls_enabled_for_runtime":
+			_run_ui_presenter.touch_controls_enabled_for_runtime = bool(value)
+			return true
+		&"_has_native_mobile_runtime_override":
+			_run_ui_presenter.has_native_mobile_runtime_override = bool(value)
+			return true
+		&"_native_mobile_runtime_override":
+			_run_ui_presenter.native_mobile_runtime_override = bool(value)
+			return true
+		&"_has_mobile_web_runtime_override":
+			_run_ui_presenter.has_mobile_web_runtime_override = bool(value)
+			return true
+		&"_mobile_web_runtime_override":
+			_run_ui_presenter.mobile_web_runtime_override = bool(value)
+			return true
+		&"_has_touchscreen_available_override":
+			_run_ui_presenter.has_touchscreen_available_override = bool(value)
+			return true
+		&"_touchscreen_available_override":
+			_run_ui_presenter.touchscreen_available_override = bool(value)
+			return true
+		_:
+			return false
+
+
 ## Converts the latest input event into the expected recovery action name.
 func _extract_recovery_action(event: InputEvent) -> StringName:
 	if event == null:
@@ -1285,40 +1136,23 @@ func _extract_recovery_action(event: InputEvent) -> StringName:
 
 ## Checks whether the current input event should dismiss the onboarding card.
 func _should_dismiss_onboarding(event: InputEvent) -> bool:
-	if event == null:
-		return false
-	if event.is_action_pressed(STEER_ACTION_NEGATIVE, false, true):
-		return true
-	if event.is_action_pressed(STEER_ACTION_POSITIVE, false, true):
-		return true
-	if event.is_action_pressed("ui_accept", false, true):
-		return true
-	if event.is_action_pressed("ui_cancel", false, true):
-		return true
-
-	var mouse_event := event as InputEventMouseButton
-	return mouse_event != null and mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed
+	return _run_ui_presenter.should_dismiss_onboarding(event)
 
 
 ## Handles direct pause-menu mouse clicks when the modal is open.
 func _handle_pause_menu_click(event: InputEvent) -> bool:
-	var mouse_event := event as InputEventMouseButton
-	if mouse_event == null:
-		return false
-	if mouse_event.button_index != MOUSE_BUTTON_LEFT or not mouse_event.pressed:
-		return false
-
-	var click_position := mouse_event.position
-	if _pause_resume_button != null and _pause_resume_button.get_global_rect().has_point(click_position):
-		_on_pause_resume_pressed()
-		return true
-	if _pause_restart_button != null and _pause_restart_button.get_global_rect().has_point(click_position):
-		_on_pause_restart_pressed()
-		return true
-	if _pause_return_button != null and _pause_return_button.get_global_rect().has_point(click_position):
-		_on_pause_return_to_title_pressed()
-		return true
-	return false
+	match _run_ui_presenter.get_pause_menu_click_action(event):
+		RunUiPresenterType.PAUSE_MENU_ACTION_RESUME:
+			_on_pause_resume_pressed()
+			return true
+		RunUiPresenterType.PAUSE_MENU_ACTION_RESTART:
+			_on_pause_restart_pressed()
+			return true
+		RunUiPresenterType.PAUSE_MENU_ACTION_RETURN_TO_TITLE:
+			_on_pause_return_to_title_pressed()
+			return true
+		_:
+			return false
 
 
 ## Injects a synthetic steering action event so touch input shares the keyboard gameplay path.
@@ -1336,23 +1170,11 @@ func _release_touch_steer_actions() -> void:
 
 
 func _get_recovery_title(failure_type: StringName) -> String:
-	match failure_type:
-		&"wheel_loose":
-			return "Wheel Loose: Secure the Wagon"
-		&"horse_panic":
-			return "Horse Panic: Calm the Team"
-		_:
-			return "Recovery"
+	return _run_ui_presenter.get_recovery_title(failure_type)
 
 
 func _get_recovery_hint(failure_type: StringName) -> String:
-	match failure_type:
-		&"wheel_loose":
-			return "Steering is compromised. Match the sequence to lock the wheel."
-		&"horse_panic":
-			return "The wagon is swerving. Complete the full left-right pattern."
-		_:
-			return "Follow the prompts left to right."
+	return _run_ui_presenter.get_recovery_hint(failure_type)
 
 
 func _apply_recovery_failure_penalty() -> void:
@@ -1365,63 +1187,25 @@ func _apply_recovery_failure_penalty() -> void:
 
 ## Returns the chip size that keeps the full recovery row inside a fixed width budget.
 func _get_recovery_step_minimum_size() -> Vector2:
-	if _run_state == null:
-		return Vector2(RECOVERY_STEP_MAX_WIDTH, RECOVERY_STEP_HEIGHT)
-
-	var sequence_size: int = max(_run_state.recovery_sequence.size(), RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH)
-	var available_width: float = RECOVERY_STEP_ROW_MAX_WIDTH - ((sequence_size - 1) * RECOVERY_STEP_SPACING)
-	var step_width: float = clampf(
-		floor(available_width / float(sequence_size)),
-		RECOVERY_STEP_MIN_WIDTH,
-		RECOVERY_STEP_MAX_WIDTH
-	)
-	return Vector2(step_width, RECOVERY_STEP_HEIGHT)
+	return _run_ui_presenter.get_recovery_step_minimum_size()
 
 
 ## Returns the prompt font size that matches the active recovery chip width.
 func _get_recovery_step_font_size() -> int:
-	var step_width := _get_recovery_step_minimum_size().x
-	return clampi(
-		int(floor(step_width * RECOVERY_STEP_FONT_SIZE_RATIO)),
-		RECOVERY_STEP_MIN_FONT_SIZE,
-		RECOVERY_STEP_MAX_FONT_SIZE
-	)
+	return _run_ui_presenter.get_recovery_step_font_size()
 
 
 ## Builds one recovery-step chip using the current compactness rules for the active sequence.
 func _build_recovery_step(index: int) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = _get_recovery_step_minimum_size()
-	panel.modulate = _get_recovery_step_color(index)
-
-	var label := Label.new()
-	label.text = _format_recovery_action(_run_state.recovery_sequence[index])
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	label.add_theme_font_size_override("font_size", _get_recovery_step_font_size())
-	label.add_theme_font_override("font", ARROW_FONT)
-	panel.add_child(label)
-	return panel
+	return _run_ui_presenter.build_recovery_step(index)
 
 
 func _get_recovery_step_color(index: int) -> Color:
-	if index < _run_state.recovery_prompt_index:
-		return RECOVERY_STEP_DONE_COLOR
-	if index == _run_state.recovery_prompt_index:
-		return RECOVERY_STEP_ACTIVE_COLOR
-	return RECOVERY_STEP_PENDING_COLOR
+	return _run_ui_presenter.get_recovery_step_color(index)
 
 
 func _format_recovery_action(action_name: StringName) -> String:
-	match action_name:
-		&"steer_left":
-			return char(0xE020)
-		&"steer_right":
-			return char(0xE022)
-		_:
-			return String(action_name).to_upper()
+	return _run_ui_presenter.format_recovery_action(action_name)
 
 
 ## Starts or refreshes the short-lived in-run bonus callout text.
@@ -1498,33 +1282,26 @@ func _on_result_return_to_title_pressed() -> void:
 
 ## Updates the pause state and keeps the keyboard focus anchored to the active pause menu.
 func _set_pause_state(paused: bool) -> void:
-	if _run_state == null:
+	var was_paused := _run_ui_presenter.pause_menu_open
+	if not _run_ui_presenter.set_pause_state(paused):
 		return
-	var was_paused := _pause_menu_open
-	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		paused = false
-
-	_pause_menu_open = paused
-	if was_paused != _pause_menu_open and _pause_toggle_player != null:
+	if _pause_toggle_player != null:
 		_pause_toggle_player.play()
 	_refresh_pause_menu()
-	if _pause_menu_open and not was_paused:
+	if _run_ui_presenter.pause_menu_open and not was_paused:
 		_focus_default_pause_button()
 	_refresh_recovery_prompt()
+	_refresh_touch_controls()
 
 
 ## Gives the pause menu a deterministic starting focus for keyboard-only play.
 func _focus_default_pause_button() -> void:
-	if _pause_resume_button == null:
-		return
-	_pause_resume_button.grab_focus()
+	_run_ui_presenter.focus_default_pause_button()
 
 
 ## Gives the result screen a deterministic starting focus for keyboard-only play.
 func _focus_default_result_button() -> void:
-	if _result_restart_button == null:
-		return
-	_result_restart_button.grab_focus()
+	_run_ui_presenter.focus_default_result_button()
 
 
 ## Resumes gameplay after playing the pause-menu click cue.
@@ -1564,7 +1341,7 @@ func _on_touch_left_button_down() -> void:
 
 ## Releases the left steering action when the mobile left button is released.
 func _on_touch_left_button_up() -> void:
-	if not _touch_controls_enabled_for_runtime:
+	if not _run_ui_presenter.touch_controls_enabled_for_runtime:
 		return
 	_parse_touch_action_event(STEER_ACTION_NEGATIVE, false)
 
@@ -1578,7 +1355,7 @@ func _on_touch_right_button_down() -> void:
 
 ## Releases the right steering action when the mobile right button is released.
 func _on_touch_right_button_up() -> void:
-	if not _touch_controls_enabled_for_runtime:
+	if not _run_ui_presenter.touch_controls_enabled_for_runtime:
 		return
 	_parse_touch_action_event(STEER_ACTION_POSITIVE, false)
 
