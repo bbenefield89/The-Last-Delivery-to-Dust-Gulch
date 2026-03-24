@@ -4,6 +4,7 @@ const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png")
 const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
 const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
+const RunAudioPresenterType := preload("res://Systems/RunAudioPresenter/run_audio_presenter.gd")
 const RunPresentationType := preload("res://Systems/RunPresentation/run_presentation.gd")
 const RunUiPresenterType := preload("res://Systems/RunUiPresenter/run_ui_presenter.gd")
 const RunStateType := preload("res://Systems/RunState/run_state.gd")
@@ -69,6 +70,11 @@ func _get_run_hazard_resolver(scene: Node) -> RunHazardResolver:
 ## Returns the extracted presentation owner bound to the active test scene.
 func _get_run_presentation(scene: Node) -> RunPresentationType:
 	return scene._run_presentation as RunPresentationType
+
+
+## Returns the extracted audio presenter bound to the active test scene.
+func _get_run_audio_presenter(scene: Node) -> RunAudioPresenterType:
+	return scene._run_audio_presenter as RunAudioPresenterType
 
 
 ## Returns the extracted UI presenter bound to the active test scene.
@@ -358,6 +364,30 @@ func test_setup_binds_run_ui_presenter_without_scene_ui_state_mirrors() -> void:
 	assert_false(property_names.has("_mobile_web_runtime_override"))
 	assert_false(property_names.has("_has_touchscreen_available_override"))
 	assert_false(property_names.has("_touchscreen_available_override"))
+
+
+## Confirms the run scene delegates audio transition state to the extracted audio presenter.
+func test_setup_binds_run_audio_presenter_without_scene_audio_state_mirrors() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	var run_audio_presenter := _get_run_audio_presenter(scene)
+
+	var property_names := scene.get_property_list().map(
+		func(property_data: Dictionary) -> String:
+			return property_data.get("name", "")
+	)
+
+	assert_not_null(run_audio_presenter)
+	assert_eq(run_audio_presenter.last_announced_failure, state.active_failure)
+	assert_eq(run_audio_presenter.last_announced_result, state.result)
+	assert_eq(run_audio_presenter.tumbleweed_impact_serial, 0)
+	assert_false(property_names.has("_last_announced_failure"))
+	assert_false(property_names.has("_last_announced_result"))
+	assert_false(property_names.has("_tumbleweed_impact_serial"))
 
 
 func _build_expected_recovery_sequence(scene: Node, progress: float, seed: int) -> Array[StringName]:
@@ -2763,6 +2793,7 @@ func test_hazard_impact_audio_dispatches_to_specific_players_and_fallback() -> v
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
+	var run_audio_presenter := _get_run_audio_presenter(scene)
 	var pothole_impact_player: AudioStreamPlayer = scene.get_node("%PotholeImpactPlayer")
 	var rock_impact_player: AudioStreamPlayer = scene.get_node("%RockImpactPlayer")
 	var tumbleweed_impact_player: AudioStreamPlayer = scene.get_node("%TumbleweedImpactPlayer")
@@ -2780,6 +2811,7 @@ func test_hazard_impact_audio_dispatches_to_specific_players_and_fallback() -> v
 
 	rock_impact_player.stop()
 	scene._play_hazard_impact(&"tumbleweed")
+	assert_eq(run_audio_presenter.tumbleweed_impact_serial, 1)
 	assert_true(tumbleweed_impact_player.playing)
 	assert_eq(tumbleweed_impact_player.stream, scene.TUMBLEWEED_IMPACT_SOUND)
 	await get_tree().create_timer(scene.IMPACT_SOUND.get_length() + 0.05, false).timeout
@@ -2792,6 +2824,29 @@ func test_hazard_impact_audio_dispatches_to_specific_players_and_fallback() -> v
 	assert_eq(impact_player.volume_db, -4.5)
 
 
+func test_tumbleweed_timeout_when_newer_impact_replaces_older_then_stale_stop_is_ignored() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var run_audio_presenter := _get_run_audio_presenter(scene)
+	var tumbleweed_impact_player: AudioStreamPlayer = scene.get_node("%TumbleweedImpactPlayer")
+
+	scene._play_hazard_impact(&"tumbleweed")
+	var first_serial := run_audio_presenter.tumbleweed_impact_serial
+	scene._play_hazard_impact(&"tumbleweed")
+	var second_serial := run_audio_presenter.tumbleweed_impact_serial
+
+	assert_true(tumbleweed_impact_player.playing)
+	assert_true(second_serial > first_serial)
+
+	scene._on_tumbleweed_impact_timeout(first_serial)
+	assert_true(tumbleweed_impact_player.playing)
+
+	scene._on_tumbleweed_impact_timeout(second_serial)
+	assert_false(tumbleweed_impact_player.playing)
+
+
 func test_new_failure_plays_failure_audio_cue() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2802,9 +2857,15 @@ func test_new_failure_plays_failure_audio_cue() -> void:
 	state.start_failure(&"wheel_loose", &"rock")
 	scene._refresh_audio_presentation()
 
+	var run_audio_presenter := _get_run_audio_presenter(scene)
 	var failure_player: AudioStreamPlayer = scene.get_node("%FailurePlayer")
 	assert_true(failure_player.playing)
 	assert_eq(failure_player.stream, scene.HORSE_SPOOK_SOUND)
+	assert_eq(run_audio_presenter.last_announced_failure, state.active_failure)
+
+	failure_player.stop()
+	scene._refresh_audio_presentation()
+	assert_false(failure_player.playing)
 
 
 func test_failure_ambient_audio_tracks_active_failure_and_run_end() -> void:
@@ -2859,6 +2920,7 @@ func test_success_result_stops_dust_and_plays_result_cue() -> void:
 	assert_eq(result_player.stream, scene.WIN_STINGER)
 	assert_false(music_player.playing)
 	assert_false(wagon_loop_player.playing)
+	assert_eq(_get_run_audio_presenter(scene).last_announced_result, RunStateType.RESULT_SUCCESS)
 
 
 func test_collapse_result_plays_collapse_stinger() -> void:
@@ -2875,6 +2937,40 @@ func test_collapse_result_plays_collapse_stinger() -> void:
 	var result_player: AudioStreamPlayer = scene.get_node("%ResultPlayer")
 	assert_true(result_player.playing)
 	assert_eq(result_player.stream, scene.COLLAPSE_STINGER)
+	assert_eq(_get_run_audio_presenter(scene).last_announced_result, RunStateType.RESULT_COLLAPSED)
+
+
+## Verifies completed-run best-state sync uses the extracted audio transition tracker to gate persistence.
+func test_sync_completed_run_best_state_uses_audio_presenter_result_tracking() -> void:
+	assert_eq(
+		RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), TEST_BEST_RUN_SAVE_PATH),
+		OK
+	)
+	var scene = RUN_SCENE.instantiate()
+	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	state.result = RunStateType.RESULT_SUCCESS
+	state.distance_remaining = 0.0
+	state.cargo_value = 95
+	state.wagon_health = 90
+
+	var run_audio_presenter := _get_run_audio_presenter(scene)
+	run_audio_presenter.last_announced_result = RunStateType.RESULT_IN_PROGRESS
+	scene._sync_completed_run_best_state()
+
+	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+	assert_eq(stored_best.score, state.get_score())
+
+	RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), TEST_BEST_RUN_SAVE_PATH)
+	run_audio_presenter.last_announced_result = state.result
+	scene._sync_completed_run_best_state()
+
+	stored_best = RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+	assert_eq(stored_best.score, 1200)
 
 
 func test_wagon_loop_audio_wraps_back_to_five_second_mark() -> void:

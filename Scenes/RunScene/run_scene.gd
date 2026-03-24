@@ -8,6 +8,7 @@ const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGe
 const RunDirectorType := preload("res://Systems/RunDirector/run_director.gd")
 const RunHazardResolverType := preload("res://Systems/RunHazardResolver/run_hazard_resolver.gd")
 const RunPresentationType := preload("res://Systems/RunPresentation/run_presentation.gd")
+const RunAudioPresenterType := preload("res://Systems/RunAudioPresenter/run_audio_presenter.gd")
 const RunUiPresenterType := preload("res://Systems/RunUiPresenter/run_ui_presenter.gd")
 const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
@@ -149,13 +150,11 @@ const WAGON_LOOP_END_SECONDS := 10.0
 
 var _run_state: RunStateType
 var _run_presentation: RunPresentationType = RunPresentationType.new()
+var _run_audio_presenter: RunAudioPresenterType = RunAudioPresenterType.new()
 var _run_ui_presenter: RunUiPresenterType = RunUiPresenterType.new()
 var _run_director: RefCounted = RunDirectorType.new()
 var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
-var _last_announced_failure: StringName = &""
-var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var _navigation_click_in_progress := false
-var _tumbleweed_impact_serial := 0
 var _bonus_callout_text := ""
 var _bonus_callout_remaining := 0.0
 var _bonus_callout_anchor_world_position := Vector2.ZERO
@@ -232,6 +231,7 @@ func setup(run_state: RunStateType) -> void:
 	_run_state.load_persisted_best_run(_best_run_save_path)
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_run_state.record_best_run_if_needed(_best_run_save_path)
+	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
 	_bonus_callout_text = ""
@@ -239,8 +239,6 @@ func setup(run_state: RunStateType) -> void:
 	_bonus_callout_anchor_world_position = Vector2.ZERO
 	_phase_callout_text = ""
 	_phase_callout_remaining = 0.0
-	_last_announced_failure = _run_state.active_failure
-	_last_announced_result = _run_state.result
 	_run_director.bind_run_state(_run_state, _recovery_sequence_generator)
 	_run_presentation.bind_run_state(_run_state)
 	_refresh_status()
@@ -274,6 +272,25 @@ func _ready() -> void:
 		_dust_trail,
 		SHRUB_TEXTURES,
 		SIGN_TEXTURE
+	)
+	_run_audio_presenter.configure_scene_nodes(
+		_run_state,
+		self,
+		_music_player,
+		_wagon_loop_player,
+		_impact_player,
+		_pothole_impact_player,
+		_rock_impact_player,
+		_tumbleweed_impact_player,
+		_wheel_loose_ambient_player,
+		_horse_panic_ambient_player,
+		_recovery_step_player,
+		_recovery_success_player,
+		_recovery_fail_player,
+		_pause_toggle_player,
+		_failure_player,
+		_result_player,
+		_ui_click_player
 	)
 	_run_ui_presenter.configure_scene_nodes(
 		_run_state,
@@ -686,7 +703,7 @@ func _sync_completed_run_best_state() -> void:
 		return
 	if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
 		return
-	if _last_announced_result == _run_state.result:
+	if _run_audio_presenter.last_announced_result == _run_state.result:
 		return
 
 	_run_state.record_best_run_if_needed(_best_run_save_path)
@@ -782,10 +799,10 @@ func _input(event: InputEvent) -> void:
 
 	if recovery_result.bonus_callout_text != "":
 		_show_bonus_callout(recovery_result.bonus_callout_text)
-	if recovery_result.play_step_sound and _recovery_step_player != null:
-		_recovery_step_player.play()
-	if recovery_result.recovery_completed and _recovery_success_player != null:
-		_recovery_success_player.play()
+	if recovery_result.play_step_sound:
+		_run_audio_presenter.play_recovery_step()
+	if recovery_result.recovery_completed:
+		_run_audio_presenter.play_recovery_success()
 
 	_refresh_status()
 	_refresh_recovery_prompt()
@@ -807,8 +824,8 @@ func _handle_run_director_update(update: RefCounted) -> void:
 		return
 	if update.phase_callout_text != "":
 		_show_phase_callout(update.phase_callout_text)
-	if update.recovery_penalty_applied and _recovery_fail_player != null:
-		_recovery_fail_player.play()
+	if update.recovery_penalty_applied:
+		_run_audio_presenter.play_recovery_fail()
 
 
 ## Applies scene-owned impact and bonus presentation emitted by the hazard resolver.
@@ -867,42 +884,17 @@ func _trigger_impact_feedback() -> void:
 
 ## Routes a hazard collision to its dedicated impact player and falls back to the generic impact cue.
 func _play_hazard_impact(hazard_type: StringName) -> void:
-	match hazard_type:
-		&"pothole":
-			if _pothole_impact_player != null:
-				_pothole_impact_player.play()
-				return
-		&"rock":
-			if _rock_impact_player != null:
-				_rock_impact_player.play()
-				return
-		&"tumbleweed":
-			if _tumbleweed_impact_player != null:
-				_tumbleweed_impact_serial += 1
-				_tumbleweed_impact_player.play()
-				_schedule_tumbleweed_impact_stop(_tumbleweed_impact_serial)
-				return
-
-	if _impact_player != null:
-		_impact_player.play()
+	_run_audio_presenter.play_hazard_impact(hazard_type)
 
 
 ## Stops the tumbleweed cue after the same playback window used by the crash impact cue.
 func _schedule_tumbleweed_impact_stop(serial: int) -> void:
-	var stop_after_seconds := IMPACT_SOUND.get_length()
-	if stop_after_seconds <= 0.0:
-		return
-	var timer := get_tree().create_timer(stop_after_seconds, false)
-	timer.timeout.connect(_on_tumbleweed_impact_timeout.bind(serial), CONNECT_ONE_SHOT)
+	_run_audio_presenter.schedule_tumbleweed_impact_stop(serial)
 
 
 ## Stops the active tumbleweed cue only if a newer tumbleweed playback has not replaced it.
 func _on_tumbleweed_impact_timeout(serial: int) -> void:
-	if _tumbleweed_impact_player == null:
-		return
-	if serial != _tumbleweed_impact_serial:
-		return
-	_tumbleweed_impact_player.stop()
+	_run_audio_presenter.on_tumbleweed_impact_timeout(serial)
 
 
 ## Ensures the looping roadside segments are populated through the presentation owner.
@@ -920,122 +912,42 @@ func _configure_dust_trail() -> void:
 	_run_presentation.configure_dust_trail()
 
 
+## Applies the authored streams, mix levels, and loop points through the extracted audio presenter.
 func _configure_audio_players() -> void:
-	if _music_player != null:
-		_music_player.stream = BACKGROUND_MUSIC
-		_music_player.volume_db = -12.0
-	if _wagon_loop_player != null:
-		_wagon_loop_player.stream = WAGON_LOOP_SOUND
-		_wagon_loop_player.volume_db = -8.5
-	if _impact_player != null:
-		_impact_player.stream = IMPACT_SOUND
-		_impact_player.volume_db = -4.5
-	if _pothole_impact_player != null:
-		_pothole_impact_player.stream = POTHOLE_IMPACT_SOUND
-		_pothole_impact_player.volume_db = -5.0
-	if _rock_impact_player != null:
-		_rock_impact_player.stream = ROCK_IMPACT_SOUND
-		_rock_impact_player.volume_db = -4.5
-	if _tumbleweed_impact_player != null:
-		_tumbleweed_impact_player.stream = TUMBLEWEED_IMPACT_SOUND
-		_tumbleweed_impact_player.volume_db = -7.0
-	if _wheel_loose_ambient_player != null:
-		_wheel_loose_ambient_player.stream = WHEEL_LOOSE_AMBIENT_SOUND
-		_wheel_loose_ambient_player.volume_db = -9.0
-	if _horse_panic_ambient_player != null:
-		_horse_panic_ambient_player.stream = HORSE_PANIC_AMBIENT_SOUND
-		_horse_panic_ambient_player.volume_db = -10.0
-	if _recovery_step_player != null:
-		_recovery_step_player.stream = RECOVERY_STEP_SOUND
-		_recovery_step_player.volume_db = -1.5
-	if _recovery_success_player != null:
-		_recovery_success_player.stream = RECOVERY_SUCCESS_SOUND
-		_recovery_success_player.volume_db = -1.0
-	if _recovery_fail_player != null:
-		_recovery_fail_player.stream = RECOVERY_FAIL_SOUND
-		_recovery_fail_player.volume_db = -1.0
-	if _pause_toggle_player != null:
-		_pause_toggle_player.stream = PAUSE_TOGGLE_SOUND
-		_pause_toggle_player.volume_db = -8.0
-	if _failure_player != null:
-		_failure_player.stream = HORSE_SPOOK_SOUND
-		_failure_player.volume_db = -5.0
-	if _result_player != null:
-		_result_player.volume_db = -6.0
-	if _ui_click_player != null:
-		_ui_click_player.stream = UI_CLICK_SOUND
-		_ui_click_player.volume_db = -9.0
+	_run_audio_presenter.configure_audio_players(
+		BACKGROUND_MUSIC,
+		WAGON_LOOP_SOUND,
+		IMPACT_SOUND,
+		POTHOLE_IMPACT_SOUND,
+		ROCK_IMPACT_SOUND,
+		TUMBLEWEED_IMPACT_SOUND,
+		WHEEL_LOOSE_AMBIENT_SOUND,
+		HORSE_PANIC_AMBIENT_SOUND,
+		RECOVERY_STEP_SOUND,
+		RECOVERY_SUCCESS_SOUND,
+		RECOVERY_FAIL_SOUND,
+		PAUSE_TOGGLE_SOUND,
+		HORSE_SPOOK_SOUND,
+		WIN_STINGER,
+		COLLAPSE_STINGER,
+		UI_CLICK_SOUND,
+		WAGON_LOOP_START_SECONDS,
+		WAGON_LOOP_END_SECONDS
+	)
 
 
+## Refreshes dust through the presentation owner and runtime audio through the extracted audio presenter.
 func _refresh_audio_presentation() -> void:
 	if _run_state == null:
 		return
 
 	_run_presentation.refresh_dust_presentation(RunStateType.DEFAULT_FORWARD_SPEED)
-
-	if _music_player != null:
-		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
-			if not _music_player.playing:
-				_music_player.play()
-		elif _music_player.playing:
-			_music_player.stop()
-
-	if _wagon_loop_player != null:
-		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
-			if not _wagon_loop_player.playing:
-				_wagon_loop_player.play(WAGON_LOOP_START_SECONDS)
-			elif _wagon_loop_player.get_playback_position() >= WAGON_LOOP_END_SECONDS:
-				_wagon_loop_player.seek(WAGON_LOOP_START_SECONDS)
-		elif _wagon_loop_player.playing:
-			_wagon_loop_player.stop()
-
-	_refresh_failure_ambient_audio()
-
-	if _run_state.active_failure != _last_announced_failure:
-		if _run_state.active_failure != &"" and _failure_player != null:
-			_failure_player.play()
-		_last_announced_failure = _run_state.active_failure
-
-	if _run_state.result != _last_announced_result:
-		match _run_state.result:
-			RunStateType.RESULT_SUCCESS:
-				if _result_player != null:
-					_result_player.stream = WIN_STINGER
-					_result_player.play()
-			RunStateType.RESULT_COLLAPSED:
-				if _result_player != null:
-					_result_player.stream = COLLAPSE_STINGER
-					_result_player.play()
-		_last_announced_result = _run_state.result
+	_run_audio_presenter.refresh_audio_presentation()
 
 
 ## Starts and stops sustained failure ambients according to the active failure and run state.
 func _refresh_failure_ambient_audio() -> void:
-	if _run_state == null:
-		return
-
-	var should_play_wheel_loose := (
-		_run_state.result == RunStateType.RESULT_IN_PROGRESS
-		and _run_state.active_failure == &"wheel_loose"
-	)
-	var should_play_horse_panic := (
-		_run_state.result == RunStateType.RESULT_IN_PROGRESS
-		and _run_state.active_failure == &"horse_panic"
-	)
-
-	if _wheel_loose_ambient_player != null:
-		if should_play_wheel_loose:
-			if not _wheel_loose_ambient_player.playing:
-				_wheel_loose_ambient_player.play()
-		elif _wheel_loose_ambient_player.playing:
-			_wheel_loose_ambient_player.stop()
-
-	if _horse_panic_ambient_player != null:
-		if should_play_horse_panic:
-			if not _horse_panic_ambient_player.playing:
-				_horse_panic_ambient_player.play()
-		elif _horse_panic_ambient_player.playing:
-			_horse_panic_ambient_player.stop()
+	_run_audio_presenter.refresh_failure_ambient_audio()
 
 
 func _ensure_input_actions() -> void:
@@ -1179,8 +1091,7 @@ func _get_recovery_hint(failure_type: StringName) -> String:
 
 func _apply_recovery_failure_penalty() -> void:
 	_run_director.apply_recovery_failure_penalty()
-	if _recovery_fail_player != null:
-		_recovery_fail_player.play()
+	_run_audio_presenter.play_recovery_fail()
 	_refresh_status()
 	_refresh_recovery_prompt()
 
@@ -1247,17 +1158,12 @@ func _tick_phase_callout(delta: float) -> void:
 
 ## Plays the shared menu click cue for pause and result buttons.
 func _play_ui_click() -> void:
-	if _ui_click_player == null:
-		return
-	_ui_click_player.play()
+	_run_audio_presenter.play_ui_click()
 
 
 ## Plays the shared menu click cue and waits long enough for scene transitions to preserve it.
 func _play_ui_click_and_wait() -> void:
-	if _ui_click_player == null or _ui_click_player.stream == null:
-		return
-	_ui_click_player.play()
-	await get_tree().create_timer(_ui_click_player.stream.get_length(), false).timeout
+	await _run_audio_presenter.play_ui_click_and_wait()
 
 
 ## Emits restart after playing the result-screen click cue.
@@ -1285,8 +1191,7 @@ func _set_pause_state(paused: bool) -> void:
 	var was_paused := _run_ui_presenter.pause_menu_open
 	if not _run_ui_presenter.set_pause_state(paused):
 		return
-	if _pause_toggle_player != null:
-		_pause_toggle_player.play()
+	_run_audio_presenter.play_pause_toggle()
 	_refresh_pause_menu()
 	if _run_ui_presenter.pause_menu_open and not was_paused:
 		_focus_default_pause_button()
