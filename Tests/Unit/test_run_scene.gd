@@ -4,6 +4,7 @@ const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
 const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png")
 const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
 const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
+const RunPresentationType := preload("res://Systems/RunPresentation/run_presentation.gd")
 const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const TEST_BEST_RUN_SAVE_PATH := "user://dg30_test_run_scene_best_run.cfg"
 
@@ -62,6 +63,11 @@ func _get_run_director(scene: Node) -> RunDirector:
 ## Returns the extracted hazard resolver bound to the active test scene.
 func _get_run_hazard_resolver(scene: Node) -> RunHazardResolver:
 	return scene._run_hazard_resolver as RunHazardResolver
+
+
+## Returns the extracted presentation owner bound to the active test scene.
+func _get_run_presentation(scene: Node) -> RunPresentationType:
+	return scene._run_presentation as RunPresentationType
 
 
 ## Confirms the route-phase callout is anchored as a small top-center overlay.
@@ -293,6 +299,31 @@ func test_setup_binds_run_rule_systems_without_scene_route_state_mirrors() -> vo
 	assert_false(property_names.has("_bad_luck_rng"))
 
 
+## Confirms the run scene delegates scroll and impact presentation state to the extracted presentation owner.
+func test_setup_binds_run_presentation_without_scene_scroll_or_impact_mirrors() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var property_names := scene.get_property_list().map(
+		func(property_data: Dictionary) -> String:
+			return property_data.get("name", "")
+	)
+	var run_presentation := _get_run_presentation(scene)
+
+	assert_not_null(run_presentation)
+	assert_eq(run_presentation.scroll_offset, 0.0)
+	assert_eq(run_presentation.impact_time, 0.0)
+	assert_false(property_names.has("_scroll_offset"))
+	assert_false(property_names.has("_impact_flash_remaining"))
+	assert_false(property_names.has("_impact_wobble_remaining"))
+	assert_false(property_names.has("_impact_shake_remaining"))
+	assert_false(property_names.has("_impact_time"))
+
+
 func _build_expected_recovery_sequence(scene: Node, progress: float, seed: int) -> Array[StringName]:
 	var generator := RecoverySequenceGeneratorType.new()
 	generator.set_seed(seed)
@@ -394,14 +425,14 @@ func test_onboarding_freezes_distance_and_hazard_spawning_while_road_scrolls() -
 	var state := RunStateType.new()
 	scene.setup(state)
 	var starting_distance := state.distance_remaining
-	var starting_scroll: float = scene._scroll_offset
+	var starting_scroll: float = _get_run_presentation(scene).scroll_offset
 
 	scene._process(0.5)
 
 	var spawner = scene.get_node("%HazardSpawner")
 	assert_eq(state.distance_remaining, starting_distance)
 	assert_eq(spawner.get_child_count(), 0)
-	assert_true(scene._scroll_offset > starting_scroll)
+	assert_true(_get_run_presentation(scene).scroll_offset > starting_scroll)
 
 
 func test_dismissing_onboarding_with_steer_input_starts_normal_gameplay() -> void:
@@ -3100,3 +3131,4 @@ func _delete_test_best_run_file() -> void:
 	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
 	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
 		DirAccess.remove_absolute(absolute_path)
+

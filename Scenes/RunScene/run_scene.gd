@@ -7,6 +7,7 @@ const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.g
 const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
 const RunDirectorType := preload("res://Systems/RunDirector/run_director.gd")
 const RunHazardResolverType := preload("res://Systems/RunHazardResolver/run_hazard_resolver.gd")
+const RunPresentationType := preload("res://Systems/RunPresentation/run_presentation.gd")
 const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const CARRIAGE_SHEET_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png")
@@ -53,26 +54,26 @@ const STEER_ACTION_POSITIVE := "steer_right"
 const PAUSE_ACTION := "pause_run"
 const STEER_SPEED := 180.0
 const ROAD_HALF_WIDTH := 104.0
-const WAGON_BASE_Y := 0.0
-const WAGON_BASE_COLOR := Color(1, 1, 1, 1)
-const WAGON_HIT_COLOR := Color(1, 0.72, 0.72, 1)
-const CAMERA_VERTICAL_OFFSET := 120.0
-const IMPACT_FLASH_DURATION := 0.18
-const IMPACT_WOBBLE_DURATION := 0.32
-const IMPACT_SHAKE_DURATION := 0.28
-const IMPACT_WOBBLE_DEGREES := 9.0
-const IMPACT_WOBBLE_FREQUENCY := 22.0
-const IMPACT_SHAKE_AMPLITUDE := 10.0
+const WAGON_BASE_Y := RunPresentationType.WAGON_BASE_Y
+const WAGON_BASE_COLOR := RunPresentationType.WAGON_BASE_COLOR
+const WAGON_HIT_COLOR := RunPresentationType.WAGON_HIT_COLOR
+const CAMERA_VERTICAL_OFFSET := RunPresentationType.CAMERA_VERTICAL_OFFSET
+const IMPACT_FLASH_DURATION := RunPresentationType.IMPACT_FLASH_DURATION
+const IMPACT_WOBBLE_DURATION := RunPresentationType.IMPACT_WOBBLE_DURATION
+const IMPACT_SHAKE_DURATION := RunPresentationType.IMPACT_SHAKE_DURATION
+const IMPACT_WOBBLE_DEGREES := RunPresentationType.IMPACT_WOBBLE_DEGREES
+const IMPACT_WOBBLE_FREQUENCY := RunPresentationType.IMPACT_WOBBLE_FREQUENCY
+const IMPACT_SHAKE_AMPLITUDE := RunPresentationType.IMPACT_SHAKE_AMPLITUDE
 const WHEEL_LOOSE_STEER_MULTIPLIER := 0.6
 const WHEEL_LOOSE_DRIFT_SPEED := 32.0
 const WHEEL_LOOSE_DRIFT_FREQUENCY := 8.0
-const WHEEL_LOOSE_WOBBLE_DEGREES := 14.0
-const WHEEL_LOOSE_WOBBLE_FREQUENCY := 15.0
+const WHEEL_LOOSE_WOBBLE_DEGREES := RunPresentationType.WHEEL_LOOSE_WOBBLE_DEGREES
+const WHEEL_LOOSE_WOBBLE_FREQUENCY := RunPresentationType.WHEEL_LOOSE_WOBBLE_FREQUENCY
 const HORSE_PANIC_STEER_MULTIPLIER := 0.3
 const HORSE_PANIC_DRIFT_SPEED := 150.0
 const HORSE_PANIC_DRIFT_FREQUENCY := 5.0
-const HORSE_PANIC_WOBBLE_DEGREES := 8.0
-const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
+const HORSE_PANIC_WOBBLE_DEGREES := RunPresentationType.HORSE_PANIC_WOBBLE_DEGREES
+const HORSE_PANIC_WOBBLE_FREQUENCY := RunPresentationType.HORSE_PANIC_WOBBLE_FREQUENCY
 const ROUTE_PHASE_WARM_UP := RunDirectorType.ROUTE_PHASE_WARM_UP
 const ROUTE_PHASE_FIRST_TROUBLE := RunDirectorType.ROUTE_PHASE_FIRST_TROUBLE
 const ROUTE_PHASE_CROSSING_BEAT := RunDirectorType.ROUTE_PHASE_CROSSING_BEAT
@@ -128,9 +129,9 @@ const RECOVERY_STEP_MIN_FONT_SIZE := 24
 const RECOVERY_STEP_MAX_FONT_SIZE := 38
 const RECOVERY_STEP_SPACING := 4
 const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := 3
-const SCROLL_LOOP_HEIGHT := 960.0
-const ROADSIDE_DECOR_SPACING := 144.0
-const ROADSIDE_DECOR_COUNT := 8
+const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
+const ROADSIDE_DECOR_SPACING := RunPresentationType.ROADSIDE_DECOR_SPACING
+const ROADSIDE_DECOR_COUNT := RunPresentationType.ROADSIDE_DECOR_COUNT
 const WAGON_COLLISION_SIZE := Vector2(32.0, 64.0)
 const RECOVERY_STEP_PENDING_COLOR := Color(0.25098, 0.203922, 0.145098, 0.92)
 const RECOVERY_STEP_ACTIVE_COLOR := Color(0.780392, 0.623529, 0.317647, 0.98)
@@ -138,7 +139,7 @@ const RECOVERY_STEP_DONE_COLOR := Color(0.419608, 0.54902, 0.290196, 0.95)
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
-const DUST_BASE_AMOUNT_RATIO := 0.35
+const DUST_BASE_AMOUNT_RATIO := RunPresentationType.DUST_BASE_AMOUNT_RATIO
 const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
 const ONBOARDING_BODY := (
 	"Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, "
@@ -149,11 +150,7 @@ const WAGON_LOOP_START_SECONDS := 5.0
 const WAGON_LOOP_END_SECONDS := 10.0
 
 var _run_state: RunStateType
-var _scroll_offset := 0.0
-var _impact_flash_remaining := 0.0
-var _impact_wobble_remaining := 0.0
-var _impact_shake_remaining := 0.0
-var _impact_time := 0.0
+var _run_presentation: RunPresentationType = RunPresentationType.new()
 var _run_director: RefCounted = RunDirectorType.new()
 var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
 var _last_announced_failure: StringName = &""
@@ -255,6 +252,7 @@ func setup(run_state: RunStateType) -> void:
 	_last_announced_failure = _run_state.active_failure
 	_last_announced_result = _run_state.result
 	_run_director.bind_run_state(_run_state, _recovery_sequence_generator)
+	_run_presentation.bind_run_state(_run_state)
 	_refresh_status()
 	_refresh_onboarding_prompt()
 	_refresh_bonus_callout()
@@ -271,6 +269,22 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_run_director.bad_luck_rng.randomize()
 	_ensure_input_actions()
+	_run_presentation.configure_scene_nodes(
+		_run_state,
+		_backdrop,
+		_road,
+		_camera,
+		_scroll_root,
+		_scroll_segment_a,
+		_scroll_segment_b,
+		_wagon,
+		_wagon_sprite,
+		_horse_left_sprite,
+		_horse_right_sprite,
+		_dust_trail,
+		SHRUB_TEXTURES,
+		SIGN_TEXTURE
+	)
 	_configure_environment_art()
 	_ensure_scroll_visuals()
 	_configure_vehicle_sprites()
@@ -376,23 +390,7 @@ func _make_horse_sheet_frame(region: Rect2i) -> AtlasTexture:
 
 ## Applies the tiled road and desert art to the world background nodes.
 func _configure_environment_art() -> void:
-	if _backdrop != null:
-		_backdrop.texture = DESERT_TEXTURE
-		_backdrop.centered = false
-		_backdrop.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-		_backdrop.region_enabled = true
-		_backdrop.region_rect = Rect2(0.0, 0.0, 960.0, 1440.0)
-		_backdrop.position = Vector2(-480.0, -720.0)
-
-	if _road != null:
-		_road.texture = ROAD_TEXTURE
-		_road.centered = false
-		_road.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-		_road.region_enabled = true
-		_road.region_rect = Rect2(0.0, 0.0, 224.0, 1440.0)
-		_road.position = Vector2(-112.0, -720.0)
-
-	_update_environment_scroll()
+	_run_presentation.configure_environment_art(DESERT_TEXTURE, ROAD_TEXTURE)
 
 
 ## Applies the shared input-prompt font styling to the mobile touch buttons.
@@ -516,7 +514,7 @@ func _process(delta: float) -> void:
 	if _onboarding_active:
 		_tick_bonus_callout(delta)
 		_tick_phase_callout(delta)
-		_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
+		_run_presentation.advance_scroll(_run_state.current_speed, delta)
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
 		_update_scroll_visuals()
@@ -538,14 +536,14 @@ func _process(delta: float) -> void:
 	match _run_state.active_failure:
 		&"wheel_loose":
 			steer_multiplier = WHEEL_LOOSE_STEER_MULTIPLIER
-			lateral_drift = sin(_impact_time * WHEEL_LOOSE_DRIFT_FREQUENCY) * WHEEL_LOOSE_DRIFT_SPEED
+			lateral_drift = sin(_run_presentation.impact_time * WHEEL_LOOSE_DRIFT_FREQUENCY) * WHEEL_LOOSE_DRIFT_SPEED
 		&"horse_panic":
 			steer_multiplier = HORSE_PANIC_STEER_MULTIPLIER
-			lateral_drift = sin(_impact_time * HORSE_PANIC_DRIFT_FREQUENCY) * HORSE_PANIC_DRIFT_SPEED
+			lateral_drift = sin(_run_presentation.impact_time * HORSE_PANIC_DRIFT_FREQUENCY) * HORSE_PANIC_DRIFT_SPEED
 		_:
 			if _run_state.has_temporary_control_instability():
 				steer_multiplier = POST_FAILURE_STEER_MULTIPLIER
-				lateral_drift = sin(_impact_time * POST_FAILURE_DRIFT_FREQUENCY) * POST_FAILURE_DRIFT_SPEED
+				lateral_drift = sin(_run_presentation.impact_time * POST_FAILURE_DRIFT_FREQUENCY) * POST_FAILURE_DRIFT_SPEED
 
 	_run_state.lateral_position = clamp(
 		_run_state.lateral_position + ((steer_input * STEER_SPEED * steer_multiplier) + lateral_drift) * delta,
@@ -557,7 +555,7 @@ func _process(delta: float) -> void:
 		0.0,
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
-	_scroll_offset = fposmod(_scroll_offset + _run_state.current_speed * delta, SCROLL_LOOP_HEIGHT)
+	_run_presentation.advance_scroll(_run_state.current_speed, delta)
 	_sync_route_phase()
 	_hazard_spawner.advance(
 		_run_state.current_speed * delta,
@@ -1003,26 +1001,12 @@ func _input(event: InputEvent) -> void:
 
 ## Updates the wagon position to match the current lateral run-state offset.
 func _update_wagon_visual() -> void:
-	if _wagon == null or _run_state == null:
-		return
-
-	_wagon.position = Vector2(_run_state.lateral_position, WAGON_BASE_Y)
+	_run_presentation.update_wagon_visual()
 
 
 ## Keeps the camera centered on the wagon while preserving the below-center framing offset.
 func _update_camera_framing() -> void:
-	if _camera == null or _wagon == null:
-		return
-
-	var camera_position := Vector2(0.0, _wagon.position.y - CAMERA_VERTICAL_OFFSET)
-	if _impact_shake_remaining > 0.0:
-		var shake_strength := _impact_shake_remaining / IMPACT_SHAKE_DURATION
-		camera_position += Vector2(
-			cos(_impact_time * 31.0),
-			sin(_impact_time * 43.0)
-		) * IMPACT_SHAKE_AMPLITUDE * shake_strength
-
-	_camera.position = camera_position
+	_run_presentation.update_camera_framing()
 
 
 ## Applies scene-owned presentation side effects emitted by the extracted run director.
@@ -1081,43 +1065,12 @@ func _get_route_phase_display_name(route_phase: StringName) -> String:
 
 ## Updates the wagon flash, wobble, and shake presentation for the current run state.
 func _update_impact_feedback(delta: float) -> void:
-	if _wagon == null:
-		return
-
-	_impact_time += delta
-	_impact_flash_remaining = max(0.0, _impact_flash_remaining - delta)
-	_impact_wobble_remaining = max(0.0, _impact_wobble_remaining - delta)
-	_impact_shake_remaining = max(0.0, _impact_shake_remaining - delta)
-
-	_set_vehicle_modulate(WAGON_HIT_COLOR if _impact_flash_remaining > 0.0 else WAGON_BASE_COLOR)
-	if _run_state != null and _run_state.active_failure == &"wheel_loose":
-		_wagon.rotation = sin(_impact_time * WHEEL_LOOSE_WOBBLE_FREQUENCY) * deg_to_rad(WHEEL_LOOSE_WOBBLE_DEGREES)
-	elif _run_state != null and _run_state.active_failure == &"horse_panic":
-		_wagon.rotation = sin(_impact_time * HORSE_PANIC_WOBBLE_FREQUENCY) * deg_to_rad(HORSE_PANIC_WOBBLE_DEGREES)
-	elif _impact_wobble_remaining > 0.0:
-		var wobble_strength := _impact_wobble_remaining / IMPACT_WOBBLE_DURATION
-		_wagon.rotation = sin(_impact_time * IMPACT_WOBBLE_FREQUENCY) * deg_to_rad(IMPACT_WOBBLE_DEGREES) * wobble_strength
-	else:
-		_wagon.rotation = 0.0
+	_run_presentation.update_impact_feedback(delta)
 
 
-## Applies a shared modulate tint across the wagon rig sprites.
-func _set_vehicle_modulate(color: Color) -> void:
-	if _wagon != null:
-		_wagon.modulate = color
-	if _wagon_sprite != null:
-		_wagon_sprite.modulate = color
-	if _horse_left_sprite != null:
-		_horse_left_sprite.modulate = color
-	if _horse_right_sprite != null:
-		_horse_right_sprite.modulate = color
-
-
+## Triggers the authored impact flash, wobble, and shake presentation state.
 func _trigger_impact_feedback() -> void:
-	_impact_flash_remaining = IMPACT_FLASH_DURATION
-	_impact_wobble_remaining = IMPACT_WOBBLE_DURATION
-	_impact_shake_remaining = IMPACT_SHAKE_DURATION
-	_impact_time = 0.0
+	_run_presentation.trigger_impact_feedback()
 
 
 ## Routes a hazard collision to its dedicated impact player and falls back to the generic impact cue.
@@ -1160,87 +1113,19 @@ func _on_tumbleweed_impact_timeout(serial: int) -> void:
 	_tumbleweed_impact_player.stop()
 
 
+## Ensures the looping roadside segments are populated through the presentation owner.
 func _ensure_scroll_visuals() -> void:
-	if _scroll_root == null:
-		return
-
-	if _scroll_segment_a.get_child_count() == 0:
-		_populate_scroll_segment(_scroll_segment_a)
-
-	if _scroll_segment_b.get_child_count() == 0:
-		_populate_scroll_segment(_scroll_segment_b)
+	_run_presentation.ensure_scroll_visuals()
 
 
+## Updates the looping world segments and tiled environment scroll windows.
 func _update_scroll_visuals() -> void:
-	if _scroll_root == null or _scroll_segment_a == null or _scroll_segment_b == null:
-		return
-
-	_scroll_segment_a.position.y = _scroll_offset
-	_scroll_segment_b.position.y = _scroll_offset - SCROLL_LOOP_HEIGHT
-	_update_environment_scroll()
+	_run_presentation.update_scroll_visuals()
 
 
-## Scrolls the tiled road and desert region windows to match the active route motion.
-func _update_environment_scroll() -> void:
-	if _backdrop != null and _backdrop.region_enabled:
-		var backdrop_rect := _backdrop.region_rect
-		backdrop_rect.position.y = -_scroll_offset
-		_backdrop.region_rect = backdrop_rect
-
-	if _road != null and _road.region_enabled:
-		var road_rect := _road.region_rect
-		road_rect.position.y = -_scroll_offset
-		_road.region_rect = road_rect
-
-
-func _populate_scroll_segment(segment: Node2D) -> void:
-	for i in range(ROADSIDE_DECOR_COUNT):
-		var left_scrub := _make_scrub_cluster(i)
-		left_scrub.position = Vector2(-184.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING))
-		segment.add_child(left_scrub)
-
-		var right_scrub := _make_scrub_cluster(i + 2)
-		right_scrub.position = Vector2(184.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING) + 56.0)
-		right_scrub.scale.x = -1.0
-		segment.add_child(right_scrub)
-
-	var sign := _make_road_sign("Dust Gulch")
-	sign.position = Vector2(-252.0, -SCROLL_LOOP_HEIGHT + 280.0)
-	segment.add_child(sign)
-
-
-func _make_scrub_cluster(variant_index: int = 0) -> Sprite2D:
-	var scrub := Sprite2D.new()
-	scrub.texture = SHRUB_TEXTURES[variant_index % SHRUB_TEXTURES.size()]
-	return scrub
-
-
-func _make_road_sign(_sign_text: String) -> Sprite2D:
-	var sign := Sprite2D.new()
-	sign.name = "RoadsideSign"
-	sign.texture = SIGN_TEXTURE
-	return sign
-
-
+## Applies the authored dust particle configuration through the presentation owner.
 func _configure_dust_trail() -> void:
-	if _dust_trail == null:
-		return
-
-	_dust_trail.emitting = true
-	_dust_trail.amount = 16
-	_dust_trail.lifetime = 0.85
-	_dust_trail.preprocess = 0.2
-	_dust_trail.local_coords = false
-	_dust_trail.direction = Vector2(0.0, 1.0)
-	_dust_trail.spread = 36.0
-	_dust_trail.initial_velocity_min = 22.0
-	_dust_trail.initial_velocity_max = 42.0
-	_dust_trail.gravity = Vector2(0.0, 80.0)
-	_dust_trail.scale_amount_min = 1.4
-	_dust_trail.scale_amount_max = 3.0
-	_dust_trail.color = Color(0.839216, 0.72549, 0.513725, 0.62)
-	_dust_trail.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	_dust_trail.emission_rect_extents = Vector2(12.0, 6.0)
+	_run_presentation.configure_dust_trail()
 
 
 func _configure_audio_players() -> void:
@@ -1294,13 +1179,7 @@ func _refresh_audio_presentation() -> void:
 	if _run_state == null:
 		return
 
-	var should_emit_dust := _run_state.result == RunStateType.RESULT_IN_PROGRESS and _run_state.current_speed > 0.0
-	if _dust_trail != null:
-		_dust_trail.emitting = should_emit_dust
-		_dust_trail.speed_scale = max(
-			DUST_BASE_AMOUNT_RATIO,
-			_run_state.current_speed / RunStateType.DEFAULT_FORWARD_SPEED
-		)
+	_run_presentation.refresh_dust_presentation(RunStateType.DEFAULT_FORWARD_SPEED)
 
 	if _music_player != null:
 		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
@@ -1709,3 +1588,4 @@ func _on_touch_pause_button_pressed() -> void:
 	if not _should_show_touch_controls():
 		return
 	_set_pause_state(true)
+

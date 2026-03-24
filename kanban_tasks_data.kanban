@@ -11,14 +11,14 @@
                        "uuid":  "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
                        "title":  "Todo",
                        "tasks":  [
-                                     "d34d8801-e9aa-4926-9ee8-5c369500c9b6"
+
                                  ]
                    },
                    {
                        "uuid":  "c670d77d-01d6-45a7-aa5b-94f564b959c3",
                        "title":  "Doing",
                        "tasks":  [
-
+                                     "d34d8801-e9aa-4926-9ee8-5c369500c9b6"
                                  ]
                    },
                    {
@@ -830,7 +830,7 @@
                       "steps":  [
                                     {
                                         "details":  "Extract wagon movement presentation, camera framing, road and backdrop scrolling, dust and impact feedback, and related visual helpers into an explicit owned system such as Systems/RunPresentation/run_presentation.gd. Fold very thorough scene or unit coverage for that extracted behavior into the same step.\n\nDone when: by playing a run normally, the wagon still tracks lateral movement correctly, the camera framing remains stable, the road and world visuals scroll correctly, and impact feedback still appears at the same moments, while that presentation logic now lives under Systems/RunPresentation instead of directly in run_scene.gd.",
-                                        "done":  false
+                                        "done":  true
                                     },
                                     {
                                         "details":  "Extract HUD refresh, onboarding, recovery prompts, pause flow, result flow, and touch-control visibility into an explicit owned system such as Systems/RunUiPresenter/run_ui_presenter.gd. Keep any owner-specific support types with that system and fold very thorough coverage for the extracted UI behavior into the same step.\n\nDone when: by playing on desktop and touch-capable play paths, the same HUD, onboarding card, recovery overlay, pause menu, result screen, and touch controls appear at the right times and remain usable, while that UI logic now lives under Systems/RunUiPresenter instead of directly in run_scene.gd.",
