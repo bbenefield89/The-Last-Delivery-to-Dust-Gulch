@@ -18,13 +18,14 @@
                        "uuid":  "c670d77d-01d6-45a7-aa5b-94f564b959c3",
                        "title":  "Doing",
                        "tasks":  [
-                                     "0e19ba26-061c-4130-bc02-b783323f21af"
+
                                  ]
                    },
                    {
                        "uuid":  "bcdfc14b-1917-44f0-948d-fece03972128",
                        "title":  "Done",
                        "tasks":  [
+                                     "0e19ba26-061c-4130-bc02-b783323f21af",
                                      "16467d80-07e9-4a7c-8693-453bd6eb1804",
                                      "037b4f73-bbb7-4e50-a02e-168e0499b67b",
                                      "4ff4b0c3-f6cc-4f2d-adba-302a991e4da7",
@@ -817,7 +818,7 @@
                                     },
                                     {
                                         "details":  "Reduce Scenes/RunScene/run_scene.gd to orchestration over the extracted run-logic systems while preserving the agreed architecture boundaries. Keep RunScene in Scenes/RunScene, keep extracted systems in Systems/\u003cOwner\u003e, and do not reintroduce a global Scripts bucket during the cleanup.\n\nDone when: a reviewer can play from the title screen through a full run and result screen with the same controls and pacing as before, and run_scene.gd now reads as a coordinator over explicit Systems owners instead of the main owner of run rules.",
-                                        "done":  false
+                                        "done":  true
                                     }
                                 ]
                   },

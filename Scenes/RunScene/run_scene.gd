@@ -156,12 +156,6 @@ var _impact_shake_remaining := 0.0
 var _impact_time := 0.0
 var _run_director: RefCounted = RunDirectorType.new()
 var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
-var _bad_luck_elapsed := 0.0
-var _scheduled_bad_luck_interval := 0.0
-var _pending_bad_luck_trigger := false
-var _route_phase: StringName = &""
-var _route_phase_callout_zone: StringName = &""
-var _bad_luck_rng: RandomNumberGenerator = _run_director.bad_luck_rng
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var _navigation_click_in_progress := false
@@ -261,7 +255,6 @@ func setup(run_state: RunStateType) -> void:
 	_last_announced_failure = _run_state.active_failure
 	_last_announced_result = _run_state.result
 	_run_director.bind_run_state(_run_state, _recovery_sequence_generator)
-	_sync_run_director_debug_state()
 	_refresh_status()
 	_refresh_onboarding_prompt()
 	_refresh_bonus_callout()
@@ -276,7 +269,7 @@ func setup(run_state: RunStateType) -> void:
 ## Wires scene-local input, UI, visuals, and audio dependencies.
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_bad_luck_rng.randomize()
+	_run_director.bad_luck_rng.randomize()
 	_ensure_input_actions()
 	_configure_environment_art()
 	_ensure_scroll_visuals()
@@ -983,8 +976,8 @@ func _input(event: InputEvent) -> void:
 		if _should_dismiss_onboarding(event):
 			_onboarding_active = false
 			_refresh_onboarding_prompt()
-			if _route_phase_callout_zone == ROUTE_PHASE_WARM_UP:
-				_show_phase_callout(_get_route_phase_display_name(_route_phase_callout_zone))
+			if _run_director.route_phase_callout_zone == ROUTE_PHASE_WARM_UP:
+				_show_phase_callout(_get_route_phase_display_name(_run_director.route_phase_callout_zone))
 		return
 	if not _run_state.has_active_recovery_sequence():
 		return
@@ -1032,24 +1025,6 @@ func _update_camera_framing() -> void:
 	_camera.position = camera_position
 
 
-## Mirrors the scene-exposed debug fields into the extracted run director before delegated rule calls.
-func _apply_run_director_debug_overrides() -> void:
-	_run_director.bad_luck_elapsed = _bad_luck_elapsed
-	_run_director.scheduled_bad_luck_interval = _scheduled_bad_luck_interval
-	_run_director.pending_bad_luck_trigger = _pending_bad_luck_trigger
-	_run_director.route_phase = _route_phase
-	_run_director.route_phase_callout_zone = _route_phase_callout_zone
-
-
-## Mirrors the extracted run director's state back onto the scene for legacy tests and coordinator reads.
-func _sync_run_director_debug_state() -> void:
-	_bad_luck_elapsed = _run_director.bad_luck_elapsed
-	_scheduled_bad_luck_interval = _run_director.scheduled_bad_luck_interval
-	_pending_bad_luck_trigger = _run_director.pending_bad_luck_trigger
-	_route_phase = _run_director.route_phase
-	_route_phase_callout_zone = _run_director.route_phase_callout_zone
-
-
 ## Applies scene-owned presentation side effects emitted by the extracted run director.
 func _handle_run_director_update(update: RefCounted) -> void:
 	if update == null:
@@ -1078,9 +1053,7 @@ func _advance_failure_triggers(delta: float) -> void:
 	if _run_state == null:
 		return
 
-	_apply_run_director_debug_overrides()
 	_handle_run_director_update(_run_director.advance(delta))
-	_sync_run_director_debug_state()
 
 
 ## Synchronizes the route phase against the current run progress and refreshes bad-luck timing when it changes.
@@ -1089,12 +1062,6 @@ func _sync_route_phase() -> void:
 		return
 
 	_handle_run_director_update(_run_director.sync_route_phase())
-	_sync_run_director_debug_state()
-
-
-## Returns whether timer-driven bad luck should currently run.
-func _is_timer_bad_luck_enabled() -> bool:
-	return _run_director.is_timer_bad_luck_enabled()
 
 
 ## Returns the current authored phase for one route-progress ratio.
@@ -1110,51 +1077,6 @@ func _get_route_phase_callout_zone(progress_ratio: float) -> StringName:
 ## Returns a readable label for the current authored route phase.
 func _get_route_phase_display_name(route_phase: StringName) -> String:
 	return RunDirectorType.get_route_phase_display_name(route_phase)
-
-
-## Attempts to start a hazard-specific failure when a collision resolves into a failure state.
-func _attempt_failure_trigger_from_collision(hazard_type: StringName) -> void:
-	_apply_run_director_debug_overrides()
-	_run_hazard_resolver.attempt_failure_trigger_from_collision(_run_director, hazard_type)
-	_sync_run_director_debug_state()
-
-
-## Returns the rolled bad-luck interval bounds for the supplied delivery progress ratio.
-func _get_bad_luck_interval_range(progress_ratio: float) -> Vector2:
-	return _run_director.get_bad_luck_interval_range(progress_ratio)
-
-
-## Rolls a fresh bad-luck interval from the current route-progress band.
-func _roll_bad_luck_interval() -> float:
-	_apply_run_director_debug_overrides()
-	var rolled_interval: float = _run_director.roll_bad_luck_interval()
-	_sync_run_director_debug_state()
-	return rolled_interval
-
-
-## Schedules the next timer-driven bad-luck interval using the current route-progress band.
-func _schedule_next_bad_luck_interval() -> void:
-	_apply_run_director_debug_overrides()
-	_run_director.schedule_next_bad_luck_interval()
-	_sync_run_director_debug_state()
-
-
-## Starts a failure and pushes the next bad-luck roll forward when the failure begins successfully.
-func _start_failure_and_reschedule_bad_luck(failure_type: StringName, source_hazard: StringName) -> bool:
-	_apply_run_director_debug_overrides()
-	var started: bool = _run_director.start_failure_and_reschedule_bad_luck(failure_type, source_hazard)
-	_sync_run_director_debug_state()
-	return started
-
-
-func _check_for_success() -> void:
-	_handle_run_director_update(_run_director.advance(0.0))
-	_sync_run_director_debug_state()
-
-
-func _check_for_loss() -> void:
-	_handle_run_director_update(_run_director.advance(0.0))
-	_sync_run_director_debug_state()
 
 
 ## Updates the wagon flash, wobble, and shake presentation for the current run state.

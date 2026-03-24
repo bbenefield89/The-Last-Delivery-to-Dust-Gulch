@@ -54,6 +54,16 @@ func _setup_active_run_at_progress(scene: Node, state: RunStateType, progress_ra
 	_dismiss_onboarding(scene)
 
 
+## Returns the extracted run director bound to the active test scene.
+func _get_run_director(scene: Node) -> RunDirector:
+	return scene._run_director as RunDirector
+
+
+## Returns the extracted hazard resolver bound to the active test scene.
+func _get_run_hazard_resolver(scene: Node) -> RunHazardResolver:
+	return scene._run_hazard_resolver as RunHazardResolver
+
+
 ## Confirms the route-phase callout is anchored as a small top-center overlay.
 func test_route_phase_callout_panel_uses_top_center_overlay_layout() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -158,29 +168,30 @@ func test_route_phase_when_progress_enters_final_stretch_then_bad_luck_is_disabl
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene._bad_luck_rng.seed = 7
+	var run_director := _get_run_director(scene)
+	run_director.bad_luck_rng.seed = 7
 	_setup_active_run_at_progress(scene, state, 0.879)
 
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
-	assert_true(scene._is_timer_bad_luck_enabled())
-	assert_true(scene._scheduled_bad_luck_interval > 0.0)
+	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
+	assert_true(run_director.is_timer_bad_luck_enabled())
+	assert_true(run_director.scheduled_bad_luck_interval > 0.0)
 
 	state.distance_remaining = state.route_distance * 0.12
 	scene._process(0.0)
 
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
-	assert_false(scene._is_timer_bad_luck_enabled())
-	assert_eq(scene._scheduled_bad_luck_interval, 0.0)
-	assert_eq(scene._bad_luck_elapsed, 0.0)
-	assert_false(scene._pending_bad_luck_trigger)
+	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
+	assert_false(run_director.is_timer_bad_luck_enabled())
+	assert_eq(run_director.scheduled_bad_luck_interval, 0.0)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
+	assert_false(run_director.pending_bad_luck_trigger)
 
 	scene._advance_failure_triggers(999.0)
 
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
+	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
 	assert_eq(state.active_failure, &"")
-	assert_eq(scene._scheduled_bad_luck_interval, 0.0)
-	assert_eq(scene._bad_luck_elapsed, 0.0)
-	assert_false(scene._pending_bad_luck_trigger)
+	assert_eq(run_director.scheduled_bad_luck_interval, 0.0)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
+	assert_false(run_director.pending_bad_luck_trigger)
 
 
 ## Verifies the run scene passes remaining distance into the spawner so the release runway can clear.
@@ -199,10 +210,10 @@ func test_final_stretch_when_route_reaches_release_window_then_spawner_holds_cle
 	scene.setup(state)
 	_dismiss_onboarding(scene)
 
-	scene._bad_luck_rng.seed = 23
+	_get_run_director(scene).bad_luck_rng.seed = 23
 	scene._process(0.0)
 
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
+	assert_eq(_get_run_director(scene).route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
 	assert_not_null(scene._hazard_spawner._next_spawn_plan)
 
 	var planned_spacing: float = scene._hazard_spawner._next_spawn_plan.spacing
@@ -257,8 +268,8 @@ func _configure_mobile_web_touch_runtime(scene: Node, touchscreen_available: boo
 	scene._refresh_touch_controls()
 
 
-## Confirms RunScene now coordinates the extracted run director while preserving mirrored route state fields.
-func test_setup_binds_run_director_and_mirrors_route_phase_state() -> void:
+## Confirms RunScene binds the extracted rule owners without keeping duplicate route-state fields.
+func test_setup_binds_run_rule_systems_without_scene_route_state_mirrors() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
@@ -267,11 +278,19 @@ func test_setup_binds_run_director_and_mirrors_route_phase_state() -> void:
 	state.distance_remaining = state.route_distance * 0.70
 	scene.setup(state)
 
-	assert_not_null(scene._run_director)
-	assert_not_null(scene._run_hazard_resolver)
-	assert_eq(scene._route_phase, scene._run_director.route_phase)
-	assert_eq(scene._route_phase_callout_zone, scene._run_director.route_phase_callout_zone)
-	assert_eq(scene._scheduled_bad_luck_interval, scene._run_director.scheduled_bad_luck_interval)
+	var property_names := scene.get_property_list().map(
+		func(property_data: Dictionary) -> String:
+			return property_data.get("name", "")
+	)
+
+	assert_not_null(_get_run_director(scene))
+	assert_not_null(_get_run_hazard_resolver(scene))
+	assert_false(property_names.has("_route_phase"))
+	assert_false(property_names.has("_route_phase_callout_zone"))
+	assert_false(property_names.has("_scheduled_bad_luck_interval"))
+	assert_false(property_names.has("_pending_bad_luck_trigger"))
+	assert_false(property_names.has("_bad_luck_elapsed"))
+	assert_false(property_names.has("_bad_luck_rng"))
 
 
 func _build_expected_recovery_sequence(scene: Node, progress: float, seed: int) -> Array[StringName]:
@@ -873,7 +892,7 @@ func test_crossing_beat_and_reset_before_finale_switch_hazard_pressure_rules() -
 	_setup_active_run(crossing_scene, crossing_state)
 	var crossing_spawner = crossing_scene.get_node("%HazardSpawner")
 	crossing_scene._process(0.0)
-	assert_eq(crossing_scene._route_phase, crossing_scene.ROUTE_PHASE_CROSSING_BEAT)
+	assert_eq(_get_run_director(crossing_scene).route_phase, crossing_scene.ROUTE_PHASE_CROSSING_BEAT)
 	assert_true(crossing_spawner._get_active_band().allows_pressure_pair)
 
 	var reset_scene = RUN_SCENE.instantiate()
@@ -885,7 +904,7 @@ func test_crossing_beat_and_reset_before_finale_switch_hazard_pressure_rules() -
 	_setup_active_run(reset_scene, reset_state)
 	var reset_spawner = reset_scene.get_node("%HazardSpawner")
 	reset_scene._process(0.0)
-	assert_eq(reset_scene._route_phase, reset_scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
+	assert_eq(_get_run_director(reset_scene).route_phase, reset_scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
 	assert_false(reset_spawner._get_active_band().allows_pressure_pair)
 
 
@@ -959,7 +978,7 @@ func test_rock_collision_triggers_wheel_loose_failure() -> void:
 	var state := RunStateType.new()
 	scene.setup(state)
 
-	scene._attempt_failure_trigger_from_collision(&"rock")
+	_get_run_hazard_resolver(scene).attempt_failure_trigger_from_collision(_get_run_director(scene), &"rock")
 
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
@@ -973,7 +992,7 @@ func test_tumbleweed_collision_triggers_horse_panic_failure() -> void:
 	var state := RunStateType.new()
 	scene.setup(state)
 
-	scene._attempt_failure_trigger_from_collision(&"tumbleweed")
+	_get_run_hazard_resolver(scene).attempt_failure_trigger_from_collision(_get_run_director(scene), &"tumbleweed")
 
 	assert_eq(state.active_failure, &"horse_panic")
 	assert_eq(state.current_failure.source_hazard, &"tumbleweed")
@@ -986,21 +1005,22 @@ func test_bad_luck_timer_triggers_failure_when_no_active_failure_exists() -> voi
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene._bad_luck_rng.seed = 7
+	var run_director := _get_run_director(scene)
+	run_director.bad_luck_rng.seed = 7
 	_setup_active_run_at_progress(scene, state, 0.8)
 
-	scene._advance_failure_triggers(scene._scheduled_bad_luck_interval)
+	scene._advance_failure_triggers(run_director.scheduled_bad_luck_interval)
 
 	assert_eq(state.active_failure, &"horse_panic")
 	assert_eq(state.current_failure.source_hazard, &"bad_luck")
-	assert_eq(scene._bad_luck_elapsed, 0.0)
-	assert_false(scene._pending_bad_luck_trigger)
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
+	assert_false(run_director.pending_bad_luck_trigger)
+	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
 	assert_true(
-		scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN
+		run_director.scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN
 	)
 	assert_true(
-		scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
+		run_director.scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
 	)
 
 
@@ -1009,41 +1029,42 @@ func test_bad_luck_interval_range_uses_route_phase_windows() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
+	var run_director := _get_run_director(scene)
 
 	assert_eq(
-		scene._get_bad_luck_interval_range(0.1),
+		run_director.get_bad_luck_interval_range(0.1),
 		Vector2.ZERO
 	)
 	assert_eq(
-		scene._get_bad_luck_interval_range(0.2),
+		run_director.get_bad_luck_interval_range(0.2),
 		Vector2(
 			scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN,
 			scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
 		)
 	)
 	assert_eq(
-		scene._get_bad_luck_interval_range(0.45),
+		run_director.get_bad_luck_interval_range(0.45),
 		Vector2(
 			scene.BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN,
 			scene.BAD_LUCK_INTERVAL_CROSSING_BEAT_MAX
 		)
 	)
 	assert_eq(
-		scene._get_bad_luck_interval_range(0.6),
+		run_director.get_bad_luck_interval_range(0.6),
 		Vector2(
 			scene.BAD_LUCK_INTERVAL_CLUTTER_BEAT_MIN,
 			scene.BAD_LUCK_INTERVAL_CLUTTER_BEAT_MAX
 		)
 	)
 	assert_eq(
-		scene._get_bad_luck_interval_range(0.85),
+		run_director.get_bad_luck_interval_range(0.85),
 		Vector2(
 			scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN,
 			scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
 		)
 	)
 	assert_eq(scene._get_route_phase(0.88), scene.ROUTE_PHASE_FINAL_STRETCH)
-	assert_eq(scene._get_bad_luck_interval_range(0.88), Vector2.ZERO)
+	assert_eq(run_director.get_bad_luck_interval_range(0.88), Vector2.ZERO)
 
 
 ## Verifies warm-up suppresses timer bad luck until the first trouble phase starts.
@@ -1054,12 +1075,13 @@ func test_bad_luck_timer_when_run_starts_in_warm_up_then_it_stays_disabled() -> 
 
 	var state := RunStateType.new()
 	scene.setup(state)
+	var run_director := _get_run_director(scene)
 
 	scene._advance_failure_triggers(10.0)
 
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_WARM_UP)
-	assert_eq(scene._scheduled_bad_luck_interval, 0.0)
-	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_WARM_UP)
+	assert_eq(run_director.scheduled_bad_luck_interval, 0.0)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
 	assert_eq(state.active_failure, &"")
 
 
@@ -1068,32 +1090,33 @@ func test_setup_rolls_first_bad_luck_interval_from_current_progress_band() -> vo
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
+	var run_director := _get_run_director(scene)
 
-	scene._bad_luck_rng.seed = 19
+	run_director.bad_luck_rng.seed = 19
 
 	var warm_up_state := RunStateType.new()
 	scene.setup(warm_up_state)
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_WARM_UP)
-	assert_eq(scene._scheduled_bad_luck_interval, 0.0)
+	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_WARM_UP)
+	assert_eq(run_director.scheduled_bad_luck_interval, 0.0)
 
 	var first_trouble_state := RunStateType.new()
 	_setup_active_run_at_progress(scene, first_trouble_state, 0.2)
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FIRST_TROUBLE)
+	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_FIRST_TROUBLE)
 	assert_true(
-		scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN
+		run_director.scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN
 	)
 	assert_true(
-		scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
+		run_director.scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
 	)
 
 	var reset_state := RunStateType.new()
 	_setup_active_run_at_progress(scene, reset_state, 0.85)
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
+	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
 	assert_true(
-		scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN
+		run_director.scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN
 	)
 	assert_true(
-		scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
+		run_director.scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
 	)
 
 
@@ -1119,24 +1142,25 @@ func test_collision_trigger_reschedules_bad_luck_interval_when_failure_starts() 
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene._bad_luck_rng.seed = 31
+	var run_director := _get_run_director(scene)
+	run_director.bad_luck_rng.seed = 31
 	_setup_active_run_at_progress(scene, state, 0.3)
-	scene._scheduled_bad_luck_interval = 99.0
-	scene._bad_luck_elapsed = 5.0
-	scene._pending_bad_luck_trigger = true
+	run_director.scheduled_bad_luck_interval = 99.0
+	run_director.bad_luck_elapsed = 5.0
+	run_director.pending_bad_luck_trigger = true
 
-	scene._attempt_failure_trigger_from_collision(&"rock")
+	_get_run_hazard_resolver(scene).attempt_failure_trigger_from_collision(run_director, &"rock")
 
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
-	assert_eq(scene._bad_luck_elapsed, 0.0)
-	assert_false(scene._pending_bad_luck_trigger)
-	assert_eq(scene._route_phase, scene.ROUTE_PHASE_FIRST_TROUBLE)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
+	assert_false(run_director.pending_bad_luck_trigger)
+	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_FIRST_TROUBLE)
 	assert_true(
-		scene._scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN
+		run_director.scheduled_bad_luck_interval >= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN
 	)
 	assert_true(
-		scene._scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
+		run_director.scheduled_bad_luck_interval <= scene.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
 	)
 
 
@@ -1148,20 +1172,21 @@ func test_bad_luck_timer_arms_one_pending_trigger_during_recovery_cooldown() -> 
 	var state := RunStateType.new()
 	_setup_active_run_at_progress(scene, state, 0.3)
 	state.recovery_cooldown_remaining = 0.5
-	scene._scheduled_bad_luck_interval = 0.2
-	scene._bad_luck_elapsed = 0.0
+	var run_director := _get_run_director(scene)
+	run_director.scheduled_bad_luck_interval = 0.2
+	run_director.bad_luck_elapsed = 0.0
 
 	scene._advance_failure_triggers(0.2)
 
 	assert_eq(state.active_failure, &"")
-	assert_true(scene._pending_bad_luck_trigger)
-	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_true(run_director.pending_bad_luck_trigger)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
 
 	scene._advance_failure_triggers(0.1)
 
 	assert_eq(state.active_failure, &"")
-	assert_true(scene._pending_bad_luck_trigger)
-	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_true(run_director.pending_bad_luck_trigger)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
 
 
 func test_bad_luck_timer_arms_one_pending_trigger_during_active_failure() -> void:
@@ -1172,15 +1197,16 @@ func test_bad_luck_timer_arms_one_pending_trigger_during_active_failure() -> voi
 	var state := RunStateType.new()
 	_setup_active_run_at_progress(scene, state, 0.3)
 	state.start_failure(&"wheel_loose", &"rock")
-	scene._scheduled_bad_luck_interval = 0.2
-	scene._bad_luck_elapsed = 0.0
+	var run_director := _get_run_director(scene)
+	run_director.scheduled_bad_luck_interval = 0.2
+	run_director.bad_luck_elapsed = 0.0
 
 	scene._advance_failure_triggers(0.2)
 
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
-	assert_true(scene._pending_bad_luck_trigger)
-	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_true(run_director.pending_bad_luck_trigger)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
 
 
 func test_pending_bad_luck_fires_on_first_frame_after_cooldown_clears() -> void:
@@ -1189,18 +1215,19 @@ func test_pending_bad_luck_fires_on_first_frame_after_cooldown_clears() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene._bad_luck_rng.seed = 47
+	var run_director := _get_run_director(scene)
+	run_director.bad_luck_rng.seed = 47
 	_setup_active_run_at_progress(scene, state, 0.3)
 	state.recovery_cooldown_remaining = 0.1
-	scene._scheduled_bad_luck_interval = 0.05
+	run_director.scheduled_bad_luck_interval = 0.05
 
 	scene._advance_failure_triggers(0.05)
 	scene._advance_failure_triggers(0.05)
 
 	assert_eq(state.active_failure, &"horse_panic")
 	assert_eq(state.current_failure.source_hazard, &"bad_luck")
-	assert_false(scene._pending_bad_luck_trigger)
-	assert_eq(scene._bad_luck_elapsed, 0.0)
+	assert_false(run_director.pending_bad_luck_trigger)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
 
 
 func test_pending_bad_luck_does_not_stack_or_reroll_while_blocked() -> void:
@@ -1211,18 +1238,19 @@ func test_pending_bad_luck_does_not_stack_or_reroll_while_blocked() -> void:
 	var state := RunStateType.new()
 	_setup_active_run_at_progress(scene, state, 0.3)
 	state.recovery_cooldown_remaining = 0.6
-	scene._scheduled_bad_luck_interval = 0.2
-	scene._bad_luck_elapsed = 0.0
+	var run_director := _get_run_director(scene)
+	run_director.scheduled_bad_luck_interval = 0.2
+	run_director.bad_luck_elapsed = 0.0
 
 	scene._advance_failure_triggers(0.2)
-	var scheduled_interval_after_pending: float = scene._scheduled_bad_luck_interval
+	var scheduled_interval_after_pending: float = run_director.scheduled_bad_luck_interval
 
 	scene._advance_failure_triggers(0.2)
 	scene._advance_failure_triggers(0.1)
 
-	assert_true(scene._pending_bad_luck_trigger)
-	assert_eq(scene._bad_luck_elapsed, 0.0)
-	assert_eq(scene._scheduled_bad_luck_interval, scheduled_interval_after_pending)
+	assert_true(run_director.pending_bad_luck_trigger)
+	assert_eq(run_director.bad_luck_elapsed, 0.0)
+	assert_eq(run_director.scheduled_bad_luck_interval, scheduled_interval_after_pending)
 	assert_eq(state.active_failure, &"")
 
 
@@ -1316,7 +1344,7 @@ func test_collision_trigger_does_not_replace_existing_failure_type() -> void:
 	state.start_failure(&"wheel_loose", &"rock")
 	scene.setup(state)
 
-	scene._attempt_failure_trigger_from_collision(&"tumbleweed")
+	_get_run_hazard_resolver(scene).attempt_failure_trigger_from_collision(_get_run_director(scene), &"tumbleweed")
 
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
