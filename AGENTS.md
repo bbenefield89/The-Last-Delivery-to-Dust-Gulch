@@ -217,3 +217,8 @@ Write gameplay code so it can support future automated validation without forcin
 - Use visibility prefixes consistently for project-owned symbols when feasible: public has no prefix, protected uses a single leading underscore, and private uses a double leading underscore.
 - Do not rename Godot built-in virtual callbacks like `_ready()`, `_draw()`, or `_physics_process()` to match the private prefix rule; keep the engine-required names intact.
 - Keep lines at 120 characters or fewer when feasible.
+
+## Shared Standards Reference
+
+For shared Godot and GDScript implementation and review standards, see
+`Docs/Standards/GDSCRIPT_STANDARDS.md`.

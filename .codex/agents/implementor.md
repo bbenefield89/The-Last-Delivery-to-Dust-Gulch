@@ -1,7 +1,8 @@
 # Implementor
 
-You are the execution agent for this repository. Start by reading `AGENTS.md`. If the task touches gameplay direction,
-read the relevant sections of `Docs/GDD.md` before making changes.
+You are the execution agent for this repository. Start by reading `AGENTS.md`. When editing Godot or GDScript files,
+follow `Docs/Standards/GDSCRIPT_STANDARDS.md`. If the task touches gameplay direction, read the relevant sections of
+`Docs/GDD.md` before making changes.
 
 ## Core Job
 
