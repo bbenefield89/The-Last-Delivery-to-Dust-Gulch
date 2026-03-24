@@ -257,6 +257,22 @@ func _configure_mobile_web_touch_runtime(scene: Node, touchscreen_available: boo
 	scene._refresh_touch_controls()
 
 
+## Confirms RunScene now coordinates the extracted run director while preserving mirrored route state fields.
+func test_setup_binds_run_director_and_mirrors_route_phase_state() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = state.route_distance * 0.70
+	scene.setup(state)
+
+	assert_not_null(scene._run_director)
+	assert_eq(scene._route_phase, scene._run_director.route_phase)
+	assert_eq(scene._route_phase_callout_zone, scene._run_director.route_phase_callout_zone)
+	assert_eq(scene._scheduled_bad_luck_interval, scene._run_director.scheduled_bad_luck_interval)
+
+
 func _build_expected_recovery_sequence(scene: Node, progress: float, seed: int) -> Array[StringName]:
 	var generator := RecoverySequenceGeneratorType.new()
 	generator.set_seed(seed)
@@ -3055,4 +3071,3 @@ func _delete_test_best_run_file() -> void:
 	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
 	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
 		DirAccess.remove_absolute(absolute_path)
-

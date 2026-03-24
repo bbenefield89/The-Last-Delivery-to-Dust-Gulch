@@ -5,6 +5,7 @@ signal return_to_title_requested
 
 const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
 const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
+const RunDirectorType := preload("res://Systems/RunDirector/run_director.gd")
 const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const CARRIAGE_SHEET_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png")
@@ -71,17 +72,17 @@ const HORSE_PANIC_DRIFT_SPEED := 150.0
 const HORSE_PANIC_DRIFT_FREQUENCY := 5.0
 const HORSE_PANIC_WOBBLE_DEGREES := 8.0
 const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
-const ROUTE_PHASE_WARM_UP := &"warm_up"
-const ROUTE_PHASE_FIRST_TROUBLE := &"first_trouble"
-const ROUTE_PHASE_CROSSING_BEAT := &"crossing_beat"
-const ROUTE_PHASE_CLUTTER_BEAT := &"clutter_beat"
-const ROUTE_PHASE_RESET_BEFORE_FINALE := &"reset_before_finale"
-const ROUTE_PHASE_FINAL_STRETCH := &"final_stretch"
-const ROUTE_PHASE_WARM_UP_END := 0.20
-const ROUTE_PHASE_FIRST_TROUBLE_END := 0.45
-const ROUTE_PHASE_CROSSING_BEAT_END := 0.60
-const ROUTE_PHASE_CLUTTER_BEAT_END := 0.80
-const ROUTE_PHASE_RESET_BEFORE_FINALE_END := 0.88
+const ROUTE_PHASE_WARM_UP := RunDirectorType.ROUTE_PHASE_WARM_UP
+const ROUTE_PHASE_FIRST_TROUBLE := RunDirectorType.ROUTE_PHASE_FIRST_TROUBLE
+const ROUTE_PHASE_CROSSING_BEAT := RunDirectorType.ROUTE_PHASE_CROSSING_BEAT
+const ROUTE_PHASE_CLUTTER_BEAT := RunDirectorType.ROUTE_PHASE_CLUTTER_BEAT
+const ROUTE_PHASE_RESET_BEFORE_FINALE := RunDirectorType.ROUTE_PHASE_RESET_BEFORE_FINALE
+const ROUTE_PHASE_FINAL_STRETCH := RunDirectorType.ROUTE_PHASE_FINAL_STRETCH
+const ROUTE_PHASE_WARM_UP_END := RunDirectorType.ROUTE_PHASE_WARM_UP_END
+const ROUTE_PHASE_FIRST_TROUBLE_END := RunDirectorType.ROUTE_PHASE_FIRST_TROUBLE_END
+const ROUTE_PHASE_CROSSING_BEAT_END := RunDirectorType.ROUTE_PHASE_CROSSING_BEAT_END
+const ROUTE_PHASE_CLUTTER_BEAT_END := RunDirectorType.ROUTE_PHASE_CLUTTER_BEAT_END
+const ROUTE_PHASE_RESET_BEFORE_FINALE_END := RunDirectorType.ROUTE_PHASE_RESET_BEFORE_FINALE_END
 const DISTANCE_BAR_BAND_BOUNDARIES := [
 	ROUTE_PHASE_WARM_UP_END,
 	ROUTE_PHASE_FIRST_TROUBLE_END,
@@ -92,41 +93,27 @@ const DISTANCE_BAR_BAND_BOUNDARIES := [
 const DISTANCE_BAR_MARKER_COLOR := Color(0.945098, 0.882353, 0.709804, 0.9)
 const DISTANCE_BAR_MARKER_HALF_WIDTH := 1.0
 const PHASE_CALLOUT_DURATION := 0.95
-const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN := 12.0
-const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX := 14.0
-const BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN := 9.5
-const BAD_LUCK_INTERVAL_CROSSING_BEAT_MAX := 11.5
-const BAD_LUCK_INTERVAL_CLUTTER_BEAT_MIN := 7.5
-const BAD_LUCK_INTERVAL_CLUTTER_BEAT_MAX := 9.0
-const BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN := 11.5
-const BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX := 13.5
-const RECOVERY_PROMPT_POOL: Array[StringName] = [
-	&"steer_left",
-	&"steer_right",
-]
-const WHEEL_LOOSE_RECOVERY_SEQUENCE: Array[StringName] = [
-	&"steer_left",
-	&"steer_right",
-	&"steer_left",
-]
-const HORSE_PANIC_RECOVERY_SEQUENCE: Array[StringName] = [
-	&"steer_left",
-	&"steer_right",
-	&"steer_left",
-	&"steer_right",
-]
-const WHEEL_LOOSE_RECOVERY_DURATION := 3.1
-const HORSE_PANIC_RECOVERY_DURATION := 3.7
+const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN := RunDirectorType.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN
+const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX := RunDirectorType.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
+const BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN := RunDirectorType.BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN
+const BAD_LUCK_INTERVAL_CROSSING_BEAT_MAX := RunDirectorType.BAD_LUCK_INTERVAL_CROSSING_BEAT_MAX
+const BAD_LUCK_INTERVAL_CLUTTER_BEAT_MIN := RunDirectorType.BAD_LUCK_INTERVAL_CLUTTER_BEAT_MIN
+const BAD_LUCK_INTERVAL_CLUTTER_BEAT_MAX := RunDirectorType.BAD_LUCK_INTERVAL_CLUTTER_BEAT_MAX
+const BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN := RunDirectorType.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN
+const BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX := RunDirectorType.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
+const RECOVERY_PROMPT_POOL: Array[StringName] = RunDirectorType.RECOVERY_PROMPT_POOL
+const WHEEL_LOOSE_RECOVERY_DURATION := RunDirectorType.WHEEL_LOOSE_RECOVERY_DURATION
+const HORSE_PANIC_RECOVERY_DURATION := RunDirectorType.HORSE_PANIC_RECOVERY_DURATION
 const POST_FAILURE_STEER_MULTIPLIER := 0.75
 const POST_FAILURE_DRIFT_SPEED := 55.0
 const POST_FAILURE_DRIFT_FREQUENCY := 6.0
-const WHEEL_LOOSE_FAILURE_HEALTH_LOSS := 10
-const WHEEL_LOOSE_FAILURE_CARGO_LOSS := 6
-const WHEEL_LOOSE_FAILURE_SPEED_LOSS := 55.0
-const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := 1.9
-const HORSE_PANIC_FAILURE_CARGO_LOSS := 14
-const HORSE_PANIC_FAILURE_SPEED_LOSS := 65.0
-const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := 2.2
+const WHEEL_LOOSE_FAILURE_HEALTH_LOSS := RunDirectorType.WHEEL_LOOSE_FAILURE_HEALTH_LOSS
+const WHEEL_LOOSE_FAILURE_CARGO_LOSS := RunDirectorType.WHEEL_LOOSE_FAILURE_CARGO_LOSS
+const WHEEL_LOOSE_FAILURE_SPEED_LOSS := RunDirectorType.WHEEL_LOOSE_FAILURE_SPEED_LOSS
+const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := RunDirectorType.WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION
+const HORSE_PANIC_FAILURE_CARGO_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_CARGO_LOSS
+const HORSE_PANIC_FAILURE_SPEED_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_SPEED_LOSS
+const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FAILURE_INSTABILITY_DURATION
 const NEAR_MISS_MAX_HORIZONTAL_CLEARANCE := 12.0
 const BONUS_CALLOUT_DURATION := 1.1
 const BONUS_CALLOUT_START_OFFSET := Vector2(0.0, -64.0)
@@ -166,12 +153,13 @@ var _impact_flash_remaining := 0.0
 var _impact_wobble_remaining := 0.0
 var _impact_shake_remaining := 0.0
 var _impact_time := 0.0
+var _run_director: RefCounted = RunDirectorType.new()
 var _bad_luck_elapsed := 0.0
 var _scheduled_bad_luck_interval := 0.0
 var _pending_bad_luck_trigger := false
 var _route_phase: StringName = &""
 var _route_phase_callout_zone: StringName = &""
-var _bad_luck_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var _bad_luck_rng: RandomNumberGenerator = _run_director.bad_luck_rng
 var _last_announced_failure: StringName = &""
 var _last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var _navigation_click_in_progress := false
@@ -268,14 +256,10 @@ func setup(run_state: RunStateType) -> void:
 	_bonus_callout_anchor_world_position = Vector2.ZERO
 	_phase_callout_text = ""
 	_phase_callout_remaining = 0.0
-	_bad_luck_elapsed = 0.0
-	_pending_bad_luck_trigger = false
-	_scheduled_bad_luck_interval = 0.0
-	_route_phase = &""
-	_route_phase_callout_zone = &""
 	_last_announced_failure = _run_state.active_failure
 	_last_announced_result = _run_state.result
-	_sync_route_phase()
+	_run_director.bind_run_state(_run_state, _recovery_sequence_generator)
+	_sync_run_director_debug_state()
 	_refresh_status()
 	_refresh_onboarding_prompt()
 	_refresh_bonus_callout()
@@ -591,8 +575,6 @@ func _process(delta: float) -> void:
 	_record_completed_hazard_dodges()
 	_award_completed_near_misses()
 	_advance_failure_triggers(delta)
-	_check_for_loss()
-	_check_for_success()
 	_sync_completed_run_best_state()
 	_tick_bonus_callout(delta)
 	_tick_phase_callout(delta)
@@ -1003,23 +985,16 @@ func _input(event: InputEvent) -> void:
 	if action_name == &"":
 		return
 
-	var expected_action := _run_state.get_current_recovery_prompt()
-	if action_name != expected_action:
-		_run_state.record_recovery_wrong_input()
+	var recovery_result: RefCounted = _run_director.handle_recovery_action(action_name)
+	if recovery_result.was_wrong_input:
 		return
 
-	if _run_state.advance_recovery_sequence(action_name):
-		if _run_state.is_current_recovery_perfect():
-			_run_state.award_perfect_recovery_bonus()
-			_show_bonus_callout("PERFECT RECOVERY +%d" % RunStateType.PERFECT_RECOVERY_BONUS_SCORE)
-		if _recovery_step_player != null:
-			_recovery_step_player.play()
-		_run_state.resolve_recovery_success()
-		if _recovery_success_player != null:
-			_recovery_success_player.play()
-	else:
-		if _recovery_step_player != null:
-			_recovery_step_player.play()
+	if recovery_result.bonus_callout_text != "":
+		_show_bonus_callout(recovery_result.bonus_callout_text)
+	if recovery_result.play_step_sound and _recovery_step_player != null:
+		_recovery_step_player.play()
+	if recovery_result.recovery_completed and _recovery_success_player != null:
+		_recovery_success_player.play()
 
 	_refresh_status()
 	_refresh_recovery_prompt()
@@ -1166,41 +1141,42 @@ func _get_horizontal_clearance_to_wagon(hazard_position: Vector2, hazard_size: V
 	return absf(hazard_position.x - _wagon.position.x) - combined_half_width
 
 
+## Mirrors the scene-exposed debug fields into the extracted run director before delegated rule calls.
+func _apply_run_director_debug_overrides() -> void:
+	_run_director.bad_luck_elapsed = _bad_luck_elapsed
+	_run_director.scheduled_bad_luck_interval = _scheduled_bad_luck_interval
+	_run_director.pending_bad_luck_trigger = _pending_bad_luck_trigger
+	_run_director.route_phase = _route_phase
+	_run_director.route_phase_callout_zone = _route_phase_callout_zone
+
+
+## Mirrors the extracted run director's state back onto the scene for legacy tests and coordinator reads.
+func _sync_run_director_debug_state() -> void:
+	_bad_luck_elapsed = _run_director.bad_luck_elapsed
+	_scheduled_bad_luck_interval = _run_director.scheduled_bad_luck_interval
+	_pending_bad_luck_trigger = _run_director.pending_bad_luck_trigger
+	_route_phase = _run_director.route_phase
+	_route_phase_callout_zone = _run_director.route_phase_callout_zone
+
+
+## Applies scene-owned presentation side effects emitted by the extracted run director.
+func _handle_run_director_update(update: RefCounted) -> void:
+	if update == null:
+		return
+	if update.phase_callout_text != "":
+		_show_phase_callout(update.phase_callout_text)
+	if update.recovery_penalty_applied and _recovery_fail_player != null:
+		_recovery_fail_player.play()
+
+
 ## Advances failure state timers and starts timer-driven bad luck when its scheduled roll matures.
 func _advance_failure_triggers(delta: float) -> void:
 	if _run_state == null:
 		return
 
-	_run_state.tick_failure(delta)
-	_run_state.tick_temporary_control_instability(delta)
-	_run_state.tick_recovery_transients(delta)
-	var had_active_recovery_sequence := _run_state.has_active_recovery_sequence()
-	_sync_recovery_sequence()
-	if had_active_recovery_sequence and _run_state.tick_recovery_sequence(delta):
-		_run_state.record_recovery_timeout()
-		_apply_recovery_failure_penalty()
-		return
-
-	if not _is_timer_bad_luck_enabled():
-		_bad_luck_elapsed = 0.0
-		_pending_bad_luck_trigger = false
-		return
-
-	if _pending_bad_luck_trigger:
-		if _run_state.can_start_failure(&"horse_panic"):
-			_start_failure_and_reschedule_bad_luck(&"horse_panic", &"bad_luck")
-		return
-
-	_bad_luck_elapsed += delta
-	if _bad_luck_elapsed < _scheduled_bad_luck_interval:
-		return
-
-	if not _run_state.can_start_failure(&"horse_panic"):
-		_bad_luck_elapsed = 0.0
-		_pending_bad_luck_trigger = true
-		return
-
-	_start_failure_and_reschedule_bad_luck(&"horse_panic", &"bad_luck")
+	_apply_run_director_debug_overrides()
+	_handle_run_director_update(_run_director.advance(delta))
+	_sync_run_director_debug_state()
 
 
 ## Synchronizes the route phase against the current run progress and refreshes bad-luck timing when it changes.
@@ -1208,200 +1184,73 @@ func _sync_route_phase() -> void:
 	if _run_state == null:
 		return
 
-	var route_progress_ratio := _run_state.get_delivery_progress_ratio()
-	var next_route_phase := _get_route_phase(route_progress_ratio)
-	var next_route_phase_callout_zone := _get_route_phase_callout_zone(route_progress_ratio)
-	var route_phase_changed := next_route_phase != _route_phase
-	var route_phase_callout_zone_changed := next_route_phase_callout_zone != _route_phase_callout_zone
-	if not route_phase_changed and not route_phase_callout_zone_changed:
-		return
-
-	_route_phase = next_route_phase
-	var previous_route_phase_callout_zone := _route_phase_callout_zone
-	_route_phase_callout_zone = next_route_phase_callout_zone
-	if route_phase_changed:
-		_handle_route_phase_change()
-	if route_phase_callout_zone_changed and previous_route_phase_callout_zone != &"":
-		_show_phase_callout(_get_route_phase_display_name(_route_phase_callout_zone))
-
-
-## Applies the timer-bad-luck scheduling rules for the current route phase.
-func _handle_route_phase_change() -> void:
-	_bad_luck_elapsed = 0.0
-	_pending_bad_luck_trigger = false
-	if not _is_timer_bad_luck_enabled():
-		_scheduled_bad_luck_interval = 0.0
-		return
-
-	_schedule_next_bad_luck_interval()
+	_handle_run_director_update(_run_director.sync_route_phase())
+	_sync_run_director_debug_state()
 
 
 ## Returns whether timer-driven bad luck should currently run.
 func _is_timer_bad_luck_enabled() -> bool:
-	return (
-		_route_phase != &""
-		and _route_phase != ROUTE_PHASE_WARM_UP
-		and _route_phase != ROUTE_PHASE_FINAL_STRETCH
-	)
+	return _run_director.is_timer_bad_luck_enabled()
 
 
 ## Returns the current authored phase for one route-progress ratio.
 func _get_route_phase(progress_ratio: float) -> StringName:
-	if progress_ratio < ROUTE_PHASE_WARM_UP_END:
-		return ROUTE_PHASE_WARM_UP
-	if progress_ratio < ROUTE_PHASE_FIRST_TROUBLE_END:
-		return ROUTE_PHASE_FIRST_TROUBLE
-	if progress_ratio < ROUTE_PHASE_CROSSING_BEAT_END:
-		return ROUTE_PHASE_CROSSING_BEAT
-	if progress_ratio < ROUTE_PHASE_CLUTTER_BEAT_END:
-		return ROUTE_PHASE_CLUTTER_BEAT
-	if progress_ratio < ROUTE_PHASE_RESET_BEFORE_FINALE_END:
-		return ROUTE_PHASE_RESET_BEFORE_FINALE
-	return ROUTE_PHASE_FINAL_STRETCH
+	return RunDirectorType.get_route_phase_for_progress(progress_ratio)
 
 
 ## Returns the current cue region for one route-progress ratio.
 func _get_route_phase_callout_zone(progress_ratio: float) -> StringName:
-	return _get_route_phase(progress_ratio)
+	return RunDirectorType.get_route_phase_callout_zone_for_progress(progress_ratio)
 
 
 ## Returns a readable label for the current authored route phase.
 func _get_route_phase_display_name(route_phase: StringName) -> String:
-	match route_phase:
-		ROUTE_PHASE_WARM_UP:
-			return "Warm-Up"
-		ROUTE_PHASE_FIRST_TROUBLE:
-			return "First Trouble"
-		ROUTE_PHASE_CROSSING_BEAT:
-			return "Crossing Beat"
-		ROUTE_PHASE_CLUTTER_BEAT:
-			return "Clutter Beat"
-		ROUTE_PHASE_RESET_BEFORE_FINALE:
-			return "Reset Before Finale"
-		ROUTE_PHASE_FINAL_STRETCH:
-			return "FINAL STRETCH"
-		_:
-			return "Route Phase"
+	return RunDirectorType.get_route_phase_display_name(route_phase)
 
 
 ## Attempts to start a hazard-specific failure when a collision resolves into a failure state.
 func _attempt_failure_trigger_from_collision(hazard_type: StringName) -> void:
-	if _run_state == null:
-		return
-	if _run_state.has_active_failure():
-		return
-
-	match hazard_type:
-		&"rock", &"pothole":
-			_start_failure_and_reschedule_bad_luck(&"wheel_loose", hazard_type)
-		&"tumbleweed", &"livestock":
-			_start_failure_and_reschedule_bad_luck(&"horse_panic", hazard_type)
+	_apply_run_director_debug_overrides()
+	_run_director.attempt_failure_trigger_from_collision(hazard_type)
+	_sync_run_director_debug_state()
 
 
 ## Returns the rolled bad-luck interval bounds for the supplied delivery progress ratio.
 func _get_bad_luck_interval_range(progress_ratio: float) -> Vector2:
-	match _get_route_phase(progress_ratio):
-		ROUTE_PHASE_FIRST_TROUBLE:
-			return Vector2(BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN, BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX)
-		ROUTE_PHASE_CROSSING_BEAT:
-			return Vector2(BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN, BAD_LUCK_INTERVAL_CROSSING_BEAT_MAX)
-		ROUTE_PHASE_CLUTTER_BEAT:
-			return Vector2(BAD_LUCK_INTERVAL_CLUTTER_BEAT_MIN, BAD_LUCK_INTERVAL_CLUTTER_BEAT_MAX)
-		ROUTE_PHASE_RESET_BEFORE_FINALE:
-			return Vector2(
-				BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MIN,
-				BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
-			)
-		_:
-			return Vector2.ZERO
+	return _run_director.get_bad_luck_interval_range(progress_ratio)
 
 
 ## Rolls a fresh bad-luck interval from the current route-progress band.
 func _roll_bad_luck_interval() -> float:
-	if not _is_timer_bad_luck_enabled():
-		return 0.0
-
-	var progress_ratio := 0.0 if _run_state == null else _run_state.get_delivery_progress_ratio()
-	var interval_range := _get_bad_luck_interval_range(progress_ratio)
-	return _bad_luck_rng.randf_range(interval_range.x, interval_range.y)
+	_apply_run_director_debug_overrides()
+	var rolled_interval: float = _run_director.roll_bad_luck_interval()
+	_sync_run_director_debug_state()
+	return rolled_interval
 
 
 ## Schedules the next timer-driven bad-luck interval using the current route-progress band.
 func _schedule_next_bad_luck_interval() -> void:
-	if not _is_timer_bad_luck_enabled():
-		_scheduled_bad_luck_interval = 0.0
-		return
-
-	_scheduled_bad_luck_interval = _roll_bad_luck_interval()
+	_apply_run_director_debug_overrides()
+	_run_director.schedule_next_bad_luck_interval()
+	_sync_run_director_debug_state()
 
 
 ## Starts a failure and pushes the next bad-luck roll forward when the failure begins successfully.
 func _start_failure_and_reschedule_bad_luck(failure_type: StringName, source_hazard: StringName) -> bool:
-	if _run_state == null:
-		return false
-	if not _run_state.start_failure(failure_type, source_hazard):
-		return false
-
-	_bad_luck_elapsed = 0.0
-	_pending_bad_luck_trigger = false
-	_schedule_next_bad_luck_interval()
-	return true
+	_apply_run_director_debug_overrides()
+	var started: bool = _run_director.start_failure_and_reschedule_bad_luck(failure_type, source_hazard)
+	_sync_run_director_debug_state()
+	return started
 
 
 func _check_for_success() -> void:
-	if _run_state == null:
-		return
-	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		return
-	if _run_state.distance_remaining > 0.0:
-		return
-
-	_run_state.distance_remaining = 0.0
-	_run_state.result = RunStateType.RESULT_SUCCESS
-	_run_state.current_speed = 0.0
+	_handle_run_director_update(_run_director.advance(0.0))
+	_sync_run_director_debug_state()
 
 
 func _check_for_loss() -> void:
-	if _run_state == null:
-		return
-	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		return
-	if _run_state.wagon_health > 0:
-		return
-
-	_run_state.wagon_health = 0
-	_run_state.result = RunStateType.RESULT_COLLAPSED
-	_run_state.current_speed = 0.0
-
-
-## Ensures the active failure owns a generated recovery sequence with the correct duration.
-func _sync_recovery_sequence() -> void:
-	if _run_state == null:
-		return
-
-	if _run_state.active_failure == &"wheel_loose":
-		if not _run_state.has_active_recovery_sequence():
-			_start_generated_recovery_sequence(WHEEL_LOOSE_RECOVERY_DURATION)
-		return
-	if _run_state.active_failure == &"horse_panic":
-		if not _run_state.has_active_recovery_sequence():
-			_start_generated_recovery_sequence(HORSE_PANIC_RECOVERY_DURATION)
-		return
-
-	if _run_state.has_active_recovery_sequence():
-		_run_state.clear_recovery_sequence()
-
-
-## Starts one generated recovery prompt sequence using route progress and the shared prompt pool.
-func _start_generated_recovery_sequence(duration: float) -> void:
-	if _run_state == null:
-		return
-
-	var recovery_sequence := _recovery_sequence_generator.generate_sequence(
-		_run_state.get_delivery_progress_ratio(),
-		RECOVERY_PROMPT_POOL
-	)
-	_run_state.start_recovery_sequence(recovery_sequence, duration)
+	_handle_run_director_update(_run_director.advance(0.0))
+	_sync_run_director_debug_state()
 
 
 ## Updates the wagon flash, wobble, and shake presentation for the current run state.
@@ -1802,28 +1651,9 @@ func _get_recovery_hint(failure_type: StringName) -> String:
 
 
 func _apply_recovery_failure_penalty() -> void:
-	if _run_state == null:
-		return
-
+	_run_director.apply_recovery_failure_penalty()
 	if _recovery_fail_player != null:
 		_recovery_fail_player.play()
-
-	match _run_state.active_failure:
-		&"wheel_loose":
-			_run_state.apply_recovery_failure_penalty(
-				WHEEL_LOOSE_FAILURE_HEALTH_LOSS,
-				WHEEL_LOOSE_FAILURE_CARGO_LOSS,
-				WHEEL_LOOSE_FAILURE_SPEED_LOSS,
-				WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION
-			)
-		&"horse_panic":
-			_run_state.apply_recovery_failure_penalty(
-				0,
-				HORSE_PANIC_FAILURE_CARGO_LOSS,
-				HORSE_PANIC_FAILURE_SPEED_LOSS,
-				HORSE_PANIC_FAILURE_INSTABILITY_DURATION
-			)
-
 	_refresh_status()
 	_refresh_recovery_prompt()
 
@@ -2053,4 +1883,3 @@ func _on_touch_pause_button_pressed() -> void:
 	if not _should_show_touch_controls():
 		return
 	_set_pause_state(true)
-

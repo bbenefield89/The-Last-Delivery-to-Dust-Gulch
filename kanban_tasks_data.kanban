@@ -11,7 +11,6 @@
                        "uuid":  "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
                        "title":  "Todo",
                        "tasks":  [
-                                     "0e19ba26-061c-4130-bc02-b783323f21af",
                                      "d34d8801-e9aa-4926-9ee8-5c369500c9b6"
                                  ]
                    },
@@ -19,7 +18,7 @@
                        "uuid":  "c670d77d-01d6-45a7-aa5b-94f564b959c3",
                        "title":  "Doing",
                        "tasks":  [
-
+                                     "0e19ba26-061c-4130-bc02-b783323f21af"
                                  ]
                    },
                    {
@@ -810,7 +809,7 @@
                       "steps":  [
                                     {
                                         "details":  "Extract the route-phase, bad-luck, failure, recovery-sequence, and win or loss flow into an explicit owned runtime system such as Systems/RunDirector/run_director.gd. Keep any owner-specific support types or enums with that system, and fold very thorough unit coverage for the extracted rules into the same step.\n\nDone when: by playing a run normally, the same route pressure, failure timing, recovery flow, and win or collapse transitions still happen in the same situations, and the corresponding logic now lives under Systems/RunDirector instead of directly in run_scene.gd.",
-                                        "done":  false
+                                        "done":  true
                                     },
                                     {
                                         "details":  "Extract hazard collision resolution, dodge tracking, near-miss tracking, and hazard-to-failure handoff into an explicit owned runtime system such as Systems/RunHazardResolver/run_hazard_resolver.gd. Keep owner-specific support code with that system and fold very thorough unit coverage for the extracted hazard rules into the same step.\n\nDone when: by playing a run normally, hazards still hit when they should, clean dodges still count, near misses still award their bonus, and the same hazards still trigger the same failure outcomes, while that adjudication logic now lives under Systems/RunHazardResolver instead of directly in run_scene.gd.",
