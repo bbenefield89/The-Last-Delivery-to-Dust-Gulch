@@ -268,6 +268,7 @@ func test_setup_binds_run_director_and_mirrors_route_phase_state() -> void:
 	scene.setup(state)
 
 	assert_not_null(scene._run_director)
+	assert_not_null(scene._run_hazard_resolver)
 	assert_eq(scene._route_phase, scene._run_director.route_phase)
 	assert_eq(scene._route_phase_callout_zone, scene._run_director.route_phase_callout_zone)
 	assert_eq(scene._scheduled_bad_luck_interval, scene._run_director.scheduled_bad_luck_interval)

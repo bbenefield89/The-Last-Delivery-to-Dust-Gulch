@@ -6,6 +6,7 @@ signal return_to_title_requested
 const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
 const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
 const RunDirectorType := preload("res://Systems/RunDirector/run_director.gd")
+const RunHazardResolverType := preload("res://Systems/RunHazardResolver/run_hazard_resolver.gd")
 const RunStateType := preload("res://Systems/RunState/run_state.gd")
 const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
 const CARRIAGE_SHEET_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png")
@@ -154,6 +155,7 @@ var _impact_wobble_remaining := 0.0
 var _impact_shake_remaining := 0.0
 var _impact_time := 0.0
 var _run_director: RefCounted = RunDirectorType.new()
+var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
 var _bad_luck_elapsed := 0.0
 var _scheduled_bad_luck_interval := 0.0
 var _pending_bad_luck_trigger := false
@@ -570,10 +572,16 @@ func _process(delta: float) -> void:
 		_run_state.distance_remaining,
 		_run_state.route_distance
 	)
-	_update_hazard_near_miss_tracking()
-	_apply_hazard_collisions()
-	_record_completed_hazard_dodges()
-	_award_completed_near_misses()
+	_handle_run_hazard_update(
+		_run_hazard_resolver.resolve_frame(
+			_hazard_spawner,
+			_run_state,
+			_run_director,
+			_wagon.position,
+			WAGON_COLLISION_SIZE,
+			NEAR_MISS_MAX_HORIZONTAL_CLEARANCE
+		)
+	)
 	_advance_failure_triggers(delta)
 	_sync_completed_run_best_state()
 	_tick_bonus_callout(delta)
@@ -1024,123 +1032,6 @@ func _update_camera_framing() -> void:
 	_camera.position = camera_position
 
 
-func _apply_hazard_collisions() -> void:
-	if _hazard_spawner == null or _run_state == null:
-		return
-
-	var collisions := _hazard_spawner.collect_collisions(_wagon.position, WAGON_COLLISION_SIZE)
-	for collision in collisions:
-		(collision["node"] as Node).set_meta("was_hit", true)
-		_run_state.wagon_health = max(0, _run_state.wagon_health - collision["damage"])
-		_run_state.cargo_value = max(0, _run_state.cargo_value - collision.get("cargo_damage", 0))
-		_run_state.last_hit_hazard = collision["type"]
-		_attempt_failure_trigger_from_collision(collision["type"])
-		_trigger_impact_feedback()
-		_play_hazard_impact(collision["type"])
-		(collision["node"] as Node).queue_free()
-
-
-## Tracks whether a hazard was ever head-on threatening and records the tightest clean dodge gap.
-func _update_hazard_near_miss_tracking() -> void:
-	if _hazard_spawner == null or _wagon == null:
-		return
-
-	for child in _hazard_spawner.get_children():
-		if not child is Node2D:
-			continue
-
-		var hazard: Node2D = child as Node2D
-		var hazard_size: Vector2 = _hazard_spawner._get_hazard_size(hazard.get_meta("hazard_type", &""))
-		if _is_hazard_ahead_of_wagon(hazard.position, hazard_size):
-			if _get_horizontal_clearance_to_wagon(hazard.position, hazard_size) <= 0.0:
-				hazard.set_meta("was_head_on_threat", true)
-		if not _has_vertical_overlap_with_wagon(hazard.position, hazard_size):
-			continue
-
-		var horizontal_clearance: float = _get_horizontal_clearance_to_wagon(hazard.position, hazard_size)
-		if horizontal_clearance <= 0.0:
-			continue
-
-		var closest_horizontal_clearance: float = min(
-			float(hazard.get_meta("closest_horizontal_clearance_to_wagon", INF)),
-			horizontal_clearance
-		)
-		hazard.set_meta("closest_horizontal_clearance_to_wagon", closest_horizontal_clearance)
-
-
-## Awards one near-miss bonus after a hazard safely passes through the wagon threat band without colliding.
-func _award_completed_near_misses() -> void:
-	if _hazard_spawner == null or _run_state == null or _wagon == null:
-		return
-
-	for child in _hazard_spawner.get_children():
-		if not child is Node2D:
-			continue
-
-		var hazard: Node2D = child as Node2D
-		if bool(hazard.get_meta("near_miss_awarded", false)):
-			continue
-		if bool(hazard.get_meta("was_hit", false)):
-			continue
-		if not bool(hazard.get_meta("was_head_on_threat", false)):
-			continue
-		if not _has_hazard_safely_passed_wagon(hazard):
-			continue
-		if float(hazard.get_meta("closest_horizontal_clearance_to_wagon", INF)) > NEAR_MISS_MAX_HORIZONTAL_CLEARANCE:
-			continue
-
-		hazard.set_meta("near_miss_awarded", true)
-		_run_state.award_near_miss_bonus()
-		_show_bonus_callout("NEAR MISS +%d" % RunStateType.NEAR_MISS_BONUS_SCORE)
-
-
-## Records each hazard once after it safely passes the wagon without a collision.
-func _record_completed_hazard_dodges() -> void:
-	if _hazard_spawner == null or _run_state == null:
-		return
-
-	for child in _hazard_spawner.get_children():
-		if not child is Node2D:
-			continue
-
-		var hazard: Node2D = child as Node2D
-		if bool(hazard.get_meta("was_hit", false)):
-			continue
-		if bool(hazard.get_meta("dodge_recorded", false)):
-			continue
-		if not _has_hazard_safely_passed_wagon(hazard):
-			continue
-
-		hazard.set_meta("dodge_recorded", true)
-		_run_state.record_hazard_dodged()
-
-
-## Returns whether the hazard has moved fully below the wagon line and can no longer collide.
-func _has_hazard_safely_passed_wagon(hazard: Node2D) -> bool:
-	var hazard_size: Vector2 = _hazard_spawner._get_hazard_size(hazard.get_meta("hazard_type", &""))
-	var wagon_bottom_y: float = _wagon.position.y + (WAGON_COLLISION_SIZE.y * 0.5)
-	var hazard_top_y: float = hazard.position.y - (hazard_size.y * 0.5)
-	return hazard_top_y > wagon_bottom_y
-
-
-## Returns whether one hazard overlaps the wagon's vertical danger band.
-func _has_vertical_overlap_with_wagon(hazard_position: Vector2, hazard_size: Vector2) -> bool:
-	var combined_half_height: float = (WAGON_COLLISION_SIZE.y + hazard_size.y) * 0.5
-	return absf(hazard_position.y - _wagon.position.y) < combined_half_height
-
-
-## Returns whether the hazard is still approaching from ahead of the wagon.
-func _is_hazard_ahead_of_wagon(hazard_position: Vector2, hazard_size: Vector2) -> bool:
-	var hazard_bottom_y: float = hazard_position.y + (hazard_size.y * 0.5)
-	return hazard_bottom_y < _wagon.position.y
-
-
-## Returns the non-colliding horizontal gap between one hazard and the wagon bounds.
-func _get_horizontal_clearance_to_wagon(hazard_position: Vector2, hazard_size: Vector2) -> float:
-	var combined_half_width: float = (WAGON_COLLISION_SIZE.x + hazard_size.x) * 0.5
-	return absf(hazard_position.x - _wagon.position.x) - combined_half_width
-
-
 ## Mirrors the scene-exposed debug fields into the extracted run director before delegated rule calls.
 func _apply_run_director_debug_overrides() -> void:
 	_run_director.bad_luck_elapsed = _bad_luck_elapsed
@@ -1167,6 +1058,19 @@ func _handle_run_director_update(update: RefCounted) -> void:
 		_show_phase_callout(update.phase_callout_text)
 	if update.recovery_penalty_applied and _recovery_fail_player != null:
 		_recovery_fail_player.play()
+
+
+## Applies scene-owned impact and bonus presentation emitted by the hazard resolver.
+func _handle_run_hazard_update(update: RefCounted) -> void:
+	if update == null:
+		return
+
+	for hazard_type in update.impact_hazard_types:
+		_trigger_impact_feedback()
+		_play_hazard_impact(hazard_type)
+
+	for bonus_callout_text in update.bonus_callout_texts:
+		_show_bonus_callout(bonus_callout_text)
 
 
 ## Advances failure state timers and starts timer-driven bad luck when its scheduled roll matures.
@@ -1211,7 +1115,7 @@ func _get_route_phase_display_name(route_phase: StringName) -> String:
 ## Attempts to start a hazard-specific failure when a collision resolves into a failure state.
 func _attempt_failure_trigger_from_collision(hazard_type: StringName) -> void:
 	_apply_run_director_debug_overrides()
-	_run_director.attempt_failure_trigger_from_collision(hazard_type)
+	_run_hazard_resolver.attempt_failure_trigger_from_collision(_run_director, hazard_type)
 	_sync_run_director_debug_state()
 
 

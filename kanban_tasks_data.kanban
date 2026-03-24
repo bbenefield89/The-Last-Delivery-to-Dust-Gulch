@@ -813,7 +813,7 @@
                                     },
                                     {
                                         "details":  "Extract hazard collision resolution, dodge tracking, near-miss tracking, and hazard-to-failure handoff into an explicit owned runtime system such as Systems/RunHazardResolver/run_hazard_resolver.gd. Keep owner-specific support code with that system and fold very thorough unit coverage for the extracted hazard rules into the same step.\n\nDone when: by playing a run normally, hazards still hit when they should, clean dodges still count, near misses still award their bonus, and the same hazards still trigger the same failure outcomes, while that adjudication logic now lives under Systems/RunHazardResolver instead of directly in run_scene.gd.",
-                                        "done":  false
+                                        "done":  true
                                     },
                                     {
                                         "details":  "Reduce Scenes/RunScene/run_scene.gd to orchestration over the extracted run-logic systems while preserving the agreed architecture boundaries. Keep RunScene in Scenes/RunScene, keep extracted systems in Systems/\u003cOwner\u003e, and do not reintroduce a global Scripts bucket during the cleanup.\n\nDone when: a reviewer can play from the title screen through a full run and result screen with the same controls and pacing as before, and run_scene.gd now reads as a coordinator over explicit Systems owners instead of the main owner of run rules.",
