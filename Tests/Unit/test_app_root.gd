@@ -1,6 +1,10 @@
 extends GutTest
 
-const APP_ROOT_SCENE := preload("res://Scenes/AppRoot/AppRoot.tscn")
+# Constants
+
+const APP_ROOT_SCENE := preload(ProjectPaths.APP_ROOT_SCENE_PATH)
+# Private Methods
+
 
 
 ## Sends a keyboard key press and release through the input pipeline for loop tests.
@@ -18,7 +22,13 @@ func _send_key_input(keycode_value: Key) -> void:
 	release.pressed = false
 	Input.parse_input_event(release)
 	await wait_process_frames(1)
+# Public Methods
 
+# Public Methods
+
+
+
+## Verifies app root starts on title screen.
 
 func test_app_root_starts_on_title_screen() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()
@@ -30,6 +40,8 @@ func test_app_root_starts_on_title_screen() -> void:
 	assert_null(app_root.run_state)
 	assert_null(app_root._run_scene)
 
+
+## Verifies app root play from title bootstraps run state and run scene.
 
 func test_app_root_play_from_title_bootstraps_run_state_and_run_scene() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()
@@ -47,6 +59,8 @@ func test_app_root_play_from_title_bootstraps_run_state_and_run_scene() -> void:
 	assert_true(app_root.run_state.distance_remaining <= app_root.starting_distance)
 	assert_true(app_root.run_state.distance_remaining >= 0.0)
 
+
+## Verifies app root restart rebuilds run state for completed run.
 
 func test_app_root_restart_rebuilds_run_state_for_completed_run() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()
@@ -112,6 +126,8 @@ func test_app_root_restart_rebuilds_run_state_for_completed_run() -> void:
 	assert_false(app_root._run_scene.has_node("World/Wagon/HorseTeam/HarnessRight"))
 
 
+## Verifies app root quit request is wired from title screen.
+
 func test_app_root_quit_request_is_wired_from_title_screen() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()
 	app_root.allow_quit = false
@@ -124,6 +140,7 @@ func test_app_root_quit_request_is_wired_from_title_screen() -> void:
 
 
 ## Verifies the keyboard-only loop can restart the run from the result screen.
+
 func test_app_root_when_keyboard_only_loop_reaches_result_then_restart_starts_new_run() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()
 	app_root.allow_quit = false
@@ -157,6 +174,7 @@ func test_app_root_when_keyboard_only_loop_reaches_result_then_restart_starts_ne
 
 
 ## Verifies the keyboard-only loop can return to title from the result screen.
+
 func test_app_root_when_keyboard_only_loop_reaches_result_then_return_goes_back_to_title() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()
 	app_root.allow_quit = false
@@ -182,6 +200,8 @@ func test_app_root_when_keyboard_only_loop_reaches_result_then_return_goes_back_
 	assert_null(app_root._run_scene)
 
 
+## Verifies app root return to title rebuilds title after success.
+
 func test_app_root_return_to_title_rebuilds_title_after_success() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()
 	app_root.allow_quit = false
@@ -200,6 +220,7 @@ func test_app_root_return_to_title_rebuilds_title_after_success() -> void:
 
 
 ## Verifies a new run started after returning to title still wires the animated carriage rig.
+
 func test_app_root_when_returning_to_title_then_starting_again_keeps_animated_carriage_rig() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()
 	app_root.allow_quit = false
@@ -254,6 +275,8 @@ func test_app_root_when_returning_to_title_then_starting_again_keeps_animated_ca
 	assert_false(app_root._run_scene.has_node("World/Wagon/HorseTeam/HarnessLeft"))
 	assert_false(app_root._run_scene.has_node("World/Wagon/HorseTeam/HarnessRight"))
 
+
+## Verifies app root clears tree pause when restarting or returning to title.
 
 func test_app_root_clears_tree_pause_when_restarting_or_returning_to_title() -> void:
 	var app_root = APP_ROOT_SCENE.instantiate()

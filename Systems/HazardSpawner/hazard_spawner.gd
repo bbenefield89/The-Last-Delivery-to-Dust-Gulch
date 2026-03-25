@@ -1,7 +1,8 @@
-class_name HazardSpawner
 extends Node2D
 
 ## Spawns readable hazard layouts with route-progress pacing and phase-based pressure pairs.
+
+# Constants
 
 const LANE_X_POSITIONS := [-96.0, -64.0, -32.0, 0.0, 32.0, 64.0, 96.0]
 const DEFAULT_SPAWN_Y := -320.0
@@ -72,10 +73,17 @@ const FULL_ROAD_LANE_INDICES: Array[int] = [0, 1, 2, 3, 4, 5, 6]
 
 # Public Fields: Export
 
-@export var pothole_texture: Texture2D
-@export var rock_texture: Texture2D
-@export var tumbleweed_texture: Texture2D
-@export var livestock_texture: Texture2D
+@export
+var pothole_texture: Texture2D
+
+@export
+var rock_texture: Texture2D
+
+@export
+var tumbleweed_texture: Texture2D
+
+@export
+var livestock_texture: Texture2D
 
 # Private Fields
 
@@ -86,10 +94,14 @@ var _next_spawn_plan: SpawnPlan
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
+# Lifecycle Methods
+
 ## Initializes the first randomized spawn plan.
 func _ready() -> void:
 	_rng.randomize()
 
+
+# Public Methods
 
 ## Advances active hazards and spawns new ones using the current route-progress band.
 func advance(

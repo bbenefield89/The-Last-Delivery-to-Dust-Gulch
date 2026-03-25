@@ -1,26 +1,47 @@
 extends Node
 
-const TITLE_SCENE := preload("res://Scenes/TitleScreen/TitleScreen.tscn")
-const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
-const RunStateType := preload("res://Systems/RunState/run_state.gd")
+## Owns the title-to-run scene flow and completed-run restart or return shortcuts.
+
+
+# Constants
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+const TITLE_SCENE := preload(ProjectPaths.TITLE_SCREEN_SCENE_PATH)
+const RUN_SCENE := preload(ProjectPaths.RUN_SCENE_PATH)
 const RESTART_ACTION := "restart_run"
 const RETURN_TO_TITLE_ACTION := "return_to_title"
 
-@export var starting_distance: float = 500.0
-@export var allow_quit: bool = true
+
+# Public Fields: Export
+
+@export
+var starting_distance: float = 500.0
+
+@export
+var allow_quit: bool = true
+
+
+# Public Fields
 
 var run_state: RunStateType
+
+
+# Private Fields
+
 var _title_screen: Control
 var _run_scene: Node
 var _quit_requested := false
 
 
+# Lifecycle Methods
+
+## Boots the app flow, registers shared input shortcuts, and shows the title screen first.
 func _ready() -> void:
 	_ensure_restart_action()
 	_ensure_return_to_title_action()
 	_show_title_screen()
 
 
+## Handles restart and return shortcuts once a run result is available.
 func _unhandled_input(event: InputEvent) -> void:
 	if run_state == null:
 		return
@@ -32,6 +53,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_show_title_screen()
 
 
+# Public Methods
+
+## Rebuilds the active run scene and fresh run state from the current starting-distance config.
 func _start_new_run() -> void:
 	get_tree().paused = false
 	if is_instance_valid(_title_screen):
@@ -52,6 +76,7 @@ func _start_new_run() -> void:
 		_run_scene.setup(run_state)
 
 
+## Returns to the title screen and clears any active run scene or run-state instance.
 func _show_title_screen() -> void:
 	get_tree().paused = false
 	if is_instance_valid(_run_scene):
@@ -65,12 +90,16 @@ func _show_title_screen() -> void:
 	_title_screen.quit_requested.connect(_request_quit)
 
 
+# Private Methods
+
+## Records the quit request and exits immediately when quitting is allowed for this runtime.
 func _request_quit() -> void:
 	_quit_requested = true
 	if allow_quit:
 		get_tree().quit()
 
 
+## Registers the shared restart shortcut if it is not already present in the input map.
 func _ensure_restart_action() -> void:
 	if not InputMap.has_action(RESTART_ACTION):
 		InputMap.add_action(RESTART_ACTION)
@@ -81,6 +110,7 @@ func _ensure_restart_action() -> void:
 		InputMap.action_add_event(RESTART_ACTION, event)
 
 
+## Registers the shared return-to-title shortcut if it is not already present in the input map.
 func _ensure_return_to_title_action() -> void:
 	if not InputMap.has_action(RETURN_TO_TITLE_ACTION):
 		InputMap.add_action(RETURN_TO_TITLE_ACTION)
@@ -89,4 +119,3 @@ func _ensure_return_to_title_action() -> void:
 	event.physical_keycode = KEY_T
 	if not InputMap.action_has_event(RETURN_TO_TITLE_ACTION, event):
 		InputMap.action_add_event(RETURN_TO_TITLE_ACTION, event)
-

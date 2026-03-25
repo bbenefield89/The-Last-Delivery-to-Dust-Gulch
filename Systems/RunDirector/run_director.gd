@@ -1,7 +1,11 @@
-class_name RunDirector
 extends RefCounted
 
 ## Owns route-phase pressure, failure and recovery rules, and win/loss adjudication for one run.
+
+# Constants
+const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+
 
 const ROUTE_PHASE_WARM_UP := &"warm_up"
 const ROUTE_PHASE_FIRST_TROUBLE := &"first_trouble"
@@ -47,14 +51,16 @@ var bad_luck_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 # Private Fields
 
-var _run_state: RunState
-var _recovery_sequence_generator: RecoverySequenceGenerator = RecoverySequenceGenerator.new()
+var _run_state: RunStateType
+var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
 
+
+# Public Methods
 
 ## Binds the active run state and resets director-owned transient rule timers.
 func bind_run_state(
-	run_state: RunState,
-	recovery_sequence_generator: RecoverySequenceGenerator = null
+	run_state: RunStateType,
+	recovery_sequence_generator: RecoverySequenceGeneratorType = null
 ) -> RunUpdate:
 	_run_state = run_state
 	if recovery_sequence_generator != null:
@@ -170,7 +176,7 @@ func handle_recovery_action(action_name: StringName) -> RecoveryActionResult:
 	if _run_state.advance_recovery_sequence(action_name):
 		if _run_state.is_current_recovery_perfect():
 			_run_state.award_perfect_recovery_bonus()
-			result.bonus_callout_text = "PERFECT RECOVERY +%d" % RunState.PERFECT_RECOVERY_BONUS_SCORE
+			result.bonus_callout_text = "PERFECT RECOVERY +%d" % RunStateType.PERFECT_RECOVERY_BONUS_SCORE
 		_run_state.resolve_recovery_success()
 		result.recovery_completed = true
 	else:
@@ -342,18 +348,18 @@ func _start_generated_recovery_sequence(duration: float) -> void:
 
 ## Resolves collapse before success so simultaneous edge cases keep the current run-scene ordering.
 func _resolve_run_result() -> void:
-	if _run_state == null or _run_state.result != RunState.RESULT_IN_PROGRESS:
+	if _run_state == null or _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		return
 	if _run_state.wagon_health <= 0:
 		_run_state.wagon_health = 0
-		_run_state.result = RunState.RESULT_COLLAPSED
+		_run_state.result = RunStateType.RESULT_COLLAPSED
 		_run_state.current_speed = 0.0
 		return
 	if _run_state.distance_remaining > 0.0:
 		return
 
 	_run_state.distance_remaining = 0.0
-	_run_state.result = RunState.RESULT_SUCCESS
+	_run_state.result = RunStateType.RESULT_SUCCESS
 	_run_state.current_speed = 0.0
 
 

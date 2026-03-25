@@ -1,7 +1,11 @@
-class_name RunAudioPresenter
 extends RefCounted
 
 ## Owns run-scene audio player setup, runtime cue playback, and audio-state transitions.
+
+
+# Constants
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+
 
 const HAZARD_TYPE_POTHOLE := &"pothole"
 const HAZARD_TYPE_ROCK := &"rock"
@@ -12,12 +16,12 @@ const FAILURE_TYPE_HORSE_PANIC := &"horse_panic"
 # Public Fields
 
 var last_announced_failure: StringName = &""
-var last_announced_result: StringName = RunState.RESULT_IN_PROGRESS
+var last_announced_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var tumbleweed_impact_serial := 0
 
 # Private Fields
 
-var _run_state: RunState
+var _run_state: RunStateType
 var _tree_host: Node
 var _music_player: AudioStreamPlayer
 var _wagon_loop_player: AudioStreamPlayer
@@ -54,9 +58,11 @@ var _wagon_loop_start_seconds := 0.0
 var _wagon_loop_end_seconds := 0.0
 
 
+# Public Methods
+
 ## Binds the scene-owned audio players and host node used for runtime audio operations.
 func configure_scene_nodes(
-	run_state: RunState,
+	run_state: RunStateType,
 	tree_host: Node,
 	music_player: AudioStreamPlayer,
 	wagon_loop_player: AudioStreamPlayer,
@@ -94,11 +100,11 @@ func configure_scene_nodes(
 
 
 ## Binds the active run state and resets presenter-owned transition tracking for that run.
-func bind_run_state(run_state: RunState) -> void:
+func bind_run_state(run_state: RunStateType) -> void:
 	_run_state = run_state
 	if _run_state == null:
 		last_announced_failure = &""
-		last_announced_result = RunState.RESULT_IN_PROGRESS
+		last_announced_result = RunStateType.RESULT_IN_PROGRESS
 	else:
 		last_announced_failure = _run_state.active_failure
 		last_announced_result = _run_state.result
@@ -197,14 +203,14 @@ func refresh_audio_presentation() -> void:
 		return
 
 	if _music_player != null:
-		if _run_state.result == RunState.RESULT_IN_PROGRESS:
+		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
 			if not _music_player.playing:
 				_music_player.play()
 		elif _music_player.playing:
 			_music_player.stop()
 
 	if _wagon_loop_player != null:
-		if _run_state.result == RunState.RESULT_IN_PROGRESS:
+		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
 			if not _wagon_loop_player.playing:
 				_wagon_loop_player.play(_wagon_loop_start_seconds)
 			elif _wagon_loop_player.get_playback_position() >= _wagon_loop_end_seconds:
@@ -221,11 +227,11 @@ func refresh_audio_presentation() -> void:
 
 	if _run_state.result != last_announced_result:
 		match _run_state.result:
-			RunState.RESULT_SUCCESS:
+			RunStateType.RESULT_SUCCESS:
 				if _result_player != null:
 					_result_player.stream = _win_stinger
 					_result_player.play()
-			RunState.RESULT_COLLAPSED:
+			RunStateType.RESULT_COLLAPSED:
 				if _result_player != null:
 					_result_player.stream = _collapse_stinger
 					_result_player.play()
@@ -306,11 +312,11 @@ func refresh_failure_ambient_audio() -> void:
 		return
 
 	var should_play_wheel_loose := (
-		_run_state.result == RunState.RESULT_IN_PROGRESS
+		_run_state.result == RunStateType.RESULT_IN_PROGRESS
 		and _run_state.active_failure == FAILURE_TYPE_WHEEL_LOOSE
 	)
 	var should_play_horse_panic := (
-		_run_state.result == RunState.RESULT_IN_PROGRESS
+		_run_state.result == RunStateType.RESULT_IN_PROGRESS
 		and _run_state.active_failure == FAILURE_TYPE_HORSE_PANIC
 	)
 
@@ -351,6 +357,8 @@ func on_tumbleweed_impact_timeout(serial: int) -> void:
 		return
 	_tumbleweed_impact_player.stop()
 
+
+# Private Methods
 
 ## Returns the current scene tree through the configured host node when timer-backed audio waits are needed.
 func _get_tree() -> SceneTree:

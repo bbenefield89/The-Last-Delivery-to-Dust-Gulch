@@ -1,16 +1,25 @@
 extends GutTest
 
-const TITLE_SCREEN_SCENE := preload("res://Scenes/TitleScreen/TitleScreen.tscn")
-const RunStateType := preload("res://Systems/RunState/run_state.gd")
-const TEST_BEST_RUN_SAVE_PATH := "user://dg30_test_title_best_run.cfg"
+# Constants
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 
+const TITLE_SCREEN_SCENE := preload(ProjectPaths.TITLE_SCREEN_SCENE_PATH)
+const TEST_BEST_RUN_SAVE_PATH := SavePaths.TEST_TITLE_SCREEN_BEST_RUN_SAVE_PATH
+# Public Methods
+
+
+
+## Runs before each.
 func before_each() -> void:
 	_delete_test_best_run_file()
 
 
+## Runs after each.
 func after_each() -> void:
 	_delete_test_best_run_file()
+# Private Methods
+
 
 
 ## Sends a single keyboard press and release through the input pipeline for focus tests.
@@ -28,7 +37,11 @@ func _send_key_input(keycode_value: Key) -> void:
 	release.pressed = false
 	Input.parse_input_event(release)
 	await wait_process_frames(1)
+# Public Methods
 
+
+
+## Verifies play button emits play requested.
 
 func test_play_button_emits_play_requested() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
@@ -40,6 +53,8 @@ func test_play_button_emits_play_requested() -> void:
 	assert_signal_emitted(title_screen, "play_requested")
 
 
+## Verifies quit button emits quit requested.
+
 func test_quit_button_emits_quit_requested() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
 	add_child_autofree(title_screen)
@@ -49,6 +64,8 @@ func test_quit_button_emits_quit_requested() -> void:
 
 	assert_signal_emitted(title_screen, "quit_requested")
 
+
+## Verifies title screen uses western panel style.
 
 func test_title_screen_uses_western_panel_style() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
@@ -60,6 +77,8 @@ func test_title_screen_uses_western_panel_style() -> void:
 	assert_not_null(stylebox)
 	assert_eq(stylebox.bg_color, Color(0.156863, 0.101961, 0.0666667, 0.94))
 
+
+## Verifies title screen background uses cover stretch mode.
 
 func test_title_screen_background_uses_cover_stretch_mode() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
@@ -73,6 +92,8 @@ func test_title_screen_background_uses_cover_stretch_mode() -> void:
 	assert_eq(background.anchor_right, 1.0)
 	assert_eq(background.anchor_bottom, 1.0)
 
+
+## Verifies title screen play and quit buttons play ui click sound.
 
 func test_title_screen_play_and_quit_buttons_play_ui_click_sound() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
@@ -94,6 +115,7 @@ func test_title_screen_play_and_quit_buttons_play_ui_click_sound() -> void:
 
 
 ## Verifies the title screen lands keyboard focus on the primary action as soon as it opens.
+
 func test_title_screen_when_ready_then_play_button_has_default_focus() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
 	add_child_autofree(title_screen)
@@ -107,6 +129,7 @@ func test_title_screen_when_ready_then_play_button_has_default_focus() -> void:
 
 
 ## Verifies the title buttons move focus in a predictable cycle with keyboard navigation.
+
 func test_title_screen_when_navigating_with_keyboard_then_focus_moves_between_buttons() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
 	add_child_autofree(title_screen)
@@ -127,6 +150,7 @@ func test_title_screen_when_navigating_with_keyboard_then_focus_moves_between_bu
 
 
 ## Verifies keyboard confirm activates the focused play action.
+
 func test_title_screen_when_confirming_focused_play_button_then_play_requested_emits() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
 	add_child_autofree(title_screen)
@@ -142,6 +166,7 @@ func test_title_screen_when_confirming_focused_play_button_then_play_requested_e
 
 
 ## Verifies keyboard confirm activates the focused quit action.
+
 func test_title_screen_when_confirming_focused_quit_button_then_quit_requested_emits() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
 	add_child_autofree(title_screen)
@@ -158,6 +183,8 @@ func test_title_screen_when_confirming_focused_quit_button_then_quit_requested_e
 	assert_signal_emitted(title_screen, "quit_requested")
 
 
+## Verifies title screen starts menu music.
+
 func test_title_screen_starts_menu_music() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
 	add_child_autofree(title_screen)
@@ -170,6 +197,8 @@ func test_title_screen_starts_menu_music() -> void:
 	assert_eq(ui_click_player.stream, title_screen.UI_CLICK_SOUND)
 
 
+## Verifies title screen when no best run exists then empty summary is shown.
+
 func test_title_screen_when_no_best_run_exists_then_empty_summary_is_shown() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
 	title_screen._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
@@ -179,6 +208,8 @@ func test_title_screen_when_no_best_run_exists_then_empty_summary_is_shown() -> 
 
 	assert_eq(best_summary.text, title_screen.BEST_RUN_EMPTY_TEXT)
 
+
+## Verifies title screen when best run exists then score and grade are shown.
 
 func test_title_screen_when_best_run_exists_then_score_and_grade_are_shown() -> void:
 	assert_eq(
@@ -195,6 +226,7 @@ func test_title_screen_when_best_run_exists_then_score_and_grade_are_shown() -> 
 	assert_string_contains(best_summary.text, "Best Grade: S")
 
 
+## Helper for delete test best run file.
 func _delete_test_best_run_file() -> void:
 	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
 	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):

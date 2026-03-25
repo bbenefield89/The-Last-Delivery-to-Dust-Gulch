@@ -1,16 +1,24 @@
-class_name RunHazardResolver
 extends RefCounted
 
 ## Owns hazard adjudication rules such as hits, dodges, near misses, and failure handoff.
 
+
+# Constants
+const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
+const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+
+
 const DEFAULT_NEAR_MISS_MAX_HORIZONTAL_CLEARANCE := 12.0
 
 
+# Public Methods
+
 ## Resolves one gameplay frame of hazard state and returns scene-owned presentation side effects.
 func resolve_frame(
-	hazard_spawner: HazardSpawner,
-	run_state: RunState,
-	run_director: RunDirector,
+	hazard_spawner: HazardSpawnerType,
+	run_state: RunStateType,
+	run_director: RunDirectorType,
 	wagon_position: Vector2,
 	wagon_size: Vector2,
 	near_miss_max_horizontal_clearance: float = DEFAULT_NEAR_MISS_MAX_HORIZONTAL_CLEARANCE
@@ -34,18 +42,20 @@ func resolve_frame(
 
 
 ## Delegates one hazard hit into the authored failure flow without owning the failure rules themselves.
-func attempt_failure_trigger_from_collision(run_director: RunDirector, hazard_type: StringName) -> bool:
+func attempt_failure_trigger_from_collision(run_director: RunDirectorType, hazard_type: StringName) -> bool:
 	if run_director == null:
 		return false
 
 	return run_director.attempt_failure_trigger_from_collision(hazard_type)
 
 
+# Private Methods
+
 ## Applies all current hazard overlaps to run-state damage, cargo loss, and failure handoff.
 func _apply_hazard_collisions(
-	hazard_spawner: HazardSpawner,
-	run_state: RunState,
-	run_director: RunDirector,
+	hazard_spawner: HazardSpawnerType,
+	run_state: RunStateType,
+	run_director: RunDirectorType,
 	wagon_position: Vector2,
 	wagon_size: Vector2,
 	update: HazardFrameUpdate
@@ -68,7 +78,7 @@ func _apply_hazard_collisions(
 
 ## Tracks whether hazards were ever head-on threats and records their tightest clean clearance.
 func _update_hazard_near_miss_tracking(
-	hazard_spawner: HazardSpawner,
+	hazard_spawner: HazardSpawnerType,
 	wagon_position: Vector2,
 	wagon_size: Vector2
 ) -> void:
@@ -102,8 +112,8 @@ func _update_hazard_near_miss_tracking(
 
 ## Awards near misses once hazards safely pass without colliding inside the authored clearance window.
 func _award_completed_near_misses(
-	hazard_spawner: HazardSpawner,
-	run_state: RunState,
+	hazard_spawner: HazardSpawnerType,
+	run_state: RunStateType,
 	wagon_position: Vector2,
 	wagon_size: Vector2,
 	near_miss_max_horizontal_clearance: float,
@@ -130,13 +140,13 @@ func _award_completed_near_misses(
 
 		hazard.set_meta("near_miss_awarded", true)
 		run_state.award_near_miss_bonus()
-		update.bonus_callout_texts.append("NEAR MISS +%d" % RunState.NEAR_MISS_BONUS_SCORE)
+		update.bonus_callout_texts.append("NEAR MISS +%d" % RunStateType.NEAR_MISS_BONUS_SCORE)
 
 
 ## Records each hazard exactly once after it safely passes the wagon without a hit.
 func _record_completed_hazard_dodges(
-	hazard_spawner: HazardSpawner,
-	run_state: RunState,
+	hazard_spawner: HazardSpawnerType,
+	run_state: RunStateType,
 	wagon_position: Vector2,
 	wagon_size: Vector2
 ) -> void:
@@ -158,7 +168,7 @@ func _record_completed_hazard_dodges(
 
 ## Returns whether one hazard has fully moved beyond the wagon line and can no longer collide.
 func _has_hazard_safely_passed_wagon(
-	hazard_spawner: HazardSpawner,
+	hazard_spawner: HazardSpawnerType,
 	hazard: Node2D,
 	wagon_position: Vector2,
 	wagon_size: Vector2
@@ -201,6 +211,8 @@ func _get_horizontal_clearance_to_wagon(
 	var combined_half_width: float = (wagon_size.x + hazard_size.x) * 0.5
 	return absf(hazard_position.x - wagon_position.x) - combined_half_width
 
+
+# Inner Classes
 
 class HazardFrameUpdate:
 	extends RefCounted

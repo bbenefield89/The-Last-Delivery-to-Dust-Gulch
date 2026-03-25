@@ -1,7 +1,11 @@
 extends RefCounted
-class_name RunState
 
-const FailureStateType := preload("res://Systems/RunState/failure_state.gd")
+## Owns the mutable gameplay state, scoring, failure flow, and persisted best-run data.
+
+# Constants
+const FailureStateType := preload(ProjectPaths.FAILURE_STATE_SCRIPT_PATH)
+
+
 
 const RESULT_IN_PROGRESS := &"in_progress"
 const RESULT_SUCCESS := &"success"
@@ -38,10 +42,13 @@ const GRADE_A_MIN_SCORE := 1500
 const GRADE_B_MIN_SCORE := 1200
 const GRADE_C_MIN_SCORE := 900
 const GRADE_D_MIN_SCORE := 600
-const BEST_RUN_SAVE_PATH := "user://best_run.cfg"
+const BEST_RUN_SAVE_PATH := SavePaths.BEST_RUN_SAVE_PATH
 const BEST_RUN_SECTION := "best_run"
 const BEST_RUN_SCORE_KEY := "score"
 const BEST_RUN_GRADE_KEY := "grade"
+
+
+# Public Fields
 
 var route_distance: float = DEFAULT_ROUTE_DISTANCE
 var distance_remaining: float = DEFAULT_DISTANCE_REMAINING
@@ -72,6 +79,9 @@ var best_run: BestRunData = BestRunData.new()
 var current_run_is_new_best: bool = false
 
 
+# Public Methods
+
+## Restores the active run-state values back to their clean new-run defaults.
 func reset_for_new_run() -> void:
 	distance_remaining = route_distance
 	wagon_health = DEFAULT_WAGON_HEALTH
@@ -100,10 +110,12 @@ func reset_for_new_run() -> void:
 	current_run_is_new_best = false
 
 
+## Returns the route distance already completed in the current run.
 func get_distance_traveled() -> float:
 	return route_distance - distance_remaining
 
 
+## Returns the normalized route progress ratio for the current run.
 func get_delivery_progress_ratio() -> float:
 	if route_distance <= 0.0:
 		return 1.0
@@ -188,15 +200,18 @@ func record_best_run_if_needed(save_path: String = BEST_RUN_SAVE_PATH) -> bool:
 	return current_run_is_new_best
 
 
+## Sets the authored route distance and resets the remaining distance to match it.
 func configure_route_distance(value: float) -> void:
 	route_distance = max(1.0, value)
 	distance_remaining = route_distance
 
 
+## Returns whether a failure is currently active for the run.
 func has_active_failure() -> bool:
 	return current_failure != null and active_failure != DEFAULT_ACTIVE_FAILURE
 
 
+## Returns whether the requested failure is currently allowed to begin.
 func can_start_failure(failure_type: StringName) -> bool:
 	if failure_type == DEFAULT_ACTIVE_FAILURE:
 		return false
@@ -206,6 +221,7 @@ func can_start_failure(failure_type: StringName) -> bool:
 	return not has_active_failure()
 
 
+## Starts a new active failure when the run can accept one.
 func start_failure(failure_type: StringName, source_hazard: StringName = &"") -> bool:
 	if not can_start_failure(failure_type):
 		return false
@@ -219,6 +235,7 @@ func start_failure(failure_type: StringName, source_hazard: StringName = &"") ->
 	return true
 
 
+## Advances the active failure timer while a failure is present.
 func tick_failure(delta: float) -> void:
 	if current_failure == null:
 		return
@@ -226,12 +243,14 @@ func tick_failure(delta: float) -> void:
 	current_failure.elapsed_time += delta
 
 
+## Clears the active failure and any attached recovery sequence state.
 func clear_failure() -> void:
 	active_failure = DEFAULT_ACTIVE_FAILURE
 	current_failure = null
 	clear_recovery_sequence()
 
 
+## Starts a new recovery sequence and resets its transient progress flags.
 func start_recovery_sequence(sequence: Array[StringName], duration: float = 0.0) -> void:
 	recovery_sequence = sequence.duplicate()
 	recovery_prompt_index = 0 if not recovery_sequence.is_empty() else DEFAULT_RECOVERY_PROMPT_INDEX
@@ -240,10 +259,12 @@ func start_recovery_sequence(sequence: Array[StringName], duration: float = 0.0)
 	recovery_timed_out = false
 
 
+## Returns whether a recovery sequence is currently in progress.
 func has_active_recovery_sequence() -> bool:
 	return recovery_prompt_index >= 0 and recovery_prompt_index < recovery_sequence.size()
 
 
+## Returns the current expected recovery prompt or an empty prompt when idle.
 func get_current_recovery_prompt() -> StringName:
 	if not has_active_recovery_sequence():
 		return &""
@@ -251,6 +272,7 @@ func get_current_recovery_prompt() -> StringName:
 	return recovery_sequence[recovery_prompt_index]
 
 
+## Advances the recovery sequence when the provided input matches the next expected prompt.
 func advance_recovery_sequence(input_action: StringName) -> bool:
 	if not has_active_recovery_sequence():
 		return false
@@ -280,6 +302,7 @@ func is_current_recovery_perfect() -> bool:
 	return not recovery_had_wrong_input and not recovery_timed_out
 
 
+## Counts down the active recovery timer and reports whether it expired this tick.
 func tick_recovery_sequence(delta: float) -> bool:
 	if not has_active_recovery_sequence():
 		return false
@@ -290,6 +313,7 @@ func tick_recovery_sequence(delta: float) -> bool:
 	return recovery_time_remaining == 0.0
 
 
+## Counts down temporary control instability after a failed recovery.
 func tick_temporary_control_instability(delta: float) -> void:
 	temporary_control_instability_remaining = max(
 		0.0,
@@ -297,6 +321,7 @@ func tick_temporary_control_instability(delta: float) -> void:
 	)
 
 
+## Counts down short-lived recovery outcome and cooldown timers.
 func tick_recovery_transients(delta: float) -> void:
 	recovery_outcome_display_remaining = max(0.0, recovery_outcome_display_remaining - delta)
 	if recovery_outcome_display_remaining == 0.0 and last_recovery_outcome != DEFAULT_LAST_RECOVERY_OUTCOME:
@@ -305,6 +330,7 @@ func tick_recovery_transients(delta: float) -> void:
 	recovery_cooldown_remaining = max(0.0, recovery_cooldown_remaining - delta)
 
 
+## Restores forward speed toward the default run speed over time.
 func recover_speed(delta: float) -> void:
 	if current_speed >= DEFAULT_FORWARD_SPEED:
 		return
@@ -312,10 +338,12 @@ func recover_speed(delta: float) -> void:
 	current_speed = min(DEFAULT_FORWARD_SPEED, current_speed + (speed_recovery_rate * max(0.0, delta)))
 
 
+## Returns whether post-failure control instability is still active.
 func has_temporary_control_instability() -> bool:
 	return temporary_control_instability_remaining > 0.0
 
 
+## Resolves the current recovery as a success and starts the short cooldown window.
 func resolve_recovery_success() -> void:
 	last_recovery_outcome = &"success"
 	recovery_outcome_display_remaining = 1.25
@@ -323,6 +351,7 @@ func resolve_recovery_success() -> void:
 	clear_failure()
 
 
+## Applies the configured failed-recovery penalties and clears the active failure flow.
 func apply_recovery_failure_penalty(
 	health_loss: int,
 	cargo_loss: int,
@@ -343,11 +372,14 @@ func apply_recovery_failure_penalty(
 	clear_failure()
 
 
+## Clears the active recovery sequence and its prompt-tracking values.
 func clear_recovery_sequence() -> void:
 	recovery_sequence = DEFAULT_RECOVERY_SEQUENCE.duplicate()
 	recovery_prompt_index = DEFAULT_RECOVERY_PROMPT_INDEX
 	recovery_time_remaining = DEFAULT_RECOVERY_TIME_REMAINING
 
+
+# Public Static Methods
 
 ## Saves the current best-run snapshot to the local user data path.
 static func save_best_run(best_run: BestRunData, save_path: String = BEST_RUN_SAVE_PATH) -> int:
@@ -381,6 +413,8 @@ static func load_best_run(save_path: String = BEST_RUN_SAVE_PATH) -> BestRunData
 	return BestRunData.new(score_value, grade_value, true)
 
 
+# Inner Classes
+
 class BestRunData:
 	extends RefCounted
 	## Stores the persistent local best-run summary that survives app relaunches.
@@ -395,4 +429,3 @@ class BestRunData:
 		score = score_value
 		grade = grade_value
 		has_value = has_stored_value
-

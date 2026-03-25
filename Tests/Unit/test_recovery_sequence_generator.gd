@@ -1,13 +1,26 @@
 extends GutTest
 
-const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
+# Constants
+
+const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
+
+# Private Methods
 
 
+
+
+## Helper for generate sequence with seed.
 func _generate_sequence_with_seed(seed: int, progress: float, prompt_pool: Array[StringName]) -> Array[StringName]:
 	var generator := RecoverySequenceGeneratorType.new()
 	generator.set_seed(seed)
 	return generator.generate_sequence(progress, prompt_pool)
+# Public Methods
 
+# Public Methods
+
+
+
+## Verifies generate sequence when early progress then length stays between three and four.
 
 func test_generate_sequence_when_early_progress_then_length_stays_between_three_and_four() -> void:
 	var prompt_pool: Array[StringName] = [&"steer_left", &"steer_right"]
@@ -23,6 +36,8 @@ func test_generate_sequence_when_early_progress_then_length_stays_between_three_
 	assert_true(seen_lengths.has(4))
 
 
+## Verifies generate sequence when mid progress then length stays between four and five.
+
 func test_generate_sequence_when_mid_progress_then_length_stays_between_four_and_five() -> void:
 	var prompt_pool: Array[StringName] = [&"steer_left", &"steer_right"]
 	var seen_lengths: Dictionary = {}
@@ -37,6 +52,8 @@ func test_generate_sequence_when_mid_progress_then_length_stays_between_four_and
 	assert_true(seen_lengths.has(5))
 
 
+## Verifies generate sequence when late progress then length stays between five and six.
+
 func test_generate_sequence_when_late_progress_then_length_stays_between_five_and_six() -> void:
 	var prompt_pool: Array[StringName] = [&"steer_left", &"steer_right"]
 	var seen_lengths: Dictionary = {}
@@ -50,6 +67,8 @@ func test_generate_sequence_when_late_progress_then_length_stays_between_five_an
 	assert_true(seen_lengths.has(5))
 	assert_true(seen_lengths.has(6))
 
+
+## Verifies generate sequence when pool has two prompts then repeated prompts are allowed.
 
 func test_generate_sequence_when_pool_has_two_prompts_then_repeated_prompts_are_allowed() -> void:
 	var prompt_pool: Array[StringName] = [&"steer_left", &"steer_right"]

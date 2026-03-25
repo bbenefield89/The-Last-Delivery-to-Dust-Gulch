@@ -1,19 +1,20 @@
-class_name RecoverySequenceGenerator
 extends RefCounted
 
 ## Builds recovery prompt sequences from route progress and a supplied prompt pool.
 
-const EARLY_LENGTH_WEIGHTS := [
-	{"length": 3, "weight": 4},
-	{"length": 4, "weight": 1},
+# Constants
+
+const EARLY_LENGTH_WEIGHTS: Array[Vector2i] = [
+	Vector2i(3, 4),
+	Vector2i(4, 1),
 ]
-const MID_LENGTH_WEIGHTS := [
-	{"length": 4, "weight": 4},
-	{"length": 5, "weight": 1},
+const MID_LENGTH_WEIGHTS: Array[Vector2i] = [
+	Vector2i(4, 4),
+	Vector2i(5, 1),
 ]
-const LATE_LENGTH_WEIGHTS := [
-	{"length": 5, "weight": 4},
-	{"length": 6, "weight": 1},
+const LATE_LENGTH_WEIGHTS: Array[Vector2i] = [
+	Vector2i(5, 4),
+	Vector2i(6, 1),
 ]
 
 # Private Fields
@@ -21,10 +22,14 @@ const LATE_LENGTH_WEIGHTS := [
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
+# Lifecycle Methods
+
 ## Randomizes the internal RNG for normal runtime prompt generation.
 func _init() -> void:
 	_rng.randomize()
 
+
+# Public Methods
 
 ## Seeds the internal RNG so generator behavior can be reproduced in tests.
 func set_seed(seed: int) -> void:
@@ -50,6 +55,8 @@ func generate_sequence(route_progress_ratio: float, prompt_pool: Array[StringNam
 	return sequence
 
 
+# Private Methods
+
 ## Rolls the sequence length from the active progress band's weighted options.
 func _roll_sequence_length(route_progress_ratio: float) -> int:
 	if route_progress_ratio < 0.33:
@@ -66,16 +73,16 @@ func _roll_prompt(prompt_pool: Array[StringName]) -> StringName:
 
 
 ## Rolls one sequence length from a weight table keyed by candidate length.
-func _roll_weighted_length(length_weights: Array) -> int:
+func _roll_weighted_length(length_weights: Array[Vector2i]) -> int:
 	var total_weight := 0
 	for length_weight in length_weights:
-		total_weight += int(length_weight["weight"])
+		total_weight += length_weight.y
 
 	var roll: int = _rng.randi_range(1, total_weight)
 	var running_total := 0
 	for length_weight in length_weights:
-		running_total += int(length_weight["weight"])
+		running_total += length_weight.y
 		if roll <= running_total:
-			return int(length_weight["length"])
+			return length_weight.x
 
-	return int(length_weights.back()["length"])
+	return length_weights.back().x

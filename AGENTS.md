@@ -129,6 +129,7 @@ Keep the center gameplay area clear. Push persistent HUD elements to edges and c
 - Follow good SOLID and Clean Code practices.
 - Agent-generated code must remain easy for humans to read, review, and maintain.
 - Favor clear naming, small focused units, low coupling, and straightforward control flow over cleverness.
+- Centralize reusable `res://` and `user://` path strings in const files under `res://Constants/` instead of scattering raw path literals through project-owned code.
 
 ## Design Decisions
 
@@ -192,16 +193,16 @@ Write gameplay code so it can support future automated validation without forcin
 
 ## Godot Script References
 
-- Do not preload `.gd` scripts for project-owned code when a `class_name` reference is available.
-- Use `class_name` for reusable script classes and static utility scripts that are referenced across files.
-- Prefer referencing project-owned script classes by `class_name` directly. If a script needs an instance, call `.new()` on the class instead of preloading the script resource.
-- When adding a new project-owned `class_name` script that other files will reference immediately, prefer a quick Godot import/boot pass such as `godot --headless --path . --quit` before wiring those references so the script-class cache is refreshed.
+- Use `class_name` only when a script genuinely needs global registration or repeated direct cross-file script-class access.
+- Do not add `class_name` by default, especially for scene-owned scripts that are loaded through `PackedScene`.
+- Constants-only modules are a valid exception; prefer referring to them by `class_name` instead of preloading the constants file into every consumer.
+- For project-owned script references without `class_name`, prefer a local named script preload constant near the top of the file.
 - Keep `preload` for `PackedScene` resources and other assets where loading the resource itself is the goal.
 - Instantiate scenes with `.instantiate()`, not `.new()`.
 
 ## GDScript Organization
 
-- Order project-owned `.gd` files like this when feasible: `class_name`, `extends`, doc comment, signals, enums, constants, static variables, exported fields, regular fields, onready fields, static init, static methods, built-in lifecycle methods, custom overridden methods, remaining methods, inner classes.
+- Order project-owned `.gd` files like this when feasible: `class_name` when used, `extends`, doc comment, signals, enums, constants, static variables, exported fields, regular fields, onready fields, static init, static methods, built-in lifecycle methods, custom overridden methods, remaining methods, inner classes.
 - Add section comments for the active parts of the file, grouped by visibility where appropriate, using labels such as `# Public Fields`, `# Private Fields`, `# Public Fields: Export`, `# Private Fields: Export`, `# Public Fields: OnReady`, `# Private Fields: OnReady`, `# Lifecycle Methods`, `# Event Handlers`, `# Public Static Methods`, and `# Private Methods`.
 - Do not treat `@export` or other Godot field attributes as a reason to widen visibility. Exported fields should follow the same public/private rules as any other field.
 - Put event-handler methods in a dedicated `# Event Handlers` section immediately after the lifecycle-methods section when the file has any event handlers.
@@ -213,7 +214,7 @@ Write gameplay code so it can support future automated validation without forcin
 - Prefer inferred typing where it keeps the code clear, and when inference is not sufficient, add an explicit type annotation.
 - Format ternaries like this when they span multiple lines: `var value := result \` on the first line, `    if condition \` on the second line, and `    else fallback` on the third line.
 - Leave a blank line between `extends` and the doc comment, between the doc comment and the next code or section comment, and between each section comment and the code that follows it.
-- Keep `class_name` on the first relevant line and `extends` on the next line.
+- When a file uses `class_name`, keep it on the first relevant line and `extends` on the next line.
 - Use visibility prefixes consistently for project-owned symbols when feasible: public has no prefix, protected uses a single leading underscore, and private uses a double leading underscore.
 - Do not rename Godot built-in virtual callbacks like `_ready()`, `_draw()`, or `_physics_process()` to match the private prefix rule; keep the engine-required names intact.
 - Keep lines at 120 characters or fewer when feasible.

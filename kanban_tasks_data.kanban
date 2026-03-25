@@ -4,6 +4,11 @@
                            "uuid":  "9509b143-caf2-476d-84d2-062bd75887f9",
                            "title":  "Task",
                            "color":  "569eff"
+                       },
+                       {
+                           "uuid":  "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+                           "title":  "TechDebt",
+                           "color":  "6b7280"
                        }
                    ],
     "stages":  [
@@ -18,7 +23,6 @@
                        "uuid":  "c670d77d-01d6-45a7-aa5b-94f564b959c3",
                        "title":  "Doing",
                        "tasks":  [
-
                                  ]
                    },
                    {
@@ -62,7 +66,8 @@
                                      "3ba0474f-0b7e-4edc-895f-f1ac5ada835e",
                                      "64b6e69a-a31a-4af1-ad0a-15ef0d940d11",
                                      "f1ed9a74-0f24-4257-9578-518912255330",
-                                     "d34d8801-e9aa-4926-9ee8-5c369500c9b6"
+                                     "d34d8801-e9aa-4926-9ee8-5c369500c9b6",
+                                     "47d2dd19-d3cf-4359-b175-dd2d08f3bfd2"
                                  ]
                    }
                ],
@@ -839,6 +844,18 @@
                                     },
                                     {
                                         "details":  "Extract runtime audio setup and presentation into an explicit owned system such as Systems/RunAudioPresenter/run_audio_presenter.gd, wire RunScene through it, and fold very thorough coverage for the extracted audio-state rules into the same step. Keep RunScene in Scenes/RunScene and do not reintroduce a global Scripts folder during the cleanup.\n\nDone when: by playing a run normally, the same music, impact sounds, failure ambients, pause cues, and result cues still occur in the same situations, and run_scene.gd mainly coordinates explicit Systems owners instead of directly owning their audio behavior.",
+                                        "done":  true
+                                    }
+                                ]
+                  },
+                  {
+                      "uuid":  "47d2dd19-d3cf-4359-b175-dd2d08f3bfd2",
+                      "title":  "DG-39",
+                      "description":  "TechDebt: Bring all project-owned GDScript files into compliance with the shared repo standards.\n\nThe repo now has a shared GDScript standards reference at Docs/Standards/GDSCRIPT_STANDARDS.md, but the project-owned .gd files were created across multiple implementation passes before that standards doc was centralized. This ticket is a broad cleanup pass to audit and update the existing project-owned GDScript files so they follow the documented organization, sectioning, visibility, typing, spacing, lifecycle ordering, scene-reference, and method-comment rules without changing player-facing behavior.\n\nScope:\n- Audit and update the project-owned .gd files that belong to this repo\u0027s runtime and tests.\n- Preserve gameplay behavior, scene flow, input behavior, UI behavior, and current run pacing while making the code conform.\n- Do not touch third-party or addon-owned code.\n- Do not expand scope into new gameplay, design changes, or architecture work beyond what is necessary to make the existing .gd files follow the standards cleanly.\n- The implementor may delegate portions of this audit/refactor across multiple implementor subagents if helpful, but the final result must be integrated into one cohesive repo-wide standards pass.\n\nUse Docs/Standards/GDSCRIPT_STANDARDS.md as the implementation source of truth for this cleanup.\n\nDone when: a reviewer can launch the game, go from the title screen into a run, drive, hit hazards, trigger and resolve recovery flow, pause, and reach a success or collapse result without any player-visible regressions, and the project-owned GDScript files touched by this pass follow Docs/Standards/GDSCRIPT_STANDARDS.md instead of the older mixed conventions.",
+                      "category":  "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+                      "steps":  [
+                                    {
+                                        "details":  "Do a single integrated standards-compliance pass across the existing project-owned .gd files in this repo, updating them to follow Docs/Standards/GDSCRIPT_STANDARDS.md while preserving behavior. This pass should include the current runtime scripts, scene-owned scripts, and repo-owned test scripts where applicable, but should exclude addon or third-party code. The implementor may split the audit and refactor work across multiple implementor subagents if that helps cover the repo efficiently, but must reconcile the final code into one cohesive result before finishing. Where the cleanup changes behavior-risky areas, add or update very thorough automated coverage inside this same pass so the refactor is protected without creating separate test-only work.\n\nDone when: by playing the game normally, a reviewer can confirm the title screen, run flow, hazards, failures, recovery prompts, pause flow, and result screens still behave as before, and the touched project-owned GDScript files now follow the shared standards well enough that a reviewer can inspect them and see consistent code order, section comments, visibility prefixes, typing, method documentation, spacing, lifecycle ordering, and scene-reference patterns across the codebase.",
                                         "done":  true
                                     }
                                 ]

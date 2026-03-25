@@ -1,12 +1,18 @@
 extends GutTest
 
-const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
-const POTHOLE_TEXTURE := preload("res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png")
-const ROCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png")
-const TUMBLEWEED_TEXTURE := preload("res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png")
-const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png")
+# Constants
+const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
 
 
+const POTHOLE_TEXTURE := preload(AssetPaths.POTHOLE_TEXTURE_PATH)
+const ROCK_TEXTURE := preload(AssetPaths.ROCK_TEXTURE_PATH)
+const TUMBLEWEED_TEXTURE := preload(AssetPaths.TUMBLEWEED_TEXTURE_PATH)
+const LIVESTOCK_TEXTURE := preload(AssetPaths.LIVESTOCK_TEXTURE_PATH)
+# Private Methods
+
+
+
+## Helper for create seeded spawner.
 func _create_seeded_spawner() -> Node:
 	var spawner := HazardSpawnerType.new()
 	spawner.pothole_texture = POTHOLE_TEXTURE
@@ -17,6 +23,7 @@ func _create_seeded_spawner() -> Node:
 	return spawner
 
 
+## Helper for prime seeded plan.
 func _prime_seeded_plan(spawner: Node, seed: int, route_progress_ratio: float) -> Variant:
 	spawner._rng.seed = seed
 	spawner._route_progress_ratio = route_progress_ratio
@@ -52,9 +59,14 @@ func _assert_route_phase_band(
 	assert_eq(band.weights.livestock, livestock_weight)
 	assert_eq(band.allows_pressure_pair, allows_pressure_pair)
 	assert_eq(band.lane_indices, expected_lane_indices)
+# Public Methods
+
+# Public Methods
+
 
 
 ## Verifies the literal DG-26 phase windows switch to the authored spawn profiles.
+
 func test_route_phase_profiles_define_expected_spacing_ranges_and_weights() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -204,6 +216,8 @@ func test_route_phase_profiles_define_expected_spacing_ranges_and_weights() -> v
 	)
 
 
+## Verifies seeded spawn plan advance uses rolled lane and type metadata.
+
 func test_seeded_spawn_plan_advance_uses_rolled_lane_and_type_metadata() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -220,6 +234,8 @@ func test_seeded_spawn_plan_advance_uses_rolled_lane_and_type_metadata() -> void
 	assert_has(HazardSpawnerType.LANE_X_POSITIONS, hazard.position.x)
 	assert_eq(hazard.texture, spawner._get_hazard_profile(plan.hazard_type)["texture"])
 
+
+## Verifies seeded spawn rolls keep spacing inside band ranges.
 
 func test_seeded_spawn_rolls_keep_spacing_inside_band_ranges() -> void:
 	var spawner := _create_seeded_spawner()
@@ -244,6 +260,7 @@ func test_seeded_spawn_rolls_keep_spacing_inside_band_ranges() -> void:
 
 
 ## Verifies the final stretch keeps RNG by varying hazard mix, lane use, spacing, and pressure pairs.
+
 func test_final_stretch_when_sampled_then_hazard_order_lane_use_and_spacing_vary() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -280,6 +297,7 @@ func test_final_stretch_when_sampled_then_hazard_order_lane_use_and_spacing_vary
 
 
 ## Verifies the queued spawn plan refreshes as soon as the run enters the final stretch.
+
 func test_final_stretch_when_phase_changes_then_spawn_plan_resets_to_finale_profile() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -300,6 +318,7 @@ func test_final_stretch_when_phase_changes_then_spawn_plan_resets_to_finale_prof
 
 
 ## Verifies the final stretch stops spawning before the finish and preserves a clear runway.
+
 func test_final_stretch_when_route_remaining_distance_reaches_release_window_then_spawning_stops() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -345,6 +364,8 @@ func test_final_stretch_when_route_remaining_distance_reaches_release_window_the
 	assert_eq(spawner._get_route_phase(0.98), spawner.ROUTE_PHASE_FINAL_STRETCH)
 
 
+## Verifies seeded rolls randomize lane selection across seven lanes.
+
 func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -362,6 +383,7 @@ func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
 
 
 ## Verifies the opener phases bias hazards toward the center lanes so idle center play is taught to dodge.
+
 func test_opening_phases_when_sampled_then_lane_selection_stays_center_biased() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -384,6 +406,7 @@ func test_opening_phases_when_sampled_then_lane_selection_stays_center_biased() 
 
 
 ## Verifies pressure pairs only appear in the phases that author them.
+
 func test_route_phase_pressure_pairs_follow_the_authoring_rules() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -430,6 +453,8 @@ func test_route_phase_pressure_pairs_follow_the_authoring_rules() -> void:
 	assert_true(clutter_pressure_pair_count > 0)
 
 
+## Verifies spawned static hazards only use allowed lane center x positions.
+
 func test_spawned_static_hazards_only_use_allowed_lane_center_x_positions() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -442,6 +467,7 @@ func test_spawned_static_hazards_only_use_allowed_lane_center_x_positions() -> v
 
 
 ## Confirms moving hazards stay out of warm-up and show up once the first trouble phase starts.
+
 func test_route_phase_when_sampled_then_moving_hazards_start_after_warm_up() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -466,6 +492,8 @@ func test_route_phase_when_sampled_then_moving_hazards_start_after_warm_up() -> 
 	assert_true(reset_counts[&"tumbleweed"] > 0)
 
 
+## Verifies static hazard types use distinct readable sprites.
+
 func test_static_hazard_types_use_distinct_readable_sprites() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -486,6 +514,7 @@ func test_static_hazard_types_use_distinct_readable_sprites() -> void:
 
 
 ## Confirms livestock hazards use the exported jackalope sheet as a looping animation.
+
 func test_livestock_hazard_uses_animated_sheet_frames() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -513,6 +542,7 @@ func test_livestock_hazard_uses_animated_sheet_frames() -> void:
 
 
 ## Confirms multiple spawned jackalopes all use the final readable playback cadence.
+
 func test_livestock_hazards_when_spawned_multiple_times_then_play_at_the_final_readable_speed() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -537,6 +567,7 @@ func test_livestock_hazards_when_spawned_multiple_times_then_play_at_the_final_r
 
 
 ## Confirms the jackalope keeps its lane target centered on the visible animal instead of the raw sheet frame.
+
 func test_livestock_hazard_uses_directional_crossing_offset_to_center_the_body_on_the_lane() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -567,6 +598,7 @@ func test_livestock_hazard_uses_directional_crossing_offset_to_center_the_body_o
 
 
 ## Confirms the livestock hazard uses a tighter collision footprint that matches the visible jackalope body.
+
 func test_livestock_hazard_uses_tighter_collision_size_matching_the_body() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -578,6 +610,7 @@ func test_livestock_hazard_uses_tighter_collision_size_matching_the_body() -> vo
 
 
 ## Verifies livestock crosses toward the road and cleans itself up after leaving the playable area.
+
 func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -603,6 +636,7 @@ func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen
 
 
 ## Verifies tumbleweeds drift laterally across lanes instead of only falling straight down.
+
 func test_tumbleweed_when_spawned_then_drifts_sideways_toward_a_future_lane_target() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -625,6 +659,7 @@ func test_tumbleweed_when_spawned_then_drifts_sideways_toward_a_future_lane_targ
 
 
 ## Verifies tumbleweeds rotate in the same signed direction as their drift and scale with travel distance.
+
 func test_tumbleweed_when_moving_then_rotation_matches_scroll_scaled_drift_speed() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -643,6 +678,7 @@ func test_tumbleweed_when_moving_then_rotation_matches_scroll_scaled_drift_speed
 
 
 ## Verifies tumbleweeds roll with varying lateral speeds instead of one fixed drift rate.
+
 func test_tumbleweed_when_sampled_then_drift_speed_ranges_from_slow_to_fast() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -663,6 +699,7 @@ func test_tumbleweed_when_sampled_then_drift_speed_ranges_from_slow_to_fast() ->
 
 
 ## Verifies tumbleweeds get a small visual bounce without changing their gameplay position.
+
 func test_tumbleweed_when_moving_then_sprite_offset_bounces_within_configured_amplitude() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -682,6 +719,7 @@ func test_tumbleweed_when_moving_then_sprite_offset_bounces_within_configured_am
 
 
 ## Verifies livestock enters from off-road so its crossing reads as a full surprise pass.
+
 func test_livestock_when_spawned_then_starts_offroad_before_crossing_through_target_lane() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -695,6 +733,8 @@ func test_livestock_when_spawned_then_starts_offroad_before_crossing_through_tar
 	assert_true(absf(livestock.position.x) > absf(target_lane_x))
 	assert_false(HazardSpawnerType.LANE_X_POSITIONS.has(target_lane_x))
 
+
+## Verifies advance removes hazards after they leave the screen.
 
 func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
 	var spawner := _create_seeded_spawner()
@@ -711,6 +751,8 @@ func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
 
 	assert_eq(spawner.get_child_count(), 0)
 
+
+## Verifies collect collisions reports profile damage for intersecting hazard.
 
 func test_collect_collisions_reports_profile_damage_for_intersecting_hazard() -> void:
 	var spawner := _create_seeded_spawner()
@@ -731,6 +773,7 @@ func test_collect_collisions_reports_profile_damage_for_intersecting_hazard() ->
 
 
 ## Verifies the lighter phases still keep potholes more common than rocks.
+
 func test_spawn_bands_when_sampled_many_times_then_potholes_outnumber_rocks() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -749,6 +792,7 @@ func test_spawn_bands_when_sampled_many_times_then_potholes_outnumber_rocks() ->
 
 
 ## Verifies the clutter beat makes rocks the dominant blocker instead of a rarity.
+
 func test_clutter_beat_when_sampled_many_times_then_rocks_outnumber_potholes() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -760,6 +804,7 @@ func test_clutter_beat_when_sampled_many_times_then_rocks_outnumber_potholes() -
 
 
 ## Verifies each authored route phase produces the intended hazard mix.
+
 func test_spawn_usage_when_sampled_across_route_phases_then_roles_follow_the_intended_mix() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -808,6 +853,7 @@ func test_spawn_usage_when_sampled_across_route_phases_then_roles_follow_the_int
 
 
 ## Verifies pressure pairs mix static and timing roles everywhere the authored profiles allow them.
+
 func test_route_phase_when_sampled_then_pressure_pairs_mix_static_and_timing_roles() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -849,6 +895,8 @@ func test_route_phase_when_sampled_then_pressure_pairs_mix_static_and_timing_rol
 	assert_true(final_stretch_pressure_pair_count > 0)
 
 
+## Verifies hazard profiles when comparing pothole and rock then rock is the punishing hit.
+
 func test_hazard_profiles_when_comparing_pothole_and_rock_then_rock_is_the_punishing_hit() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
@@ -860,6 +908,7 @@ func test_hazard_profiles_when_comparing_pothole_and_rock_then_rock_is_the_punis
 	assert_true(rock_profile["cargo_damage"] > pothole_profile["cargo_damage"])
 
 
+## Helper for sample primary hazard counts.
 func _sample_primary_hazard_counts(
 	spawner: Node,
 	progress_ratio: float,

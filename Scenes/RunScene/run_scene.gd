@@ -1,24 +1,33 @@
 extends Node2D
 
+## Owns the run scene composition and coordinates the extracted runtime systems.
+
+
+# Signals
+
 signal restart_requested
 signal return_to_title_requested
 
-const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
-const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
-const RunDirectorType := preload("res://Systems/RunDirector/run_director.gd")
-const RunHazardResolverType := preload("res://Systems/RunHazardResolver/run_hazard_resolver.gd")
-const RunPresentationType := preload("res://Systems/RunPresentation/run_presentation.gd")
-const RunAudioPresenterType := preload("res://Systems/RunAudioPresenter/run_audio_presenter.gd")
-const RunUiPresenterType := preload("res://Systems/RunUiPresenter/run_ui_presenter.gd")
-const RunStateType := preload("res://Systems/RunState/run_state.gd")
-const BACKGROUND_MUSIC := preload("res://Assets/Audio/We Ride At Dawn! (loop).ogg")
-const CARRIAGE_SHEET_TEXTURE := preload("res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png")
+
+# Constants
+const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
+const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
+const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_PATH)
+const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
+const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_PATH)
+const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+const RunUiPresenterType := preload(ProjectPaths.RUN_UI_PRESENTER_SCRIPT_PATH)
+
+
+const BACKGROUND_MUSIC := preload(AssetPaths.RUN_BACKGROUND_MUSIC_AUDIO_PATH)
+const CARRIAGE_SHEET_TEXTURE := preload(AssetPaths.CARRIAGE_SHEET_TEXTURE_PATH)
 const CARRIAGE_SHEET_FRAMES: Array[Rect2i] = [
 	Rect2i(0, 0, 32, 64),
 	Rect2i(32, 0, 32, 64),
 ]
 const CARRIAGE_ANIMATION_FPS := 4.0
-const HORSE_SHEET_TEXTURE := preload("res://Assets/Tilesets/Horse/Horse-16x48-Sheet.png")
+const HORSE_SHEET_TEXTURE := preload(AssetPaths.HORSE_SHEET_TEXTURE_PATH)
 const HORSE_SHEET_FRAMES: Array[Rect2i] = [
 	Rect2i(0, 0, 16, 48),
 	Rect2i(16, 0, 16, 48),
@@ -26,31 +35,31 @@ const HORSE_SHEET_FRAMES: Array[Rect2i] = [
 	Rect2i(48, 0, 16, 48),
 ]
 const HORSE_ANIMATION_FPS := 4.0
-const DESERT_TEXTURE := preload("res://Assets/Tilesets/Desert/Desert-3-32x32.png")
-const ROAD_TEXTURE := preload("res://Assets/Tilesets/Road/Road-4-tiled-32x32.png")
+const DESERT_TEXTURE := preload(AssetPaths.DESERT_TEXTURE_PATH)
+const ROAD_TEXTURE := preload(AssetPaths.ROAD_TEXTURE_PATH)
 const SHRUB_TEXTURES: Array[Texture2D] = [
-	preload("res://Assets/Tilesets/Shrubs/Shrub-1-32x32.png"),
-	preload("res://Assets/Tilesets/Shrubs/Shrub-2-32x32.png"),
-	preload("res://Assets/Tilesets/Shrubs/Shrub-3-32x32.png"),
-	preload("res://Assets/Tilesets/Shrubs/Shrub-4-32x32.png"),
+	preload(AssetPaths.SHRUB_1_TEXTURE_PATH),
+	preload(AssetPaths.SHRUB_2_TEXTURE_PATH),
+	preload(AssetPaths.SHRUB_3_TEXTURE_PATH),
+	preload(AssetPaths.SHRUB_4_TEXTURE_PATH),
 ]
-const SIGN_TEXTURE := preload("res://Assets/Tilesets/Sign/Sign-32x48.png")
-const WAGON_LOOP_SOUND := preload("res://Assets/Sfx/Horse-and-Chariot-30-sec-73615.mp3")
-const IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
-const POTHOLE_IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
-const ROCK_IMPACT_SOUND := preload("res://Assets/Sfx/Car-Crash-376874.mp3")
-const TUMBLEWEED_IMPACT_SOUND := preload("res://Assets/Sfx/Tumbleweed-98357.mp3")
-const WHEEL_LOOSE_AMBIENT_SOUND := preload("res://Assets/Sfx/Loose-Wheel-411689.mp3")
-const HORSE_PANIC_AMBIENT_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
-const RECOVERY_STEP_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
-const RECOVERY_SUCCESS_SOUND := preload("res://Assets/Sfx/Recovery-Step-Success-374193.mp3")
-const RECOVERY_FAIL_SOUND := preload("res://Assets/Sfx/Recovery-Step-Failure-437420.mp3")
-const ARROW_FONT = preload("res://Assets/Fonts/kenney_input_keyboard_mouse.ttf")
-const PAUSE_TOGGLE_SOUND := preload("res://Assets/Sfx/Pause-Open-Close-333828.mp3")
-const WIN_STINGER := preload("res://Assets/Sfx/Win-Fanfare-368589.mp3")
-const COLLAPSE_STINGER := preload("res://Assets/Sfx/Wagon-Collapse-379298.mp3")
-const HORSE_SPOOK_SOUND := preload("res://Assets/Sfx/Horse-Panic-261131.mp3")
-const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
+const SIGN_TEXTURE := preload(AssetPaths.SIGN_TEXTURE_PATH)
+const WAGON_LOOP_SOUND := preload(AssetPaths.WAGON_LOOP_SOUND_PATH)
+const IMPACT_SOUND := preload(AssetPaths.IMPACT_SOUND_PATH)
+const POTHOLE_IMPACT_SOUND := preload(AssetPaths.IMPACT_SOUND_PATH)
+const ROCK_IMPACT_SOUND := preload(AssetPaths.IMPACT_SOUND_PATH)
+const TUMBLEWEED_IMPACT_SOUND := preload(AssetPaths.TUMBLEWEED_IMPACT_SOUND_PATH)
+const WHEEL_LOOSE_AMBIENT_SOUND := preload(AssetPaths.WHEEL_LOOSE_AMBIENT_SOUND_PATH)
+const HORSE_PANIC_AMBIENT_SOUND := preload(AssetPaths.HORSE_PANIC_AMBIENT_SOUND_PATH)
+const RECOVERY_STEP_SOUND := preload(AssetPaths.UI_CLICK_SOUND_PATH)
+const RECOVERY_SUCCESS_SOUND := preload(AssetPaths.RECOVERY_SUCCESS_SOUND_PATH)
+const RECOVERY_FAIL_SOUND := preload(AssetPaths.RECOVERY_FAIL_SOUND_PATH)
+const ARROW_FONT = preload(AssetPaths.ARROW_FONT_PATH)
+const PAUSE_TOGGLE_SOUND := preload(AssetPaths.PAUSE_TOGGLE_SOUND_PATH)
+const WIN_STINGER := preload(AssetPaths.WIN_STINGER_SOUND_PATH)
+const COLLAPSE_STINGER := preload(AssetPaths.COLLAPSE_STINGER_SOUND_PATH)
+const HORSE_SPOOK_SOUND := preload(AssetPaths.HORSE_PANIC_AMBIENT_SOUND_PATH)
+const UI_CLICK_SOUND := preload(AssetPaths.UI_CLICK_SOUND_PATH)
 const STEER_ACTION_NEGATIVE := "steer_left"
 const STEER_ACTION_POSITIVE := "steer_right"
 const PAUSE_ACTION := "pause_run"
@@ -148,6 +157,9 @@ const ONBOARDING_HINT := RunUiPresenterType.ONBOARDING_HINT
 const WAGON_LOOP_START_SECONDS := 5.0
 const WAGON_LOOP_END_SECONDS := 10.0
 
+
+# Private Fields
+
 var _run_state: RunStateType
 var _run_presentation: RunPresentationType = RunPresentationType.new()
 var _run_audio_presenter: RunAudioPresenterType = RunAudioPresenterType.new()
@@ -163,67 +175,195 @@ var _phase_callout_remaining := 0.0
 var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
 
-@onready var _backdrop: Sprite2D = $World/Backdrop
-@onready var _road: Sprite2D = $World/Road
-@onready var _camera: Camera2D = %Camera
-@onready var _hazard_spawner: HazardSpawnerType = %HazardSpawner
-@onready var _scroll_root: Node2D = %ScrollRoot
-@onready var _scroll_segment_a: Node2D = %ScrollSegmentA
-@onready var _scroll_segment_b: Node2D = %ScrollSegmentB
-@onready var _wagon: Polygon2D = %Wagon
-@onready var _wagon_shadow: AnimatedSprite2D = $World/Wagon/Shadow
-@onready var _wagon_sprite: AnimatedSprite2D = $World/Wagon/CarriageSprite
-@onready var _horse_left_sprite: AnimatedSprite2D = $World/Wagon/HorseTeam/HorseLeft
-@onready var _horse_right_sprite: AnimatedSprite2D = $World/Wagon/HorseTeam/HorseRight
-@onready var _dust_trail: CPUParticles2D = %DustTrail
-@onready var _health_bar: ProgressBar = %HealthBar
-@onready var _health_label: Label = %HealthLabel
-@onready var _distance_bar: ProgressBar = %DistanceBar
-@onready var _distance_band_markers: Control = %DistanceBandMarkers
-@onready var _cargo_label: Label = %CargoLabel
-@onready var _bonus_callout_panel: Control = %BonusCalloutPanel
-@onready var _bonus_callout_label: Label = %BonusCalloutLabel
-@onready var _phase_callout_panel: PanelContainer = %PhaseCalloutPanel
-@onready var _phase_callout_label: Label = %PhaseCalloutLabel
-@onready var _touch_layer: CanvasLayer = %TouchLayer
-@onready var _touch_left_button: Button = %TouchLeft
-@onready var _touch_right_button: Button = %TouchRight
-@onready var _touch_pause_button: Button = %TouchPause
-@onready var _onboarding_panel: PanelContainer = %OnboardingPanel
-@onready var _onboarding_title: Label = %OnboardingTitle
-@onready var _onboarding_body: Label = %OnboardingBody
-@onready var _onboarding_hint: Label = %OnboardingHint
-@onready var _pause_overlay: Control = %PauseOverlay
-@onready var _pause_panel: PanelContainer = %PausePanel
-@onready var _pause_resume_button: Button = %PauseResumeButton
-@onready var _pause_restart_button: Button = %PauseRestartButton
-@onready var _pause_return_button: Button = %PauseReturnButton
-@onready var _recovery_panel: PanelContainer = %RecoveryPanel
-@onready var _recovery_title: Label = %RecoveryTitle
-@onready var _recovery_hint: Label = %RecoveryHint
-@onready var _recovery_steps: HBoxContainer = %RecoverySteps
-@onready var _result_panel: PanelContainer = %ResultPanel
-@onready var _result_title: Label = %ResultTitle
-@onready var _result_summary: Label = %ResultSummary
-@onready var _result_stats: Label = %ResultStats
-@onready var _result_restart_button: Button = $ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton
-@onready var _result_return_button: Button = $ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton
-@onready var _music_player: AudioStreamPlayer = %MusicPlayer
-@onready var _wagon_loop_player: AudioStreamPlayer = %WagonLoopPlayer
-@onready var _impact_player: AudioStreamPlayer = %ImpactPlayer
-@onready var _pothole_impact_player: AudioStreamPlayer = %PotholeImpactPlayer
-@onready var _rock_impact_player: AudioStreamPlayer = %RockImpactPlayer
-@onready var _tumbleweed_impact_player: AudioStreamPlayer = %TumbleweedImpactPlayer
-@onready var _wheel_loose_ambient_player: AudioStreamPlayer = %WheelLooseAmbientPlayer
-@onready var _horse_panic_ambient_player: AudioStreamPlayer = %HorsePanicAmbientPlayer
-@onready var _recovery_step_player: AudioStreamPlayer = %RecoveryStepPlayer
-@onready var _recovery_success_player: AudioStreamPlayer = %RecoverySuccessPlayer
-@onready var _recovery_fail_player: AudioStreamPlayer = %RecoveryFailPlayer
-@onready var _pause_toggle_player: AudioStreamPlayer = %PauseTogglePlayer
-@onready var _failure_player: AudioStreamPlayer = %FailurePlayer
-@onready var _result_player: AudioStreamPlayer = %ResultPlayer
-@onready var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
 
+# Private Fields: OnReady
+
+@onready
+var _backdrop: Sprite2D = $World/Backdrop
+
+@onready
+var _road: Sprite2D = $World/Road
+
+@onready
+var _camera: Camera2D = %Camera
+
+@onready
+var _hazard_spawner: HazardSpawnerType = %HazardSpawner
+
+@onready
+var _scroll_root: Node2D = %ScrollRoot
+
+@onready
+var _scroll_segment_a: Node2D = %ScrollSegmentA
+
+@onready
+var _scroll_segment_b: Node2D = %ScrollSegmentB
+
+@onready
+var _wagon: Polygon2D = %Wagon
+
+@onready
+var _wagon_shadow: AnimatedSprite2D = $World/Wagon/Shadow
+
+@onready
+var _wagon_sprite: AnimatedSprite2D = $World/Wagon/CarriageSprite
+
+@onready
+var _horse_left_sprite: AnimatedSprite2D = $World/Wagon/HorseTeam/HorseLeft
+
+@onready
+var _horse_right_sprite: AnimatedSprite2D = $World/Wagon/HorseTeam/HorseRight
+
+@onready
+var _dust_trail: CPUParticles2D = %DustTrail
+
+@onready
+var _health_bar: ProgressBar = %HealthBar
+
+@onready
+var _health_label: Label = %HealthLabel
+
+@onready
+var _distance_bar: ProgressBar = %DistanceBar
+
+@onready
+var _distance_band_markers: Control = %DistanceBandMarkers
+
+@onready
+var _cargo_label: Label = %CargoLabel
+
+@onready
+var _bonus_callout_panel: Control = %BonusCalloutPanel
+
+@onready
+var _bonus_callout_label: Label = %BonusCalloutLabel
+
+@onready
+var _phase_callout_panel: PanelContainer = %PhaseCalloutPanel
+
+@onready
+var _phase_callout_label: Label = %PhaseCalloutLabel
+
+@onready
+var _touch_layer: CanvasLayer = %TouchLayer
+
+@onready
+var _touch_left_button: Button = %TouchLeft
+
+@onready
+var _touch_right_button: Button = %TouchRight
+
+@onready
+var _touch_pause_button: Button = %TouchPause
+
+@onready
+var _onboarding_panel: PanelContainer = %OnboardingPanel
+
+@onready
+var _onboarding_title: Label = %OnboardingTitle
+
+@onready
+var _onboarding_body: Label = %OnboardingBody
+
+@onready
+var _onboarding_hint: Label = %OnboardingHint
+
+@onready
+var _pause_overlay: Control = %PauseOverlay
+
+@onready
+var _pause_panel: PanelContainer = %PausePanel
+
+@onready
+var _pause_resume_button: Button = %PauseResumeButton
+
+@onready
+var _pause_restart_button: Button = %PauseRestartButton
+
+@onready
+var _pause_return_button: Button = %PauseReturnButton
+
+@onready
+var _recovery_panel: PanelContainer = %RecoveryPanel
+
+@onready
+var _recovery_title: Label = %RecoveryTitle
+
+@onready
+var _recovery_hint: Label = %RecoveryHint
+
+@onready
+var _recovery_steps: HBoxContainer = %RecoverySteps
+
+@onready
+var _result_panel: PanelContainer = %ResultPanel
+
+@onready
+var _result_title: Label = %ResultTitle
+
+@onready
+var _result_summary: Label = %ResultSummary
+
+@onready
+var _result_stats: Label = %ResultStats
+
+@onready
+var _result_restart_button: Button = (
+	$ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton
+)
+
+@onready
+var _result_return_button: Button = (
+	$ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton
+)
+
+@onready
+var _music_player: AudioStreamPlayer = %MusicPlayer
+
+@onready
+var _wagon_loop_player: AudioStreamPlayer = %WagonLoopPlayer
+
+@onready
+var _impact_player: AudioStreamPlayer = %ImpactPlayer
+
+@onready
+var _pothole_impact_player: AudioStreamPlayer = %PotholeImpactPlayer
+
+@onready
+var _rock_impact_player: AudioStreamPlayer = %RockImpactPlayer
+
+@onready
+var _tumbleweed_impact_player: AudioStreamPlayer = %TumbleweedImpactPlayer
+
+@onready
+var _wheel_loose_ambient_player: AudioStreamPlayer = %WheelLooseAmbientPlayer
+
+@onready
+var _horse_panic_ambient_player: AudioStreamPlayer = %HorsePanicAmbientPlayer
+
+@onready
+var _recovery_step_player: AudioStreamPlayer = %RecoveryStepPlayer
+
+@onready
+var _recovery_success_player: AudioStreamPlayer = %RecoverySuccessPlayer
+
+@onready
+var _recovery_fail_player: AudioStreamPlayer = %RecoveryFailPlayer
+
+@onready
+var _pause_toggle_player: AudioStreamPlayer = %PauseTogglePlayer
+
+@onready
+var _failure_player: AudioStreamPlayer = %FailurePlayer
+
+@onready
+var _result_player: AudioStreamPlayer = %ResultPlayer
+
+@onready
+var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
+
+
+# Public Methods
 
 ## Binds a fresh run state and resets transient scene-only UI flow.
 func setup(run_state: RunStateType) -> void:
@@ -251,6 +391,8 @@ func setup(run_state: RunStateType) -> void:
 	_refresh_touch_controls()
 	_refresh_audio_presentation()
 
+
+# Lifecycle Methods
 
 ## Wires scene-local input, UI, visuals, and audio dependencies.
 func _ready() -> void:
@@ -762,6 +904,8 @@ func _reveal_touch_controls_from_first_touch(event: InputEvent) -> void:
 	_run_ui_presenter.reveal_touch_controls_from_first_touch(event)
 
 
+# Event Handlers
+
 ## Routes pause, onboarding, and recovery input for the run scene.
 func _input(event: InputEvent) -> void:
 	_reveal_touch_controls_from_first_touch(event)
@@ -950,12 +1094,14 @@ func _refresh_failure_ambient_audio() -> void:
 	_run_audio_presenter.refresh_failure_ambient_audio()
 
 
+## Helper for ensure input actions.
 func _ensure_input_actions() -> void:
 	_register_action(STEER_ACTION_NEGATIVE, [KEY_A, KEY_LEFT])
 	_register_action(STEER_ACTION_POSITIVE, [KEY_D, KEY_RIGHT])
 	_register_action(PAUSE_ACTION, [KEY_ESCAPE])
 
 
+## Helper for register action.
 func _register_action(action_name: StringName, keys: Array[int]) -> void:
 	if not InputMap.has_action(action_name):
 		InputMap.add_action(action_name)
@@ -967,6 +1113,7 @@ func _register_action(action_name: StringName, keys: Array[int]) -> void:
 			InputMap.action_add_event(action_name, event)
 
 
+## Helper for set process mode recursive.
 func _set_process_mode_recursive(node: Node, mode: ProcessMode) -> void:
 	if node == null:
 		return
@@ -1081,14 +1228,17 @@ func _release_touch_steer_actions() -> void:
 	_parse_touch_action_event(STEER_ACTION_POSITIVE, false)
 
 
+## Helper for get recovery title.
 func _get_recovery_title(failure_type: StringName) -> String:
 	return _run_ui_presenter.get_recovery_title(failure_type)
 
 
+## Helper for get recovery hint.
 func _get_recovery_hint(failure_type: StringName) -> String:
 	return _run_ui_presenter.get_recovery_hint(failure_type)
 
 
+## Helper for apply recovery failure penalty.
 func _apply_recovery_failure_penalty() -> void:
 	_run_director.apply_recovery_failure_penalty()
 	_run_audio_presenter.play_recovery_fail()
@@ -1111,10 +1261,12 @@ func _build_recovery_step(index: int) -> PanelContainer:
 	return _run_ui_presenter.build_recovery_step(index)
 
 
+## Helper for get recovery step color.
 func _get_recovery_step_color(index: int) -> Color:
 	return _run_ui_presenter.get_recovery_step_color(index)
 
 
+## Helper for format recovery action.
 func _format_recovery_action(action_name: StringName) -> String:
 	return _run_ui_presenter.format_recovery_action(action_name)
 
@@ -1270,4 +1422,3 @@ func _on_touch_pause_button_pressed() -> void:
 	if not _should_show_touch_controls():
 		return
 	_set_pause_state(true)
-

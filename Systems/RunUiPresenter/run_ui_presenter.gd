@@ -1,7 +1,11 @@
-class_name RunUiPresenter
 extends RefCounted
 
 ## Owns run-scene HUD, onboarding, recovery, pause/result panels, and touch-control visibility.
+
+
+# Constants
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+
 
 const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
 const ONBOARDING_BODY := (
@@ -40,7 +44,7 @@ var touchscreen_available_override := false
 
 # Private Fields
 
-var _run_state: RunState
+var _run_state: RunStateType
 var _health_bar: ProgressBar
 var _health_label: Label
 var _distance_bar: ProgressBar
@@ -72,9 +76,11 @@ var _result_return_button: Button
 var _arrow_font: Font
 
 
+# Public Methods
+
 ## Binds the scene-owned UI nodes and shared resources used by runtime UI presentation.
 func configure_scene_nodes(
-	run_state: RunState,
+	run_state: RunStateType,
 	health_bar: ProgressBar,
 	health_label: Label,
 	distance_bar: ProgressBar,
@@ -138,7 +144,7 @@ func configure_scene_nodes(
 
 
 ## Binds the active run state so runtime UI follows the current run.
-func bind_run_state(run_state: RunState) -> void:
+func bind_run_state(run_state: RunStateType) -> void:
 	_run_state = run_state
 
 
@@ -206,7 +212,7 @@ func refresh_recovery_prompt() -> void:
 		return
 
 	var has_recovery := (
-		_run_state.result == RunState.RESULT_IN_PROGRESS
+		_run_state.result == RunStateType.RESULT_IN_PROGRESS
 		and not pause_menu_open
 		and _run_state.has_active_recovery_sequence()
 	)
@@ -235,7 +241,7 @@ func refresh_onboarding_prompt() -> void:
 
 	var is_visible := (
 		_run_state != null
-		and _run_state.result == RunState.RESULT_IN_PROGRESS
+		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
 		and onboarding_active
 		and not pause_menu_open
 	)
@@ -317,7 +323,7 @@ func refresh_pause_menu() -> void:
 	if _pause_overlay == null or _pause_panel == null:
 		return
 
-	var is_visible := _run_state != null and _run_state.result == RunState.RESULT_IN_PROGRESS and pause_menu_open
+	var is_visible := _run_state != null and _run_state.result == RunStateType.RESULT_IN_PROGRESS and pause_menu_open
 	_pause_overlay.visible = is_visible
 	_pause_panel.visible = is_visible
 	if (
@@ -338,16 +344,16 @@ func refresh_pause_menu() -> void:
 func refresh_result_screen(best_run_summary: String) -> void:
 	if _result_panel == null or _result_title == null or _result_summary == null or _result_stats == null:
 		return
-	if _run_state == null or _run_state.result == RunState.RESULT_IN_PROGRESS:
+	if _run_state == null or _run_state.result == RunStateType.RESULT_IN_PROGRESS:
 		_result_panel.visible = false
 		_result_summary.visible = false
 		return
 
 	_result_panel.visible = true
 	match _run_state.result:
-		RunState.RESULT_SUCCESS:
+		RunStateType.RESULT_SUCCESS:
 			_result_title.text = "Delivered to Dust Gulch"
-		RunState.RESULT_COLLAPSED:
+		RunStateType.RESULT_COLLAPSED:
 			_result_title.text = "Wagon Collapsed"
 		_:
 			_result_title.text = "Run Complete"
@@ -405,7 +411,7 @@ func refresh_touch_controls() -> void:
 func set_pause_state(paused: bool) -> bool:
 	if _run_state == null:
 		return false
-	if _run_state.result != RunState.RESULT_IN_PROGRESS:
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		paused = false
 
 	var was_paused := pause_menu_open
@@ -418,7 +424,7 @@ func should_show_touch_controls() -> bool:
 	return (
 		touch_controls_enabled_for_runtime
 		and _run_state != null
-		and _run_state.result == RunState.RESULT_IN_PROGRESS
+		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
 		and not pause_menu_open
 	)
 
@@ -575,6 +581,8 @@ func focus_default_result_button() -> void:
 		return
 	_result_restart_button.grab_focus()
 
+
+# Private Methods
 
 ## Enables touch controls automatically for native mobile and touch-capable mobile web runtimes.
 func _refresh_touch_controls_runtime_state() -> void:

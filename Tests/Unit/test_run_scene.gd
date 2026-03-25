@@ -1,14 +1,21 @@
 extends GutTest
 
-const RUN_SCENE := preload("res://Scenes/RunScene/RunScene.tscn")
-const LIVESTOCK_TEXTURE := preload("res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png")
-const HazardSpawnerType := preload("res://Systems/HazardSpawner/hazard_spawner.gd")
-const RecoverySequenceGeneratorType := preload("res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd")
-const RunAudioPresenterType := preload("res://Systems/RunAudioPresenter/run_audio_presenter.gd")
-const RunPresentationType := preload("res://Systems/RunPresentation/run_presentation.gd")
-const RunUiPresenterType := preload("res://Systems/RunUiPresenter/run_ui_presenter.gd")
-const RunStateType := preload("res://Systems/RunState/run_state.gd")
-const TEST_BEST_RUN_SAVE_PATH := "user://dg30_test_run_scene_best_run.cfg"
+# Constants
+const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
+const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
+const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_PATH)
+const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
+const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_PATH)
+const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+const RunUiPresenterType := preload(ProjectPaths.RUN_UI_PRESENTER_SCRIPT_PATH)
+
+
+const RUN_SCENE := preload(ProjectPaths.RUN_SCENE_PATH)
+const LIVESTOCK_TEXTURE := preload(AssetPaths.LIVESTOCK_TEXTURE_PATH)
+const TEST_BEST_RUN_SAVE_PATH := SavePaths.TEST_RUN_SCENE_BEST_RUN_SAVE_PATH
+# Public Methods
+
 
 
 ## Clears the scene-level best-run fixture before each test uses the override save path.
@@ -19,6 +26,8 @@ func before_each() -> void:
 ## Clears the scene-level best-run fixture after each test completes.
 func after_each() -> void:
 	_delete_test_best_run_file()
+# Private Methods
+
 
 
 ## Sends a keyboard key press and release through the input pipeline for focus and menu tests.
@@ -38,6 +47,7 @@ func _send_key_input(keycode_value: Key) -> void:
 	await wait_process_frames(1)
 
 
+## Dismisses onboarding through the same steer-input path a player uses.
 func _dismiss_onboarding(scene: Node) -> void:
 	var dismiss_event := InputEventAction.new()
 	dismiss_event.action = &"steer_left"
@@ -45,6 +55,7 @@ func _dismiss_onboarding(scene: Node) -> void:
 	scene._input(dismiss_event)
 
 
+## Binds a run state and dismisses onboarding so the scene enters active gameplay.
 func _setup_active_run(scene: Node, state: RunStateType) -> void:
 	scene.setup(state)
 	_dismiss_onboarding(scene)
@@ -58,13 +69,13 @@ func _setup_active_run_at_progress(scene: Node, state: RunStateType, progress_ra
 
 
 ## Returns the extracted run director bound to the active test scene.
-func _get_run_director(scene: Node) -> RunDirector:
-	return scene._run_director as RunDirector
+func _get_run_director(scene: Node) -> RunDirectorType:
+	return scene._run_director as RunDirectorType
 
 
 ## Returns the extracted hazard resolver bound to the active test scene.
-func _get_run_hazard_resolver(scene: Node) -> RunHazardResolver:
-	return scene._run_hazard_resolver as RunHazardResolver
+func _get_run_hazard_resolver(scene: Node) -> RunHazardResolverType:
+	return scene._run_hazard_resolver as RunHazardResolverType
 
 
 ## Returns the extracted presentation owner bound to the active test scene.
@@ -80,9 +91,12 @@ func _get_run_audio_presenter(scene: Node) -> RunAudioPresenterType:
 ## Returns the extracted UI presenter bound to the active test scene.
 func _get_run_ui_presenter(scene: Node) -> RunUiPresenterType:
 	return scene._run_ui_presenter as RunUiPresenterType
+# Public Methods
+
 
 
 ## Confirms the route-phase callout is anchored as a small top-center overlay.
+
 func test_route_phase_callout_panel_uses_top_center_overlay_layout() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -134,6 +148,8 @@ func _assert_phase_callout_for_transition(
 	assert_eq(phase_callout_label.text, "")
 
 
+## Verifies route phase when transitioning from warm up then first trouble callout appears.
+
 func test_route_phase_when_transitioning_from_warm_up_then_first_trouble_callout_appears() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -142,6 +158,8 @@ func test_route_phase_when_transitioning_from_warm_up_then_first_trouble_callout
 	var state := RunStateType.new()
 	_assert_phase_callout_for_transition(scene, state, 0.19, 0.05, "First Trouble")
 
+
+## Verifies route phase when transitioning from first trouble then crossing beats callout appears.
 
 func test_route_phase_when_transitioning_from_first_trouble_then_crossing_beats_callout_appears() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -152,6 +170,8 @@ func test_route_phase_when_transitioning_from_first_trouble_then_crossing_beats_
 	_assert_phase_callout_for_transition(scene, state, 0.44, 0.05, "Crossing Beat")
 
 
+## Verifies route phase when transitioning from crossing then clutter callout appears.
+
 func test_route_phase_when_transitioning_from_crossing_then_clutter_callout_appears() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -161,6 +181,8 @@ func test_route_phase_when_transitioning_from_crossing_then_clutter_callout_appe
 	_assert_phase_callout_for_transition(scene, state, 0.59, 0.05, "Clutter Beat")
 
 
+## Verifies route phase when transitioning from clutter then reset callout appears.
+
 func test_route_phase_when_transitioning_from_clutter_then_reset_callout_appears() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -169,6 +191,8 @@ func test_route_phase_when_transitioning_from_clutter_then_reset_callout_appears
 	var state := RunStateType.new()
 	_assert_phase_callout_for_transition(scene, state, 0.79, 0.05, "Reset Before Finale")
 
+
+## Verifies route phase when transitioning from reset then final stretch callout appears.
 
 func test_route_phase_when_transitioning_from_reset_then_final_stretch_callout_appears() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -180,6 +204,7 @@ func test_route_phase_when_transitioning_from_reset_then_final_stretch_callout_a
 
 
 ## Verifies the finale state takes over at 0.88 progress and clears any armed timer bad luck.
+
 func test_route_phase_when_progress_enters_final_stretch_then_bad_luck_is_disabled() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -213,6 +238,7 @@ func test_route_phase_when_progress_enters_final_stretch_then_bad_luck_is_disabl
 
 
 ## Verifies the run scene passes remaining distance into the spawner so the release runway can clear.
+
 func test_final_stretch_when_route_reaches_release_window_then_spawner_holds_clear_runway() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -252,6 +278,8 @@ func test_final_stretch_when_route_reaches_release_window_then_spawner_holds_cle
 	assert_eq(scene._hazard_spawner._get_route_phase(0.98), scene._hazard_spawner.ROUTE_PHASE_FINAL_STRETCH)
 
 
+## Verifies dismissing onboarding when run starts then warm up callout appears.
+
 func test_dismissing_onboarding_when_run_starts_then_warm_up_callout_appears() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -287,6 +315,7 @@ func _configure_mobile_web_touch_runtime(scene: Node, touchscreen_available: boo
 
 
 ## Confirms RunScene binds the extracted rule owners without keeping duplicate route-state fields.
+
 func test_setup_binds_run_rule_systems_without_scene_route_state_mirrors() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -312,6 +341,7 @@ func test_setup_binds_run_rule_systems_without_scene_route_state_mirrors() -> vo
 
 
 ## Confirms the run scene delegates scroll and impact presentation state to the extracted presentation owner.
+
 func test_setup_binds_run_presentation_without_scene_scroll_or_impact_mirrors() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -337,6 +367,7 @@ func test_setup_binds_run_presentation_without_scene_scroll_or_impact_mirrors() 
 
 
 ## Confirms the run scene delegates transient UI state to the extracted UI presenter.
+
 func test_setup_binds_run_ui_presenter_without_scene_ui_state_mirrors() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -367,6 +398,7 @@ func test_setup_binds_run_ui_presenter_without_scene_ui_state_mirrors() -> void:
 
 
 ## Confirms the run scene delegates audio transition state to the extracted audio presenter.
+
 func test_setup_binds_run_audio_presenter_without_scene_audio_state_mirrors() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -390,12 +422,14 @@ func test_setup_binds_run_audio_presenter_without_scene_audio_state_mirrors() ->
 	assert_false(property_names.has("_tumbleweed_impact_serial"))
 
 
+## Rebuilds the expected seeded recovery sequence for the current progress band.
 func _build_expected_recovery_sequence(scene: Node, progress: float, seed: int) -> Array[StringName]:
 	var generator := RecoverySequenceGeneratorType.new()
 	generator.set_seed(seed)
 	return generator.generate_sequence(progress, scene.RECOVERY_PROMPT_POOL)
 
 
+## Triggers a seeded failure flow and returns the expected authored recovery sequence.
 func _start_seeded_recovery_sequence(scene: Node, state: RunStateType, seed: int) -> Array[StringName]:
 	scene._recovery_sequence_generator.set_seed(seed)
 	scene._advance_failure_triggers(0.0)
@@ -413,6 +447,7 @@ func _spawn_test_hazard(scene: Node, hazard_type: StringName, lane_index: int = 
 	return hazard
 
 
+## Clicks a control through the same mouse-event path used by the runtime UI.
 func _click_control(control: Control) -> void:
 	var center := control.get_global_rect().get_center()
 
@@ -438,6 +473,8 @@ func _click_control(control: Control) -> void:
 	Input.parse_input_event(release)
 	await wait_process_frames(1)
 
+
+## Verifies setup populates hud labels with run state values.
 
 func test_setup_populates_hud_labels_with_run_state_values() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -468,6 +505,8 @@ func test_setup_populates_hud_labels_with_run_state_values() -> void:
 	assert_false(scene.has_node("%OutcomeLabel"))
 
 
+## Verifies setup shows onboarding panel at run start.
+
 func test_setup_shows_onboarding_panel_at_run_start() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -482,6 +521,8 @@ func test_setup_shows_onboarding_panel_at_run_start() -> void:
 	assert_true(onboarding_panel.visible)
 	assert_eq(onboarding_title.text, scene.ONBOARDING_TITLE)
 
+
+## Verifies onboarding freezes distance and hazard spawning while road scrolls.
 
 func test_onboarding_freezes_distance_and_hazard_spawning_while_road_scrolls() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -500,6 +541,8 @@ func test_onboarding_freezes_distance_and_hazard_spawning_while_road_scrolls() -
 	assert_eq(spawner.get_child_count(), 0)
 	assert_true(_get_run_presentation(scene).scroll_offset > starting_scroll)
 
+
+## Verifies dismissing onboarding with steer input starts normal gameplay.
 
 func test_dismissing_onboarding_with_steer_input_starts_normal_gameplay() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -525,6 +568,7 @@ func test_dismissing_onboarding_with_steer_input_starts_normal_gameplay() -> voi
 
 
 ## Verifies the onboarding overlay can be dismissed using keyboard confirm input alone.
+
 func test_dismissing_onboarding_with_keyboard_confirm_starts_normal_gameplay() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -545,6 +589,8 @@ func test_dismissing_onboarding_with_keyboard_confirm_starts_normal_gameplay() -
 	assert_true(spawner.get_child_count() > 0)
 
 
+## Verifies ready registers steering input actions.
+
 func test_ready_registers_steering_input_actions() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -556,6 +602,7 @@ func test_ready_registers_steering_input_actions() -> void:
 
 
 ## Verifies Escape opens the pause menu and gives the resume button default focus.
+
 func test_pause_menu_when_opened_with_escape_then_resume_button_has_default_focus() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -576,6 +623,7 @@ func test_pause_menu_when_opened_with_escape_then_resume_button_has_default_focu
 
 
 ## Verifies pause-menu keyboard navigation and confirm activate the expected action.
+
 func test_pause_menu_when_open_then_keyboard_navigation_and_restart_confirm_work() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -613,6 +661,7 @@ func test_pause_menu_when_open_then_keyboard_navigation_and_restart_confirm_work
 
 
 ## Verifies the existing cancel input closes the pause menu without needing a mouse click.
+
 func test_pause_menu_when_open_then_escape_closes_it() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -632,6 +681,8 @@ func test_pause_menu_when_open_then_escape_closes_it() -> void:
 	assert_false(pause_overlay.visible)
 	assert_false(pause_panel.visible)
 
+
+## Verifies process moves right and reduces distance.
 
 func test_process_moves_right_and_reduces_distance() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -659,6 +710,8 @@ func test_process_moves_right_and_reduces_distance() -> void:
 	assert_eq(horse_right.position, Vector2(8.0, 0.0))
 
 
+## Verifies process clamps lateral position to road bounds.
+
 func test_process_clamps_lateral_position_to_road_bounds() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -674,6 +727,8 @@ func test_process_clamps_lateral_position_to_road_bounds() -> void:
 
 	assert_eq(state.lateral_position, scene.ROAD_HALF_WIDTH)
 
+
+## Verifies hazard collision reduces health and records last hit type.
 
 func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -700,6 +755,8 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	assert_false(fallback_impact_player.playing)
 
 
+## Verifies rock collision when it hits then it causes the heavier wheel loose punishment.
+
 func test_rock_collision_when_it_hits_then_it_causes_the_heavier_wheel_loose_punishment() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -719,6 +776,8 @@ func test_rock_collision_when_it_hits_then_it_causes_the_heavier_wheel_loose_pun
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
 
+
+## Verifies near miss when hazard passes close without collision then bonus and callout are awarded once.
 
 func test_near_miss_when_hazard_passes_close_without_collision_then_bonus_and_callout_are_awarded_once() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -763,6 +822,8 @@ func test_near_miss_when_hazard_passes_close_without_collision_then_bonus_and_ca
 	assert_false(bonus_callout_panel.visible)
 
 
+## Verifies clean dodge when hazard passes safely then only hazards dodged increments.
+
 func test_clean_dodge_when_hazard_passes_safely_then_only_hazards_dodged_increments() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -782,6 +843,8 @@ func test_clean_dodge_when_hazard_passes_safely_then_only_hazards_dodged_increme
 	assert_eq(state.bonus_score, 0)
 
 
+## Verifies near miss bonus is not awarded for a real collision.
+
 func test_near_miss_bonus_is_not_awarded_for_a_real_collision() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -798,6 +861,8 @@ func test_near_miss_bonus_is_not_awarded_for_a_real_collision() -> void:
 	assert_eq(state.bonus_score, 0)
 	assert_false(bonus_callout_panel.visible)
 
+
+## Verifies near miss bonus is not awarded for side pass then late swerve toward hazard.
 
 func test_near_miss_bonus_is_not_awarded_for_side_pass_then_late_swerve_toward_hazard() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -823,6 +888,7 @@ func test_near_miss_bonus_is_not_awarded_for_side_pass_then_late_swerve_toward_h
 
 
 ## Verifies a live livestock collision uses the existing damage and horse-panic failure flow.
+
 func test_livestock_collision_when_it_hits_the_wagon_then_existing_failure_flow_is_used() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -842,6 +908,8 @@ func test_livestock_collision_when_it_hits_the_wagon_then_existing_failure_flow_
 	assert_eq(state.active_failure, &"horse_panic")
 	assert_eq(state.current_failure.source_hazard, &"livestock")
 
+
+## Verifies hazard collision triggers hit flash wobble and camera shake.
 
 func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -876,6 +944,8 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	assert_eq(horse_right.global_rotation, wagon.global_rotation)
 	assert_ne(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
+
+## Verifies impact feedback recovers after timers expire.
 
 func test_impact_feedback_recovers_after_timers_expire() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -913,6 +983,8 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 	assert_eq(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
 
+## Verifies camera tracks wagon with below center offset.
+
 func test_camera_tracks_wagon_with_below_center_offset() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -930,6 +1002,8 @@ func test_camera_tracks_wagon_with_below_center_offset() -> void:
 	assert_eq(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
 
 
+## Verifies forward motion scrolls the environment.
+
 func test_forward_motion_scrolls_the_environment() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -944,6 +1018,8 @@ func test_forward_motion_scrolls_the_environment() -> void:
 	assert_almost_eq(segment_a.position.y, state.current_speed * 0.5, 0.01)
 	assert_almost_eq(segment_b.position.y, (state.current_speed * 0.5) - scene.SCROLL_LOOP_HEIGHT, 0.01)
 
+
+## Verifies scroll environment wraps for continuous travel.
 
 func test_scroll_environment_wraps_for_continuous_travel() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -960,6 +1036,8 @@ func test_scroll_environment_wraps_for_continuous_travel() -> void:
 	assert_almost_eq(segment_a.position.y, 140.0, 0.01)
 	assert_almost_eq(segment_b.position.y, 140.0 - scene.SCROLL_LOOP_HEIGHT, 0.01)
 
+
+## Verifies scroll segment populates enough roadside scrub to cover loop end.
 
 func test_scroll_segment_populates_enough_roadside_scrub_to_cover_loop_end() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -979,6 +1057,7 @@ func test_scroll_segment_populates_enough_roadside_scrub_to_cover_loop_end() -> 
 
 
 ## Verifies the scene flow keeps crossing beat pressure pairs enabled and the reset phase disabled.
+
 func test_crossing_beat_and_reset_before_finale_switch_hazard_pressure_rules() -> void:
 	var crossing_scene = RUN_SCENE.instantiate()
 	add_child_autofree(crossing_scene)
@@ -1005,6 +1084,8 @@ func test_crossing_beat_and_reset_before_finale_switch_hazard_pressure_rules() -
 	assert_false(reset_spawner._get_active_band().allows_pressure_pair)
 
 
+## Verifies reaching dust gulch triggers success and stops forward motion.
+
 func test_reaching_dust_gulch_triggers_success_and_stops_forward_motion() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1021,6 +1102,8 @@ func test_reaching_dust_gulch_triggers_success_and_stops_forward_motion() -> voi
 	assert_eq(state.result, RunStateType.RESULT_SUCCESS)
 	assert_eq(state.current_speed, 0.0)
 
+
+## Verifies success state freezes progress on later frames.
 
 func test_success_state_freezes_progress_on_later_frames() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1046,6 +1129,8 @@ func test_success_state_freezes_progress_on_later_frames() -> void:
 	assert_eq(result_title.text, "Delivered to Dust Gulch")
 
 
+## Verifies zero health triggers collapse and stops forward motion.
+
 func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1067,6 +1152,8 @@ func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
 	assert_eq(result_title.text, "Wagon Collapsed")
 
 
+## Verifies rock collision triggers wheel loose failure.
+
 func test_rock_collision_triggers_wheel_loose_failure() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1080,6 +1167,8 @@ func test_rock_collision_triggers_wheel_loose_failure() -> void:
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
 
+
+## Verifies tumbleweed collision triggers horse panic failure.
 
 func test_tumbleweed_collision_triggers_horse_panic_failure() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1096,6 +1185,7 @@ func test_tumbleweed_collision_triggers_horse_panic_failure() -> void:
 
 
 ## Verifies timer bad luck still fires in the reset-before-finale phase.
+
 func test_bad_luck_timer_triggers_failure_when_no_active_failure_exists() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1122,6 +1212,7 @@ func test_bad_luck_timer_triggers_failure_when_no_active_failure_exists() -> voi
 
 
 ## Verifies the timer bad-luck ranges line up with the authored phase windows.
+
 func test_bad_luck_interval_range_uses_route_phase_windows() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1165,6 +1256,7 @@ func test_bad_luck_interval_range_uses_route_phase_windows() -> void:
 
 
 ## Verifies warm-up suppresses timer bad luck until the first trouble phase starts.
+
 func test_bad_luck_timer_when_run_starts_in_warm_up_then_it_stays_disabled() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1183,6 +1275,7 @@ func test_bad_luck_timer_when_run_starts_in_warm_up_then_it_stays_disabled() -> 
 
 
 ## Verifies setup disables timer bad luck in warm-up and schedules it once phases activate.
+
 func test_setup_rolls_first_bad_luck_interval_from_current_progress_band() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1217,6 +1310,8 @@ func test_setup_rolls_first_bad_luck_interval_from_current_progress_band() -> vo
 	)
 
 
+## Verifies bad luck timer does not replace existing failure.
+
 func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1233,6 +1328,7 @@ func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
 
 
 ## Verifies collision-triggered failures reschedule timer bad luck using the active phase.
+
 func test_collision_trigger_reschedules_bad_luck_interval_when_failure_starts() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1261,6 +1357,8 @@ func test_collision_trigger_reschedules_bad_luck_interval_when_failure_starts() 
 	)
 
 
+## Verifies bad luck timer arms one pending trigger during recovery cooldown.
+
 func test_bad_luck_timer_arms_one_pending_trigger_during_recovery_cooldown() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1286,6 +1384,8 @@ func test_bad_luck_timer_arms_one_pending_trigger_during_recovery_cooldown() -> 
 	assert_eq(run_director.bad_luck_elapsed, 0.0)
 
 
+## Verifies bad luck timer arms one pending trigger during active failure.
+
 func test_bad_luck_timer_arms_one_pending_trigger_during_active_failure() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1305,6 +1405,8 @@ func test_bad_luck_timer_arms_one_pending_trigger_during_active_failure() -> voi
 	assert_true(run_director.pending_bad_luck_trigger)
 	assert_eq(run_director.bad_luck_elapsed, 0.0)
 
+
+## Verifies pending bad luck fires on first frame after cooldown clears.
 
 func test_pending_bad_luck_fires_on_first_frame_after_cooldown_clears() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1326,6 +1428,8 @@ func test_pending_bad_luck_fires_on_first_frame_after_cooldown_clears() -> void:
 	assert_false(run_director.pending_bad_luck_trigger)
 	assert_eq(run_director.bad_luck_elapsed, 0.0)
 
+
+## Verifies pending bad luck does not stack or reroll while blocked.
 
 func test_pending_bad_luck_does_not_stack_or_reroll_while_blocked() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1351,6 +1455,8 @@ func test_pending_bad_luck_does_not_stack_or_reroll_while_blocked() -> void:
 	assert_eq(state.active_failure, &"")
 
 
+## Verifies wheel loose reduces steering authority without one side lock.
+
 func test_wheel_loose_reduces_steering_authority_without_one_side_lock() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1366,6 +1472,8 @@ func test_wheel_loose_reduces_steering_authority_without_one_side_lock() -> void
 
 	assert_almost_eq(state.lateral_position, -scene.ROAD_HALF_WIDTH, 0.01)
 
+
+## Verifies wheel loose drift oscillates instead of always pulling right.
 
 func test_wheel_loose_drift_oscillates_instead_of_always_pulling_right() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1385,6 +1493,8 @@ func test_wheel_loose_drift_oscillates_instead_of_always_pulling_right() -> void
 	assert_true(first_position != 0.0 or second_position != 0.0)
 
 
+## Verifies wheel loose adds persistent wobble to wagon visual.
+
 func test_wheel_loose_adds_persistent_wobble_to_wagon_visual() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1399,6 +1509,8 @@ func test_wheel_loose_adds_persistent_wobble_to_wagon_visual() -> void:
 	var wagon: Polygon2D = scene.get_node("%Wagon")
 	assert_ne(wagon.rotation, 0.0)
 
+
+## Verifies horse panic adds stronger side to side instability.
 
 func test_horse_panic_adds_stronger_side_to_side_instability() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1417,6 +1529,8 @@ func test_horse_panic_adds_stronger_side_to_side_instability() -> void:
 	assert_true(absf(second_position - first_position) > 10.0)
 
 
+## Verifies horse panic adds distinct wobble to wagon visual.
+
 func test_horse_panic_adds_distinct_wobble_to_wagon_visual() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1432,6 +1546,8 @@ func test_horse_panic_adds_distinct_wobble_to_wagon_visual() -> void:
 	assert_ne(wagon.rotation, 0.0)
 
 
+## Verifies collision trigger does not replace existing failure type.
+
 func test_collision_trigger_does_not_replace_existing_failure_type() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1446,6 +1562,8 @@ func test_collision_trigger_does_not_replace_existing_failure_type() -> void:
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
 
+
+## Verifies wheel loose starts recovery sequence prompt.
 
 func test_wheel_loose_starts_recovery_sequence_prompt() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1472,6 +1590,8 @@ func test_wheel_loose_starts_recovery_sequence_prompt() -> void:
 		assert_eq((recovery_steps.get_child(index).get_child(0) as Label).text, scene._format_recovery_action(expected_sequence[index]))
 
 
+## Verifies recovery prompt steps use embedded arrow font.
+
 func test_recovery_prompt_steps_use_embedded_arrow_font() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1493,6 +1613,8 @@ func test_recovery_prompt_steps_use_embedded_arrow_font() -> void:
 	assert_eq(arrow_label.get_theme_font_size("font_size"), scene._get_recovery_step_font_size())
 	assert_eq(first_step.custom_minimum_size, scene._get_recovery_step_minimum_size())
 
+
+## Verifies long recovery sequence uses same row width with smaller prompt chips.
 
 func test_long_recovery_sequence_uses_same_row_width_with_smaller_prompt_chips() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1519,6 +1641,8 @@ func test_long_recovery_sequence_uses_same_row_width_with_smaller_prompt_chips()
 	assert_eq(first_step.custom_minimum_size, Vector2(36.0, scene.RECOVERY_STEP_HEIGHT))
 	assert_eq(arrow_label.get_theme_font_size("font_size"), scene.RECOVERY_STEP_MIN_FONT_SIZE)
 
+
+## Verifies recovery panel stays inside viewport during touch recovery.
 
 func test_recovery_panel_stays_inside_viewport_during_touch_recovery() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1548,6 +1672,8 @@ func test_recovery_panel_stays_inside_viewport_during_touch_recovery() -> void:
 	assert_true(steps_rect.position.y >= panel_rect.position.y)
 	assert_true(steps_rect.end.y <= panel_rect.end.y)
 
+
+## Verifies recovery panel does not overlap touch steering buttons.
 
 func test_recovery_panel_does_not_overlap_touch_steering_buttons() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1584,6 +1710,8 @@ func test_recovery_panel_does_not_overlap_touch_steering_buttons() -> void:
 	assert_false(panel_rect.intersects(right_rect))
 
 
+## Verifies wheel loose recovery sequence clears failure on success.
+
 func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1611,6 +1739,8 @@ func test_wheel_loose_recovery_sequence_clears_failure_on_success() -> void:
 	assert_eq(recovery_success_player.stream, scene.RECOVERY_SUCCESS_SOUND)
 
 
+## Verifies recovery prompt advances highlight with direct input actions.
+
 func test_recovery_prompt_advances_highlight_with_direct_input_actions() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1635,6 +1765,8 @@ func test_recovery_prompt_advances_highlight_with_direct_input_actions() -> void
 	assert_eq(second_step.modulate, scene.RECOVERY_STEP_ACTIVE_COLOR)
 
 
+## Verifies recovery step audio plays on non final correct input.
+
 func test_recovery_step_audio_plays_on_non_final_correct_input() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1657,6 +1789,8 @@ func test_recovery_step_audio_plays_on_non_final_correct_input() -> void:
 	assert_eq(recovery_step_player.stream, scene.RECOVERY_STEP_SOUND)
 	assert_false(recovery_success_player.playing)
 
+
+## Verifies horse panic starts distinct recovery sequence prompt.
 
 func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1681,6 +1815,8 @@ func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
 		assert_eq((recovery_steps.get_child(index).get_child(0) as Label).text, scene._format_recovery_action(expected_sequence[index]))
 
 
+## Verifies horse panic recovery sequence clears failure on success.
+
 func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1701,6 +1837,8 @@ func test_horse_panic_recovery_sequence_clears_failure_on_success() -> void:
 	assert_false(state.has_active_recovery_sequence())
 
 
+## Verifies perfect recovery counter when recovery finishes clean then result stat increments.
+
 func test_perfect_recovery_counter_when_recovery_finishes_clean_then_result_stat_increments() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1720,6 +1858,8 @@ func test_perfect_recovery_counter_when_recovery_finishes_clean_then_result_stat
 	assert_eq(state.perfect_recoveries, 1)
 	assert_eq(state.recovery_failures, 0)
 
+
+## Verifies wheel loose recovery timeout applies health and speed penalty.
 
 func test_wheel_loose_recovery_timeout_applies_health_and_speed_penalty() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1746,6 +1886,8 @@ func test_wheel_loose_recovery_timeout_applies_health_and_speed_penalty() -> voi
 	assert_eq(recovery_fail_player.stream, scene.RECOVERY_FAIL_SOUND)
 
 
+## Verifies horse panic recovery timeout applies cargo and speed penalty.
+
 func test_horse_panic_recovery_timeout_applies_cargo_and_speed_penalty() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1766,6 +1908,8 @@ func test_horse_panic_recovery_timeout_applies_cargo_and_speed_penalty() -> void
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED - scene.HORSE_PANIC_FAILURE_SPEED_LOSS)
 	assert_true(state.has_temporary_control_instability())
 
+
+## Verifies successful recovery sets success outcome without resource penalty.
 
 func test_successful_recovery_sets_success_outcome_without_resource_penalty() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1791,6 +1935,8 @@ func test_successful_recovery_sets_success_outcome_without_resource_penalty() ->
 	assert_false(state.has_temporary_control_instability())
 
 
+## Verifies perfect recovery when sequence is clean then bonus score and callout are awarded.
+
 func test_perfect_recovery_when_sequence_is_clean_then_bonus_score_and_callout_are_awarded() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1815,6 +1961,8 @@ func test_perfect_recovery_when_sequence_is_clean_then_bonus_score_and_callout_a
 	assert_true(bonus_callout_panel.visible)
 	assert_eq(bonus_callout_label.text, "PERFECT RECOVERY +100")
 
+
+## Verifies perfect recovery bonus is not awarded after wrong input then clean finish.
 
 func test_perfect_recovery_bonus_is_not_awarded_after_wrong_input_then_clean_finish() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1845,6 +1993,8 @@ func test_perfect_recovery_bonus_is_not_awarded_after_wrong_input_then_clean_fin
 	assert_false(bonus_callout_panel.visible)
 
 
+## Verifies perfect recovery bonus is not awarded after timeout.
+
 func test_perfect_recovery_bonus_is_not_awarded_after_timeout() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1865,6 +2015,8 @@ func test_perfect_recovery_bonus_is_not_awarded_after_timeout() -> void:
 	assert_false(bonus_callout_panel.visible)
 
 
+## Verifies failed recovery causes temporary control instability after failure clears.
+
 func test_failed_recovery_causes_temporary_control_instability_after_failure_clears() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1881,6 +2033,8 @@ func test_failed_recovery_causes_temporary_control_instability_after_failure_cle
 
 	assert_ne(state.lateral_position, 0.0)
 
+
+## Verifies speed penalty recovers toward default speed over time.
 
 func test_speed_penalty_recovers_toward_default_speed_over_time() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1899,6 +2053,8 @@ func test_speed_penalty_recovers_toward_default_speed_over_time() -> void:
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
 
 
+## Verifies recovery outcome message and cooldown clear after post failure window.
+
 func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1916,6 +2072,8 @@ func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window(
 	assert_eq(state.last_recovery_outcome, &"")
 	assert_eq(state.recovery_cooldown_remaining, 0.0)
 
+
+## Verifies hud panel uses compact health distance and cargo layout.
 
 func test_hud_panel_uses_compact_health_distance_and_cargo_layout() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -1954,6 +2112,8 @@ func test_hud_panel_uses_compact_health_distance_and_cargo_layout() -> void:
 	assert_false(scene.has_node("%ProgressBar"))
 
 
+## Verifies touch controls exist in scene corners with mobile friendly sizing.
+
 func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -1991,6 +2151,8 @@ func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() ->
 	assert_not_null(touch_pause.get_theme_stylebox("normal"))
 
 
+## Verifies touch controls stay hidden and disabled on desktop runtime.
+
 func test_touch_controls_stay_hidden_and_disabled_on_desktop_runtime() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2009,6 +2171,8 @@ func test_touch_controls_stay_hidden_and_disabled_on_desktop_runtime() -> void:
 	assert_true(touch_right.disabled)
 	assert_true(touch_pause.disabled)
 
+
+## Verifies touch controls show immediately on native mobile runtime.
 
 func test_touch_controls_show_immediately_on_native_mobile_runtime() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2029,6 +2193,8 @@ func test_touch_controls_show_immediately_on_native_mobile_runtime() -> void:
 	assert_false(touch_right.disabled)
 	assert_false(touch_pause.disabled)
 
+
+## Verifies touch controls show on mobile web after touch capability detection.
 
 func test_touch_controls_show_on_mobile_web_after_touch_capability_detection() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2055,6 +2221,8 @@ func test_touch_controls_show_on_mobile_web_after_touch_capability_detection() -
 	assert_false(touch_right.disabled)
 	assert_false(touch_pause.disabled)
 
+
+## Verifies touch controls reveal on first mobile web touch when capability is delayed.
 
 func test_touch_controls_reveal_on_first_mobile_web_touch_when_capability_is_delayed() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2085,6 +2253,8 @@ func test_touch_controls_reveal_on_first_mobile_web_touch_when_capability_is_del
 	assert_false(touch_pause.disabled)
 
 
+## Verifies touch steering buttons hold and release their actions.
+
 func test_touch_steering_buttons_hold_and_release_their_actions() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2106,6 +2276,8 @@ func test_touch_steering_buttons_hold_and_release_their_actions() -> void:
 	assert_false(Input.is_action_pressed("steer_left"))
 
 
+## Verifies hidden touch controls do not press steering actions.
+
 func test_hidden_touch_controls_do_not_press_steering_actions() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2122,6 +2294,8 @@ func test_hidden_touch_controls_do_not_press_steering_actions() -> void:
 	assert_false(Input.is_action_pressed("steer_left"))
 	assert_eq(state.lateral_position, 0.0)
 
+
+## Verifies touch steering counts as recovery input.
 
 func test_touch_steering_counts_as_recovery_input() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2145,6 +2319,8 @@ func test_touch_steering_counts_as_recovery_input() -> void:
 
 	assert_eq(state.recovery_prompt_index, 1)
 
+
+## Verifies touch pause button opens pause and hides touch controls.
 
 func test_touch_pause_button_opens_pause_and_hides_touch_controls() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2172,6 +2348,8 @@ func test_touch_pause_button_opens_pause_and_hides_touch_controls() -> void:
 	assert_false(Input.is_action_pressed("steer_left"))
 
 
+## Verifies temporary instability resolves back to normal driving.
+
 func test_temporary_instability_resolves_back_to_normal_driving() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2196,6 +2374,8 @@ func test_temporary_instability_resolves_back_to_normal_driving() -> void:
 	assert_eq(wagon.rotation, 0.0)
 
 
+## Verifies recovery panel title shows active failure warning.
+
 func test_recovery_panel_title_shows_active_failure_warning() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2213,6 +2393,8 @@ func test_recovery_panel_title_shows_active_failure_warning() -> void:
 	assert_string_contains(recovery_hint.text, "lock the wheel")
 
 
+## Verifies no persistent failure banner exists in scene.
+
 func test_no_persistent_failure_banner_exists_in_scene() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2220,6 +2402,8 @@ func test_no_persistent_failure_banner_exists_in_scene() -> void:
 
 	assert_false(scene.has_node("%FailureBanner"))
 
+
+## Verifies recovery hint matches active failure type.
 
 func test_recovery_hint_matches_active_failure_type() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2236,6 +2420,8 @@ func test_recovery_hint_matches_active_failure_type() -> void:
 	assert_string_contains(recovery_hint.text, "left-right pattern")
 
 
+## Verifies result panel stays hidden during active run.
+
 func test_result_panel_stays_hidden_during_active_run() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2250,6 +2436,7 @@ func test_result_panel_stays_hidden_during_active_run() -> void:
 
 
 ## Verifies the result screen lands keyboard focus on restart as soon as it opens.
+
 func test_result_panel_when_opened_then_restart_button_has_default_focus() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2271,6 +2458,7 @@ func test_result_panel_when_opened_then_restart_button_has_default_focus() -> vo
 
 
 ## Verifies the result buttons move focus predictably with keyboard navigation.
+
 func test_result_panel_when_open_then_keyboard_navigation_moves_between_actions() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2301,6 +2489,7 @@ func test_result_panel_when_open_then_keyboard_navigation_moves_between_actions(
 
 
 ## Verifies keyboard confirm activates the focused restart result action.
+
 func test_result_panel_when_confirming_focused_restart_then_restart_requested_emits() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2325,6 +2514,7 @@ func test_result_panel_when_confirming_focused_restart_then_restart_requested_em
 
 
 ## Verifies keyboard confirm activates the focused return-to-title result action.
+
 func test_result_panel_when_confirming_focused_return_then_return_to_title_requested_emits() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2350,6 +2540,7 @@ func test_result_panel_when_confirming_focused_return_then_return_to_title_reque
 
 
 ## Verifies the success result panel shows score and grade alongside the stat summary.
+
 func test_result_panel_includes_score_grade_and_small_stats_summary_for_success() -> void:
 	var scene = RUN_SCENE.instantiate()
 	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
@@ -2393,6 +2584,7 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 
 
 ## Verifies the collapse result panel uses the same score and grade wiring.
+
 func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	var scene = RUN_SCENE.instantiate()
 	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
@@ -2431,6 +2623,7 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 
 
 ## Verifies the completed-run result flow does not overwrite a higher stored best score.
+
 func test_result_flow_when_completed_score_is_lower_then_stored_best_run_is_unchanged() -> void:
 	assert_eq(
 		RunStateType.save_best_run(RunStateType.BestRunData.new(1700, "A", true), TEST_BEST_RUN_SAVE_PATH),
@@ -2461,6 +2654,7 @@ func test_result_flow_when_completed_score_is_lower_then_stored_best_run_is_unch
 
 
 ## Verifies the completed-run result flow persists a strictly higher score as the new best run.
+
 func test_result_flow_when_completed_score_is_higher_then_new_best_run_is_saved() -> void:
 	assert_eq(
 		RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), TEST_BEST_RUN_SAVE_PATH),
@@ -2487,6 +2681,8 @@ func test_result_flow_when_completed_score_is_higher_then_new_best_run_is_saved(
 	assert_eq(stored_best.score, state.get_score())
 	assert_eq(stored_best.grade, state.get_delivery_grade())
 
+
+## Verifies result panel fits viewport with full mastery breakdown for success.
 
 func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2524,6 +2720,8 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -
 	assert_true(restart_button.get_global_rect().end.y <= viewport_rect.end.y)
 	assert_true(title_button.get_global_rect().end.y <= viewport_rect.end.y)
 
+
+## Verifies result panel fits viewport with full mastery breakdown for collapse.
 
 func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2563,6 +2761,8 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() 
 	assert_true(title_button.get_global_rect().end.y <= viewport_rect.end.y)
 
 
+## Verifies result panel buttons emit restart and return signals.
+
 func test_result_panel_buttons_emit_restart_and_return_signals() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2588,6 +2788,8 @@ func test_result_panel_buttons_emit_restart_and_return_signals() -> void:
 	assert_signal_emitted(scene, "restart_requested")
 	assert_signal_emitted(scene, "return_to_title_requested")
 
+
+## Verifies pause menu toggles tree pause and visibility.
 
 func test_pause_menu_toggles_tree_pause_and_visibility() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2622,6 +2824,8 @@ func test_pause_menu_toggles_tree_pause_and_visibility() -> void:
 	assert_true(pause_toggle_player.playing)
 
 
+## Verifies pause menu buttons emit restart and return after unpausing.
+
 func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2650,6 +2854,8 @@ func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
 	assert_signal_emitted(scene, "return_to_title_requested")
 
 
+## Verifies pause resume button unpauses through button signal.
+
 func test_pause_resume_button_unpauses_through_button_signal() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2669,6 +2875,8 @@ func test_pause_resume_button_unpauses_through_button_signal() -> void:
 	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
 	assert_false(pause_panel.visible)
 
+
+## Verifies pause menu and result buttons share ui click sound.
 
 func test_pause_menu_and_result_buttons_share_ui_click_sound() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2693,6 +2901,8 @@ func test_pause_menu_and_result_buttons_share_ui_click_sound() -> void:
 	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
 
 
+## Verifies pause menu does not show after run is over.
+
 func test_pause_menu_does_not_show_after_run_is_over() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2709,6 +2919,8 @@ func test_pause_menu_does_not_show_after_run_is_over() -> void:
 	assert_false(pause_panel.visible)
 
 
+## Verifies recovery panel hides when run is over.
+
 func test_recovery_panel_hides_when_run_is_over() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2724,6 +2936,8 @@ func test_recovery_panel_hides_when_run_is_over() -> void:
 	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
 	assert_false(recovery_panel.visible)
 
+
+## Verifies result panel is darkened without full screen backdrop.
 
 func test_result_panel_is_darkened_without_full_screen_backdrop() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2745,6 +2959,8 @@ func test_result_panel_is_darkened_without_full_screen_backdrop() -> void:
 	assert_eq(result_summary.get_theme_color("font_color"), Color(1, 1, 1, 1))
 	assert_eq(result_stats.get_theme_color("font_color"), Color(1, 1, 1, 1))
 
+
+## Verifies step4 presentation nodes exist for dust and audio.
 
 func test_step4_presentation_nodes_exist_for_dust_and_audio() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2769,6 +2985,8 @@ func test_step4_presentation_nodes_exist_for_dust_and_audio() -> void:
 	assert_true(scene.has_node("%UIClickPlayer"))
 
 
+## Verifies ready starts music and dust presentation.
+
 func test_ready_starts_music_and_dust_presentation() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2787,6 +3005,8 @@ func test_ready_starts_music_and_dust_presentation() -> void:
 	assert_eq(wagon_loop_player.stream, scene.WAGON_LOOP_SOUND)
 	assert_true(wagon_loop_player.get_playback_position() >= scene.WAGON_LOOP_START_SECONDS)
 
+
+## Verifies hazard impact audio dispatches to specific players and fallback.
 
 func test_hazard_impact_audio_dispatches_to_specific_players_and_fallback() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2824,6 +3044,8 @@ func test_hazard_impact_audio_dispatches_to_specific_players_and_fallback() -> v
 	assert_eq(impact_player.volume_db, -4.5)
 
 
+## Verifies tumbleweed timeout when newer impact replaces older then stale stop is ignored.
+
 func test_tumbleweed_timeout_when_newer_impact_replaces_older_then_stale_stop_is_ignored() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2847,6 +3069,8 @@ func test_tumbleweed_timeout_when_newer_impact_replaces_older_then_stale_stop_is
 	assert_false(tumbleweed_impact_player.playing)
 
 
+## Verifies new failure plays failure audio cue.
+
 func test_new_failure_plays_failure_audio_cue() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2867,6 +3091,8 @@ func test_new_failure_plays_failure_audio_cue() -> void:
 	scene._refresh_audio_presentation()
 	assert_false(failure_player.playing)
 
+
+## Verifies failure ambient audio tracks active failure and run end.
 
 func test_failure_ambient_audio_tracks_active_failure_and_run_end() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -2900,6 +3126,8 @@ func test_failure_ambient_audio_tracks_active_failure_and_run_end() -> void:
 	assert_false(horse_panic_ambient_player.playing)
 
 
+## Verifies success result stops dust and plays result cue.
+
 func test_success_result_stops_dust_and_plays_result_cue() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2923,6 +3151,8 @@ func test_success_result_stops_dust_and_plays_result_cue() -> void:
 	assert_eq(_get_run_audio_presenter(scene).last_announced_result, RunStateType.RESULT_SUCCESS)
 
 
+## Verifies collapse result plays collapse stinger.
+
 func test_collapse_result_plays_collapse_stinger() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2941,6 +3171,7 @@ func test_collapse_result_plays_collapse_stinger() -> void:
 
 
 ## Verifies completed-run best-state sync uses the extracted audio transition tracker to gate persistence.
+
 func test_sync_completed_run_best_state_uses_audio_presenter_result_tracking() -> void:
 	assert_eq(
 		RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), TEST_BEST_RUN_SAVE_PATH),
@@ -2973,6 +3204,8 @@ func test_sync_completed_run_best_state_uses_audio_presenter_result_tracking() -
 	assert_eq(stored_best.score, 1200)
 
 
+## Verifies wagon loop audio wraps back to five second mark.
+
 func test_wagon_loop_audio_wraps_back_to_five_second_mark() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -2989,6 +3222,8 @@ func test_wagon_loop_audio_wraps_back_to_five_second_mark() -> void:
 	assert_true(wagon_loop_player.get_playback_position() < scene.WAGON_LOOP_END_SECONDS)
 
 
+## Verifies scroll segment includes roadside dust gulch sign.
+
 func test_scroll_segment_includes_roadside_dust_gulch_sign() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3004,6 +3239,8 @@ func test_scroll_segment_includes_roadside_dust_gulch_sign() -> void:
 	assert_true(sign_found)
 
 
+## Verifies step4 environment art replaces route placeholder geometry.
+
 func test_step4_environment_art_replaces_route_placeholder_geometry() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3018,6 +3255,8 @@ func test_step4_environment_art_replaces_route_placeholder_geometry() -> void:
 	assert_false(scene.has_node("World/RoadStripeLeft"))
 	assert_false(scene.has_node("World/RoadStripeRight"))
 
+
+## Verifies step4 environment art scrolls with route motion.
 
 func test_step4_environment_art_scrolls_with_route_motion() -> void:
 	var scene = RUN_SCENE.instantiate()
@@ -3038,6 +3277,8 @@ func test_step4_environment_art_scrolls_with_route_motion() -> void:
 	assert_true(road.region_rect.position.y < starting_road_offset)
 
 
+## Verifies step3 cohesion nodes exist on wagon.
+
 func test_step3_cohesion_nodes_exist_on_wagon() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3050,6 +3291,7 @@ func test_step3_cohesion_nodes_exist_on_wagon() -> void:
 
 
 ## Confirms the horse team sits closer to the wagon without the drawn-on harness lines.
+
 func test_step1_horse_team_is_pulled_closer_to_wagon() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3082,6 +3324,7 @@ func test_step1_horse_team_is_pulled_closer_to_wagon() -> void:
 
 
 ## Confirms the animated horse sprites are wired to the exported sheet slices.
+
 func test_step1_horse_sprites_use_animated_sheet_frames() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3129,6 +3372,7 @@ func test_step1_horse_sprites_use_animated_sheet_frames() -> void:
 
 
 ## Confirms the animated carriage sprite is wired to sheet slices from the exported asset.
+
 func test_step1_carriage_sprite_uses_animated_sheet_frames() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3156,6 +3400,7 @@ func test_step1_carriage_sprite_uses_animated_sheet_frames() -> void:
 
 
 ## Confirms the run scene wires the jackalope hazard to the exported 48x32 sheet resource.
+
 func test_step1_hazard_spawner_uses_animated_jackalope_sheet_resource() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3167,6 +3412,7 @@ func test_step1_hazard_spawner_uses_animated_jackalope_sheet_resource() -> void:
 
 
 ## Confirms spawned jackalopes keep the final readable playback cadence in the shipped run scene.
+
 func test_step3_livestock_hazards_play_at_the_final_readable_speed_in_scene() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3194,6 +3440,7 @@ func test_step3_livestock_hazards_play_at_the_final_readable_speed_in_scene() ->
 
 
 ## Confirms the wagon rig still applies the existing presentation state while the carriage animates.
+
 func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3242,6 +3489,8 @@ func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	assert_eq(horse_right.speed_scale, 1.0)
 
 
+## Verifies step3 panel styles use western palette.
+
 func test_step3_panel_styles_use_western_palette() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
@@ -3263,4 +3512,3 @@ func _delete_test_best_run_file() -> void:
 	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
 	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
 		DirAccess.remove_absolute(absolute_path)
-

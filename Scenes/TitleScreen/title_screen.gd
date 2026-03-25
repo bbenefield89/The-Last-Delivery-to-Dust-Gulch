@@ -1,12 +1,21 @@
 extends Control
 
-const TITLE_MUSIC := preload("res://Assets/Audio/Confronting The Man In Black.ogg")
-const UI_CLICK_SOUND := preload("res://Assets/Sfx/Button-Click-85854.mp3")
-const BEST_RUN_EMPTY_TEXT := "Best Run: None yet"
-const RunStateType := preload("res://Systems/RunState/run_state.gd")
+## Owns the title-screen presentation, menu input, and best-run summary display.
+
+
+# Signals
 
 signal play_requested
 signal quit_requested
+
+
+# Constants
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+
+
+const TITLE_MUSIC := preload(AssetPaths.TITLE_MUSIC_AUDIO_PATH)
+const UI_CLICK_SOUND := preload(AssetPaths.UI_CLICK_SOUND_PATH)
+const BEST_RUN_EMPTY_TEXT := "Best Run: None yet"
 
 
 # Private Fields
@@ -17,12 +26,23 @@ var _best_run_save_path: String = RunStateType.BEST_RUN_SAVE_PATH
 
 # Private Fields: OnReady
 
-@onready var _play_button: Button = $Panel/Margin/Content/Buttons/PlayButton
-@onready var _quit_button: Button = $Panel/Margin/Content/Buttons/QuitButton
-@onready var _best_run_summary: Label = %BestRunSummary
-@onready var _title_music_player: AudioStreamPlayer = $TitleMusicPlayer
-@onready var _ui_click_player: AudioStreamPlayer = $UIClickPlayer
+@onready
+var _play_button: Button = $Panel/Margin/Content/Buttons/PlayButton
 
+@onready
+var _quit_button: Button = $Panel/Margin/Content/Buttons/QuitButton
+
+@onready
+var _best_run_summary: Label = %BestRunSummary
+
+@onready
+var _title_music_player: AudioStreamPlayer = $TitleMusicPlayer
+
+@onready
+var _ui_click_player: AudioStreamPlayer = $UIClickPlayer
+
+
+# Lifecycle Methods
 
 ## Wires title-screen buttons and starts the menu audio presentation.
 func _ready() -> void:
@@ -46,6 +66,8 @@ func _exit_tree() -> void:
 	_ui_click_player.stream = null
 
 
+# Event Handlers
+
 ## Emits the play request after playing the shared UI click cue.
 func _on_play_pressed() -> void:
 	if _navigation_click_in_progress:
@@ -65,6 +87,8 @@ func _on_quit_pressed() -> void:
 	_navigation_click_in_progress = false
 	quit_requested.emit()
 
+
+# Private Methods
 
 ## Plays the shared title-screen click cue when the UI player is available.
 func _play_ui_click() -> void:

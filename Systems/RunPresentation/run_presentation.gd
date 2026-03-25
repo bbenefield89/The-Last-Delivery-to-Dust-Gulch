@@ -1,7 +1,11 @@
-class_name RunPresentation
 extends RefCounted
 
 ## Owns run-scene wagon, camera, scroll, dust, and impact presentation state.
+
+
+# Constants
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+
 
 const WAGON_BASE_Y := 0.0
 const WAGON_BASE_COLOR := Color(1, 1, 1, 1)
@@ -29,7 +33,7 @@ var scroll_offset := 0.0
 
 # Private Fields
 
-var _run_state: RunState
+var _run_state: RunStateType
 var _backdrop: Sprite2D
 var _road: Sprite2D
 var _camera: Camera2D
@@ -48,9 +52,11 @@ var _impact_wobble_remaining := 0.0
 var _impact_shake_remaining := 0.0
 
 
+# Public Methods
+
 ## Binds the scene-owned nodes and shared art resources used by runtime presentation.
 func configure_scene_nodes(
-	run_state: RunState,
+	run_state: RunStateType,
 	backdrop: Sprite2D,
 	road: Sprite2D,
 	camera: Camera2D,
@@ -82,7 +88,7 @@ func configure_scene_nodes(
 
 
 ## Binds the active run state so runtime presentation follows the current run.
-func bind_run_state(run_state: RunState) -> void:
+func bind_run_state(run_state: RunStateType) -> void:
 	_run_state = run_state
 
 
@@ -214,13 +220,15 @@ func refresh_dust_presentation(default_forward_speed: float) -> void:
 	if _run_state == null or _dust_trail == null:
 		return
 
-	var should_emit_dust := _run_state.result == RunState.RESULT_IN_PROGRESS and _run_state.current_speed > 0.0
+	var should_emit_dust := _run_state.result == RunStateType.RESULT_IN_PROGRESS and _run_state.current_speed > 0.0
 	_dust_trail.emitting = should_emit_dust
 	_dust_trail.speed_scale = max(
 		DUST_BASE_AMOUNT_RATIO,
 		_run_state.current_speed / default_forward_speed
 	)
 
+
+# Private Methods
 
 ## Applies the scrolling region offset to the bound desert and road sprites.
 func _update_environment_scroll() -> void:
@@ -278,4 +286,3 @@ func _set_vehicle_modulate(color: Color) -> void:
 		_horse_left_sprite.modulate = color
 	if _horse_right_sprite != null:
 		_horse_right_sprite.modulate = color
-

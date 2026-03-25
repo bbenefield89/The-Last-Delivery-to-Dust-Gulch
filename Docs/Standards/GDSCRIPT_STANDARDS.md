@@ -7,7 +7,7 @@ Shared Godot and GDScript implementation and review standards for this repositor
 Organize top-level script contents in this order when present:
 
 01. `@tool`, `@icon`, `@static_unload`
-02. `class_name`
+02. `class_name` when needed
 03. `extends`
 04. `##` class doc comment
 05. `# Signals`
@@ -43,6 +43,22 @@ Examples:
 - `# Public Methods`
 
 Do not add empty section comments for sections that are not present.
+
+## Class Names
+
+Use `class_name` only when a script genuinely benefits from global registration or repeated direct cross-file
+script-class access.
+
+Do not add `class_name` by default.
+
+Scene-owned scripts that are primarily loaded through `PackedScene` usually do not need `class_name` unless another
+part of the codebase materially depends on that script class directly.
+
+Constants-only modules are a valid exception. Prefer referring to shared constants files by `class_name` instead of
+preloading the constants file into every consumer.
+
+When a project-owned script is referenced without `class_name`, prefer a local named preload constant such as
+`const RunStateType := preload("res://Systems/RunState/run_state.gd")`.
 
 ## Visibility Prefixes
 
@@ -105,6 +121,9 @@ work. Hardcoded paths are fragile when files move or are renamed.
 
 Use string file-path exports only when the runtime genuinely needs a raw path string instead of a scene resource
 reference.
+
+When project-owned code genuinely needs reusable raw `res://` or `user://` path strings, centralize them in const
+files under `res://Constants/` instead of repeating the literal path across multiple scripts.
 
 ## Spacing
 
