@@ -1,0 +1,11 @@
+[gd_resource type="Resource" format=3 uid="uid://ctkmp24rrcgdy"]
+
+[ext_resource type="Script" uid="uid://f48r4not0qda" path="res://Systems/HazardSpawner/hazard_definition.gd" id="1_deeu6"]
+[ext_resource type="Texture2D" uid="uid://bfo6dckq6e7jq" path="res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png" id="2_6l6ae"]
+
+[resource]
+script = ExtResource("1_deeu6")
+hazard_type = &"tumbleweed"
+damage = 6
+cargo_damage = 3
+texture = ExtResource("2_6l6ae")

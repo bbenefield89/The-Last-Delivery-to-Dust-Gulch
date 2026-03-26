@@ -7,7 +7,6 @@ extends RefCounted
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 
-const WAGON_BASE_Y := 0.0
 const WAGON_BASE_COLOR := Color(1, 1, 1, 1)
 const WAGON_HIT_COLOR := Color(1, 0.72, 0.72, 1)
 const CAMERA_VERTICAL_OFFSET := 120.0
@@ -40,7 +39,7 @@ var _camera: Camera2D
 var _scroll_root: Node2D
 var _scroll_segment_a: Node2D
 var _scroll_segment_b: Node2D
-var _wagon: Polygon2D
+var _wagon: Node2D
 var _wagon_sprite: AnimatedSprite2D
 var _horse_left_sprite: AnimatedSprite2D
 var _horse_right_sprite: AnimatedSprite2D
@@ -50,6 +49,11 @@ var _sign_texture: Texture2D
 var _impact_flash_remaining := 0.0
 var _impact_wobble_remaining := 0.0
 var _impact_shake_remaining := 0.0
+var _authored_backdrop_position := Vector2.ZERO
+var _authored_road_position := Vector2.ZERO
+var _authored_wagon_position := Vector2.ZERO
+var _authored_camera_position := Vector2.ZERO
+var _authored_camera_y_offset := -CAMERA_VERTICAL_OFFSET
 
 
 # Public Methods
@@ -63,7 +67,7 @@ func configure_scene_nodes(
 	scroll_root: Node2D,
 	scroll_segment_a: Node2D,
 	scroll_segment_b: Node2D,
-	wagon: Polygon2D,
+	wagon: Node2D,
 	wagon_sprite: AnimatedSprite2D,
 	horse_left_sprite: AnimatedSprite2D,
 	horse_right_sprite: AnimatedSprite2D,
@@ -85,6 +89,12 @@ func configure_scene_nodes(
 	_dust_trail = dust_trail
 	_shrub_textures = shrub_textures.duplicate()
 	_sign_texture = sign_texture
+	_authored_backdrop_position = _backdrop.position if _backdrop != null else Vector2.ZERO
+	_authored_road_position = _road.position if _road != null else Vector2.ZERO
+	_authored_wagon_position = _wagon.position if _wagon != null else Vector2.ZERO
+	_authored_camera_position = _camera.position if _camera != null else Vector2.ZERO
+	if _camera != null and _wagon != null:
+		_authored_camera_y_offset = _camera.position.y - _wagon.position.y
 
 
 ## Binds the active run state so runtime presentation follows the current run.
@@ -100,7 +110,7 @@ func configure_environment_art(desert_texture: Texture2D, road_texture: Texture2
 		_backdrop.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 		_backdrop.region_enabled = true
 		_backdrop.region_rect = Rect2(0.0, 0.0, 960.0, 1440.0)
-		_backdrop.position = Vector2(-480.0, -720.0)
+		_backdrop.position = _authored_backdrop_position
 
 	if _road != null:
 		_road.texture = road_texture
@@ -108,7 +118,7 @@ func configure_environment_art(desert_texture: Texture2D, road_texture: Texture2
 		_road.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 		_road.region_enabled = true
 		_road.region_rect = Rect2(0.0, 0.0, 224.0, 1440.0)
-		_road.position = Vector2(-112.0, -720.0)
+		_road.position = _authored_road_position
 
 	_update_environment_scroll()
 
@@ -156,7 +166,10 @@ func update_wagon_visual() -> void:
 	if _wagon == null or _run_state == null:
 		return
 
-	_wagon.position = Vector2(_run_state.lateral_position, WAGON_BASE_Y)
+	_wagon.position = Vector2(
+		_authored_wagon_position.x + _run_state.lateral_position,
+		_authored_wagon_position.y
+	)
 
 
 ## Applies the authored camera framing and screen shake around the wagon.
@@ -164,7 +177,10 @@ func update_camera_framing() -> void:
 	if _camera == null or _wagon == null:
 		return
 
-	var camera_position := Vector2(0.0, _wagon.position.y - CAMERA_VERTICAL_OFFSET)
+	var camera_position := Vector2(
+		_authored_camera_position.x,
+		_wagon.position.y + _authored_camera_y_offset
+	)
 	if _impact_shake_remaining > 0.0:
 		var shake_strength := _impact_shake_remaining / IMPACT_SHAKE_DURATION
 		camera_position += Vector2(

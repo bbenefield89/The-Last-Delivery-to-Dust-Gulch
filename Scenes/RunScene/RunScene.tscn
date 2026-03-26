@@ -3,10 +3,80 @@
 [ext_resource type="Script" uid="uid://cdm6b62edidaa" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
 [ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Systems/HazardSpawner/hazard_spawner.gd" id="2_ok7u7"]
 [ext_resource type="Script" uid="uid://mraylpyhw2iy" path="res://UI/ResultPanel/result_panel_ui.gd" id="3_2a2m5"]
-[ext_resource type="Texture2D" uid="uid://bsmtbkgrqdt63" path="res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png" id="5_vvclu"]
-[ext_resource type="Texture2D" uid="uid://de6ppq0376jbi" path="res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png" id="6_kd7yq"]
-[ext_resource type="Texture2D" uid="uid://bfo6dckq6e7jq" path="res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png" id="7_l2yxu"]
-[ext_resource type="Texture2D" uid="uid://b6jwsfx6gt1pw" path="res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png" id="8_13xg3"]
+[ext_resource type="Texture2D" uid="uid://bm35sy7bc1e45" path="res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png" id="9_k3x0m"]
+[ext_resource type="Texture2D" uid="uid://d0fxmc8h746io" path="res://Assets/Tilesets/Horse/Horse-16x48-Sheet.png" id="10_lu4m1"]
+[ext_resource type="Texture2D" uid="uid://dryxakr4r1w65" path="res://Assets/Tilesets/Desert/Desert-3-32x32.png" id="11_hmcd6"]
+[ext_resource type="Texture2D" uid="uid://bxq3csyxi8ss8" path="res://Assets/Tilesets/Road/Road-4-tiled-32x32.png" id="12_2d3al"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wagon_collision"]
+size = Vector2(30, 79)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wagon_near_miss"]
+size = Vector2(54, 103)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_carriage_frame_0"]
+atlas = ExtResource("9_k3x0m")
+region = Rect2(0, 0, 32, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_carriage_frame_1"]
+atlas = ExtResource("9_k3x0m")
+region = Rect2(32, 0, 32, 64)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_carriage"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_carriage_frame_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_carriage_frame_1")
+}],
+"loop": true,
+"name": &"default",
+"speed": 4.0
+}]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_horse_frame_0"]
+atlas = ExtResource("10_lu4m1")
+region = Rect2(0, 0, 16, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_horse_frame_1"]
+atlas = ExtResource("10_lu4m1")
+region = Rect2(16, 0, 16, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_horse_frame_2"]
+atlas = ExtResource("10_lu4m1")
+region = Rect2(32, 0, 16, 48)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_horse_frame_3"]
+atlas = ExtResource("10_lu4m1")
+region = Rect2(48, 0, 16, 48)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_horse"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_horse_frame_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_horse_frame_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_horse_frame_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_horse_frame_3")
+}],
+"loop": true,
+"name": &"default",
+"speed": 4.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hazard_cleanup_bottom"]
+size = Vector2(900, 320)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hazard_cleanup_side"]
+size = Vector2(120, 900)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hud_panel"]
 bg_color = Color(0.235294, 0.180392, 0.117647, 0.88)
@@ -70,11 +140,25 @@ script = ExtResource("1_4n0rj")
 [node name="World" type="Node2D" parent="." unique_id=1731062576]
 
 [node name="Backdrop" type="Sprite2D" parent="World" unique_id=2130331480]
+visible = false
+texture_repeat = 1
+texture = ExtResource("11_hmcd6")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 640, 360)
 
 [node name="Road" type="Sprite2D" parent="World" unique_id=1591385740]
+visible = false
+texture_repeat = 1
+position = Vector2(208, 0)
+texture = ExtResource("12_2d3al")
+centered = false
+region_enabled = true
+region_rect = Rect2(0, 0, 224, 1440)
 
 [node name="ScrollRoot" type="Node2D" parent="World" unique_id=1220442931]
 unique_name_in_owner = true
+position = Vector2(320, 300)
 
 [node name="ScrollSegmentA" type="Node2D" parent="World/ScrollRoot" unique_id=1566709917]
 unique_name_in_owner = true
@@ -85,32 +169,49 @@ position = Vector2(0, -960)
 
 [node name="HazardSpawner" type="Node2D" parent="World" unique_id=234043959]
 unique_name_in_owner = true
+position = Vector2(320, 300)
 script = ExtResource("2_ok7u7")
-pothole_texture = ExtResource("5_vvclu")
-rock_texture = ExtResource("6_kd7yq")
-tumbleweed_texture = ExtResource("7_l2yxu")
-livestock_texture = ExtResource("8_13xg3")
 
-[node name="Wagon" type="Polygon2D" parent="World" unique_id=688295343]
+[node name="Wagon" type="Node2D" parent="World" unique_id=688295343]
 unique_name_in_owner = true
-color = Color(1, 1, 1, 0)
-polygon = PackedVector2Array(-16, -28, 16, -28, 14, 32, -14, 32)
+position = Vector2(320, 300)
+
+[node name="WagonCollisionArea" type="Area2D" parent="World/Wagon" unique_id=1246139011]
+unique_name_in_owner = true
+collision_layer = 2
+
+[node name="WagonCollisionShape" type="CollisionShape2D" parent="World/Wagon/WagonCollisionArea" unique_id=946711205]
+unique_name_in_owner = true
+position = Vector2(0, -10.5)
+shape = SubResource("RectangleShape2D_wagon_collision")
+
+[node name="WagonNearMissArea" type="Area2D" parent="World/Wagon" unique_id=1246139012]
+unique_name_in_owner = true
+collision_layer = 2
+
+[node name="WagonNearMissShape" type="CollisionShape2D" parent="World/Wagon/WagonNearMissArea" unique_id=946711206]
+unique_name_in_owner = true
+position = Vector2(0, -10.5)
+shape = SubResource("RectangleShape2D_wagon_near_miss")
 
 [node name="Shadow" type="AnimatedSprite2D" parent="World/Wagon" unique_id=710484652]
 modulate = Color(0, 0, 0, 0.2)
-z_index = -2
 position = Vector2(0, 5)
+sprite_frames = SubResource("SpriteFrames_carriage")
 
 [node name="CarriageSprite" type="AnimatedSprite2D" parent="World/Wagon" unique_id=355649902]
+sprite_frames = SubResource("SpriteFrames_carriage")
 
 [node name="HorseTeam" type="Node2D" parent="World/Wagon" unique_id=1666748263]
 position = Vector2(0, -38)
 
 [node name="HorseLeft" type="AnimatedSprite2D" parent="World/Wagon/HorseTeam" unique_id=1813804162]
 position = Vector2(-8, 0)
+sprite_frames = SubResource("SpriteFrames_horse")
 
 [node name="HorseRight" type="AnimatedSprite2D" parent="World/Wagon/HorseTeam" unique_id=1874504157]
 position = Vector2(8, 0)
+sprite_frames = SubResource("SpriteFrames_horse")
 
 [node name="DustTrail" type="CPUParticles2D" parent="World/Wagon" unique_id=1637724448]
 unique_name_in_owner = true
@@ -118,7 +219,31 @@ position = Vector2(0, 28)
 
 [node name="Camera" type="Camera2D" parent="World" unique_id=1055321517]
 unique_name_in_owner = true
-position = Vector2(0, -60)
+position = Vector2(320, 180)
+
+[node name="HazardCleanupBottomArea" type="Area2D" parent="World" unique_id=1960000001]
+unique_name_in_owner = true
+position = Vector2(320, 720)
+collision_layer = 4
+
+[node name="HazardCleanupBottomShape" type="CollisionShape2D" parent="World/HazardCleanupBottomArea" unique_id=1960000002]
+shape = SubResource("RectangleShape2D_hazard_cleanup_bottom")
+
+[node name="HazardCleanupLeftArea" type="Area2D" parent="World" unique_id=1960000003]
+unique_name_in_owner = true
+position = Vector2(-100, 300)
+collision_layer = 4
+
+[node name="HazardCleanupLeftShape" type="CollisionShape2D" parent="World/HazardCleanupLeftArea" unique_id=1960000004]
+shape = SubResource("RectangleShape2D_hazard_cleanup_side")
+
+[node name="HazardCleanupRightArea" type="Area2D" parent="World" unique_id=1960000005]
+unique_name_in_owner = true
+position = Vector2(740, 300)
+collision_layer = 4
+
+[node name="HazardCleanupRightShape" type="CollisionShape2D" parent="World/HazardCleanupRightArea" unique_id=1960000006]
+shape = SubResource("RectangleShape2D_hazard_cleanup_side")
 
 [node name="AudioPlayers" type="Node" parent="." unique_id=1051716591]
 
@@ -385,6 +510,7 @@ grow_vertical = 2
 
 [node name="OnboardingPanel" type="PanelContainer" parent="OnboardingLayer/OnboardingMargin" unique_id=743698184]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 
@@ -437,6 +563,7 @@ grow_horizontal = 2
 
 [node name="RecoveryPanel" type="PanelContainer" parent="RecoveryLayer/RecoveryMargin" unique_id=1024654356]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_recovery_panel")
 
@@ -507,6 +634,7 @@ mouse_filter = 2
 
 [node name="PausePanel" type="PanelContainer" parent="PauseLayer/PauseOverlay/PauseCenter" unique_id=1688471581]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(320, 196)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
@@ -576,6 +704,7 @@ grow_vertical = 2
 
 [node name="ResultPanel" type="PanelContainer" parent="ResultLayer/ResultMargin" unique_id=70916264]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 script = ExtResource("3_2a2m5")

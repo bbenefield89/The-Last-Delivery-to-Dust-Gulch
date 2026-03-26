@@ -1,0 +1,13 @@
+[gd_resource type="Resource" format=3 uid="uid://dbuvod71qhd72"]
+
+[ext_resource type="Script" uid="uid://f48r4not0qda" path="res://Systems/HazardSpawner/hazard_definition.gd" id="1_0g1w4"]
+[ext_resource type="Texture2D" uid="uid://b6jwsfx6gt1pw" path="res://Assets/Tilesets/Hazards/Jackalope/Jackalope-48x32-Sheet.png" id="2_31g03"]
+
+[resource]
+script = ExtResource("1_0g1w4")
+hazard_type = &"livestock"
+damage = 12
+cargo_damage = 5
+texture = ExtResource("2_31g03")
+frame_regions = Array[Rect2i]([Rect2i(0, 0, 48, 32), Rect2i(48, 0, 48, 32), Rect2i(96, 0, 48, 32), Rect2i(144, 0, 48, 32)])
+animation_fps = 5.5

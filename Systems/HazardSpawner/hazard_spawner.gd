@@ -4,6 +4,9 @@ extends Node2D
 
 # Constants
 
+const HazardDefinitionType := preload(ProjectPaths.HAZARD_DEFINITION_SCRIPT_PATH)
+const HazardInstanceType := preload(ProjectPaths.HAZARD_INSTANCE_SCRIPT_PATH)
+const HAZARD_SCENE := preload(ProjectPaths.HAZARD_SCENE_PATH)
 const LANE_X_POSITIONS := [-96.0, -64.0, -32.0, 0.0, 32.0, 64.0, 96.0]
 const DEFAULT_SPAWN_Y := -320.0
 const DEFAULT_DESPAWN_Y := 260.0
@@ -17,32 +20,7 @@ const TUMBLEWEED_BOUNCE_RADIANS_PER_SCROLL_UNIT := 0.04
 const TUMBLEWEED_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_TARGET_Y := 0.0
 const LIVESTOCK_CROSSING_X_PER_SCROLL_UNIT := 0.75
-const LIVESTOCK_ANIMATION_FPS := 5.5
-const LIVESTOCK_SHEET_FRAME_SIZE := Vector2i(48, 32)
 const LIVESTOCK_VISUAL_CENTER_OFFSET_X := 7.0
-const LIVESTOCK_COLLISION_SIZE := Vector2(36.0, 32.0)
-const LIVESTOCK_SHEET_FRAMES: Array[Rect2i] = [
-	Rect2i(0, 0, LIVESTOCK_SHEET_FRAME_SIZE.x, LIVESTOCK_SHEET_FRAME_SIZE.y),
-	Rect2i(
-		LIVESTOCK_SHEET_FRAME_SIZE.x,
-		0,
-		LIVESTOCK_SHEET_FRAME_SIZE.x,
-		LIVESTOCK_SHEET_FRAME_SIZE.y
-	),
-	Rect2i(
-		LIVESTOCK_SHEET_FRAME_SIZE.x * 2,
-		0,
-		LIVESTOCK_SHEET_FRAME_SIZE.x,
-		LIVESTOCK_SHEET_FRAME_SIZE.y
-	),
-	Rect2i(
-		LIVESTOCK_SHEET_FRAME_SIZE.x * 3,
-		0,
-		LIVESTOCK_SHEET_FRAME_SIZE.x,
-		LIVESTOCK_SHEET_FRAME_SIZE.y
-	),
-]
-const HAZARD_SIDE_DESPAWN_X := 360.0
 const ROUTE_PHASE_WARM_UP := &"warm_up"
 const ROUTE_PHASE_FIRST_TROUBLE := &"first_trouble"
 const ROUTE_PHASE_CROSSING_BEAT := &"crossing_beat"
@@ -74,16 +52,16 @@ const FULL_ROAD_LANE_INDICES: Array[int] = [0, 1, 2, 3, 4, 5, 6]
 # Public Fields: Export
 
 @export
-var pothole_texture: Texture2D
+var pothole_definition: HazardDefinitionType = preload(ProjectPaths.POTHOLE_HAZARD_DEFINITION_RESOURCE_PATH)
 
 @export
-var rock_texture: Texture2D
+var rock_definition: HazardDefinitionType = preload(ProjectPaths.ROCK_HAZARD_DEFINITION_RESOURCE_PATH)
 
 @export
-var tumbleweed_texture: Texture2D
+var tumbleweed_definition: HazardDefinitionType = preload(ProjectPaths.TUMBLEWEED_HAZARD_DEFINITION_RESOURCE_PATH)
 
 @export
-var livestock_texture: Texture2D
+var livestock_definition: HazardDefinitionType = preload(ProjectPaths.LIVESTOCK_HAZARD_DEFINITION_RESOURCE_PATH)
 
 # Private Fields
 
@@ -91,6 +69,13 @@ var _distance_until_next_spawn := 0.0
 var _route_progress_ratio := 0.0
 var _active_route_phase: StringName = &""
 var _next_spawn_plan: SpawnPlan
+var _pending_collision_hazards: Array[HazardInstanceType] = []
+var _pending_near_miss_hazards: Array[HazardInstanceType] = []
+var _pending_completed_passes: Array[Dictionary] = []
+var _wagon_collision_area: Area2D
+var _wagon_near_miss_area: Area2D
+var _hazard_cleanup_areas: Array[Area2D] = []
+var _shared_hazard_collision_size := Vector2.ZERO
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -99,6 +84,7 @@ var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 ## Initializes the first randomized spawn plan.
 func _ready() -> void:
 	_rng.randomize()
+	_shared_hazard_collision_size = _get_shared_hazard_collision_size()
 
 
 # Public Methods
@@ -121,7 +107,53 @@ func advance(
 		_distance_until_next_spawn = min(_distance_until_next_spawn, active_spacing)
 	_move_hazards(distance_delta)
 	_spawn_hazards(distance_delta)
-	_cleanup_hazards()
+
+
+## Binds the active wagon collision area to the event-based hazard hit queue.
+func bind_wagon_collision_area(wagon_collision_area: Area2D) -> void:
+	if _wagon_collision_area != null and _wagon_collision_area.area_entered.is_connected(_on_wagon_area_entered):
+		_wagon_collision_area.area_entered.disconnect(_on_wagon_area_entered)
+
+	_wagon_collision_area = wagon_collision_area
+	if _wagon_collision_area == null:
+		return
+
+	if not _wagon_collision_area.area_entered.is_connected(_on_wagon_area_entered):
+		_wagon_collision_area.area_entered.connect(_on_wagon_area_entered)
+
+
+## Binds the active wagon near-miss area to the event-based near-miss queue.
+func bind_wagon_near_miss_area(wagon_near_miss_area: Area2D) -> void:
+	if _wagon_near_miss_area != null:
+		if _wagon_near_miss_area.area_entered.is_connected(_on_wagon_near_miss_area_entered):
+			_wagon_near_miss_area.area_entered.disconnect(_on_wagon_near_miss_area_entered)
+		if _wagon_near_miss_area.area_exited.is_connected(_on_wagon_near_miss_area_exited):
+			_wagon_near_miss_area.area_exited.disconnect(_on_wagon_near_miss_area_exited)
+
+	_wagon_near_miss_area = wagon_near_miss_area
+	if _wagon_near_miss_area == null:
+		return
+
+	if not _wagon_near_miss_area.area_entered.is_connected(_on_wagon_near_miss_area_entered):
+		_wagon_near_miss_area.area_entered.connect(_on_wagon_near_miss_area_entered)
+	if not _wagon_near_miss_area.area_exited.is_connected(_on_wagon_near_miss_area_exited):
+		_wagon_near_miss_area.area_exited.connect(_on_wagon_near_miss_area_exited)
+
+
+## Binds the active cleanup boundaries that mark hazards as safely passed and free them.
+func bind_hazard_cleanup_areas(hazard_cleanup_areas: Array) -> void:
+	for cleanup_area in _hazard_cleanup_areas:
+		if cleanup_area != null and cleanup_area.area_entered.is_connected(_on_hazard_cleanup_area_entered):
+			cleanup_area.area_entered.disconnect(_on_hazard_cleanup_area_entered)
+
+	_hazard_cleanup_areas.clear()
+	for cleanup_area in hazard_cleanup_areas:
+		if cleanup_area == null:
+			continue
+
+		_hazard_cleanup_areas.append(cleanup_area)
+		if not cleanup_area.area_entered.is_connected(_on_hazard_cleanup_area_entered):
+			cleanup_area.area_entered.connect(_on_hazard_cleanup_area_entered)
 
 
 ## Moves all live hazards downward with the current scroll distance.
@@ -214,7 +246,10 @@ func _clear_regular_spawn_schedule() -> void:
 ## Adds one hazard node using the shared visual and metadata conventions.
 func _spawn_hazard(hazard_type: StringName, lane_index: int, spawn_y: float = DEFAULT_SPAWN_Y) -> void:
 	var resolved_lane_index := _resolve_lane_index(lane_index)
-	var hazard := _build_hazard_visual(hazard_type)
+	var hazard := _build_hazard_visual()
+	if hazard is HazardInstanceType:
+		var hazard_instance := hazard as HazardInstanceType
+		hazard_instance.apply_definition(_get_hazard_definition(hazard_type))
 	hazard.position = _resolve_spawn_position(hazard, hazard_type, resolved_lane_index, spawn_y)
 	hazard.set_meta("hazard_type", hazard_type)
 	hazard.set_meta("lane_index", resolved_lane_index)
@@ -323,45 +358,10 @@ func _get_pressure_lane_index(primary_lane_index: int, allowed_lane_indices: Arr
 func _is_static_hazard_type(hazard_type: StringName) -> bool:
 	return hazard_type == &"pothole" or hazard_type == &"rock"
 
-## Builds a readable hazard node for the requested hazard type.
-func _build_hazard_visual(hazard_type: StringName) -> Node2D:
-	if hazard_type == &"livestock":
-		return _build_livestock_hazard_visual()
 
-	var profile := _get_hazard_profile(hazard_type)
-	var hazard := Sprite2D.new()
-	hazard.texture = profile["texture"]
-	return hazard
-
-
-## Builds the animated jackalope hazard so the livestock crossing reads as a bounding animal.
-func _build_livestock_hazard_visual() -> AnimatedSprite2D:
-	var hazard := AnimatedSprite2D.new()
-	hazard.sprite_frames = _build_livestock_sprite_frames()
-	hazard.animation = &"default"
-	hazard.frame = 0
-	hazard.play()
-	return hazard
-
-
-## Builds the four-frame livestock animation from the exported jackalope sheet.
-func _build_livestock_sprite_frames() -> SpriteFrames:
-	var sprite_frames := SpriteFrames.new()
-	sprite_frames.set_animation_loop(&"default", true)
-	sprite_frames.set_animation_speed(&"default", LIVESTOCK_ANIMATION_FPS)
-
-	for frame_region in LIVESTOCK_SHEET_FRAMES:
-		sprite_frames.add_frame(&"default", _make_livestock_sheet_frame(frame_region))
-
-	return sprite_frames
-
-
-## Creates a single atlas frame that slices the livestock sheet to one animation cell.
-func _make_livestock_sheet_frame(region: Rect2i) -> AtlasTexture:
-	var atlas_texture := AtlasTexture.new()
-	atlas_texture.atlas = livestock_texture
-	atlas_texture.region = region
-	return atlas_texture
+## Builds one unconfigured shared hazard instance.
+func _build_hazard_visual() -> Node2D:
+	return HAZARD_SCENE.instantiate() as HazardInstanceType
 
 
 ## Returns the per-frame motion offset for one hazard, including lateral drift on moving hazards.
@@ -379,20 +379,20 @@ func _get_hazard_rotation_delta(hazard: Node2D, distance_delta: float) -> float:
 
 ## Applies visual-only bounce to hazards that opt into rolling motion without changing gameplay collision.
 func _update_hazard_bounce(hazard: Node2D, distance_delta: float) -> void:
-	var sprite := hazard as Sprite2D
-	if sprite == null:
+	var hazard_instance := hazard as HazardInstanceType
+	if hazard_instance == null:
 		return
 
 	var bounce_amplitude := float(hazard.get_meta("bounce_amplitude", 0.0))
 	var bounce_radians_per_scroll_unit := float(hazard.get_meta("bounce_radians_per_scroll_unit", 0.0))
 	if bounce_amplitude == 0.0 or bounce_radians_per_scroll_unit == 0.0:
-		sprite.offset.y = 0.0
+		hazard_instance.get_visual().offset.y = 0.0
 		return
 
 	var bounce_phase := float(hazard.get_meta("bounce_phase", 0.0))
 	bounce_phase += bounce_radians_per_scroll_unit * distance_delta
 	hazard.set_meta("bounce_phase", bounce_phase)
-	sprite.offset.y = sin(bounce_phase) * bounce_amplitude
+	hazard_instance.get_visual().offset.y = sin(bounce_phase) * bounce_amplitude
 
 
 ## Resolves the spawn position for one hazard and configures any hazard-specific movement metadata.
@@ -484,76 +484,204 @@ func _get_livestock_spawn_x(lane_index: int, spawn_y: float, crossing_direction:
 
 ## Resolves the shared gameplay profile for the requested hazard type.
 func _get_hazard_profile(hazard_type: StringName) -> Dictionary:
+	var definition := _get_hazard_definition(hazard_type)
+	return {
+		"texture": null if definition == null else definition.texture,
+		"damage": 0 if definition == null else definition.damage,
+		"cargo_damage": 0 if definition == null else definition.cargo_damage,
+		"size": _get_shared_hazard_collision_size(),
+	}
+
+
+## Returns the authored hazard definition resource for one hazard type.
+func _get_hazard_definition(hazard_type: StringName) -> HazardDefinitionType:
 	match hazard_type:
 		&"rock":
-			return {
-				"texture": rock_texture,
-				"damage": 18,
-				"cargo_damage": 9,
-				"size": Vector2(36.0, 36.0),
-			}
+			return rock_definition
 		&"tumbleweed":
-			return {
-				"texture": tumbleweed_texture,
-				"damage": 6,
-				"cargo_damage": 3,
-				"size": Vector2(32.0, 32.0),
-			}
+			return tumbleweed_definition
 		&"livestock":
-			return {
-				"texture": livestock_texture,
-				"damage": 12,
-				"cargo_damage": 5,
-				"size": LIVESTOCK_COLLISION_SIZE,
-			}
+			return livestock_definition
 		_:
-			return {
-				"texture": pothole_texture,
-				"damage": 6,
-				"cargo_damage": 2,
-				"size": Vector2(32.0, 24.0),
-			}
+			return pothole_definition
 
 
-## Frees hazards after they scroll past the visible play area.
-func _cleanup_hazards() -> void:
-	for child in get_children():
-		if child is Node2D and _should_despawn_hazard(child as Node2D):
-			child.queue_free()
-
-
-## Returns whether the hazard has left the playable area and should be freed.
-func _should_despawn_hazard(hazard: Node2D) -> bool:
-	return hazard.position.y > DEFAULT_DESPAWN_Y or absf(hazard.position.x) > HAZARD_SIDE_DESPAWN_X
-
-
-## Collects all hazards whose current bounds overlap the wagon bounds.
-func collect_collisions(wagon_position: Vector2, wagon_size: Vector2) -> Array[Dictionary]:
+## Returns all queued wagon-overlap collisions since the previous consume.
+func consume_pending_collisions() -> Array[Dictionary]:
 	var collisions: Array[Dictionary] = []
-	var wagon_rect := Rect2(wagon_position - (wagon_size * 0.5), wagon_size)
+	var pending_hazards := _pending_collision_hazards.duplicate()
+	_pending_collision_hazards.clear()
 
-	for child in get_children():
-		if not child is Node2D:
+	for hazard in pending_hazards:
+		if hazard == null or not is_instance_valid(hazard):
 			continue
 
-		var hazard := child as Node2D
-		var hazard_size := _get_hazard_size(hazard.get_meta("hazard_type", &""))
-		var hazard_rect := Rect2(hazard.position - (hazard_size * 0.5), hazard_size)
-		if wagon_rect.intersects(hazard_rect):
-			var profile := _get_hazard_profile(hazard.get_meta("hazard_type", &""))
-			collisions.append({
-				"type": hazard.get_meta("hazard_type", &""),
-				"damage": profile["damage"],
-				"cargo_damage": profile["cargo_damage"],
-				"node": hazard,
-			})
+		hazard.set_meta("collision_pending", false)
+		if bool(hazard.get_meta("was_hit", false)):
+			continue
+
+		var profile := _get_hazard_profile(hazard.get_meta("hazard_type", &""))
+		collisions.append({
+			"type": hazard.get_meta("hazard_type", &""),
+			"damage": profile["damage"],
+			"cargo_damage": profile["cargo_damage"],
+			"node": hazard,
+		})
 
 	return collisions
 
 
-## Returns the collision size used for each hazard type.
-func _get_hazard_size(hazard_type: StringName) -> Vector2:
-	return _get_hazard_profile(hazard_type)["size"]
+## Returns all queued cleanup-boundary passes since the previous consume.
+func consume_completed_passes() -> Array[Dictionary]:
+	var completed_passes := _pending_completed_passes.duplicate(true)
+	_pending_completed_passes.clear()
+	return completed_passes
+
+
+## Returns all queued near-miss exits since the previous consume.
+func consume_pending_near_misses() -> Array[Dictionary]:
+	var near_misses: Array[Dictionary] = []
+	var pending_hazards := _pending_near_miss_hazards.duplicate()
+	_pending_near_miss_hazards.clear()
+
+	for hazard in pending_hazards:
+		if hazard == null or not is_instance_valid(hazard):
+			continue
+
+		hazard.set_meta("near_miss_pending", false)
+		if bool(hazard.get_meta("was_hit", false)):
+			continue
+		if bool(hazard.get_meta("near_miss_awarded", false)):
+			continue
+
+		hazard.set_meta("near_miss_awarded", true)
+		near_misses.append({
+			"type": hazard.get_meta("hazard_type", &""),
+		})
+
+	return near_misses
+
+
+## Queues one hazard for collision resolution when its collision area enters the wagon area.
+func _on_wagon_area_entered(area: Area2D) -> void:
+	var hazard_instance := _get_hazard_instance_from_area(area)
+	if hazard_instance == null:
+		return
+	if bool(hazard_instance.get_meta("was_hit", false)):
+		return
+	if bool(hazard_instance.get_meta("collision_pending", false)):
+		return
+
+	hazard_instance.set_meta("collision_pending", true)
+	_pending_collision_hazards.append(hazard_instance)
+
+
+## Marks hazards that enter the wagon near-miss band while still approaching from ahead.
+func _on_wagon_near_miss_area_entered(area: Area2D) -> void:
+	var hazard_instance := _get_hazard_instance_from_area(area)
+	if hazard_instance == null:
+		return
+	if bool(hazard_instance.get_meta("was_hit", false)):
+		return
+	if _wagon_near_miss_area == null:
+		return
+	if not _is_hazard_ahead_of_area(hazard_instance, _wagon_near_miss_area):
+		return
+
+	hazard_instance.set_meta("near_miss_candidate", true)
+
+
+## Queues one near miss as soon as a candidate hazard exits the band below the wagon without hitting.
+func _on_wagon_near_miss_area_exited(area: Area2D) -> void:
+	var hazard_instance := _get_hazard_instance_from_area(area)
+	if hazard_instance == null:
+		return
+	if bool(hazard_instance.get_meta("was_hit", false)):
+		return
+	if bool(hazard_instance.get_meta("collision_pending", false)):
+		return
+	if bool(hazard_instance.get_meta("near_miss_pending", false)):
+		return
+	if bool(hazard_instance.get_meta("near_miss_awarded", false)):
+		return
+	if not bool(hazard_instance.get_meta("near_miss_candidate", false)):
+		return
+	if _wagon_near_miss_area == null:
+		return
+	if _is_hazard_ahead_of_area(hazard_instance, _wagon_near_miss_area):
+		return
+
+	hazard_instance.set_meta("near_miss_pending", true)
+	_pending_near_miss_hazards.append(hazard_instance)
+
+
+## Queues one clean hazard pass and frees the instance after it exits through a cleanup boundary.
+func _on_hazard_cleanup_area_entered(area: Area2D) -> void:
+	var hazard_instance := _get_hazard_instance_from_area(area)
+	if hazard_instance == null:
+		return
+	if bool(hazard_instance.get_meta("was_hit", false)):
+		return
+	if bool(hazard_instance.get_meta("collision_pending", false)):
+		return
+	if bool(hazard_instance.get_meta("pass_pending", false)):
+		return
+
+	hazard_instance.set_meta("pass_pending", true)
+	_pending_completed_passes.append({
+		"type": hazard_instance.get_meta("hazard_type", &""),
+	})
+	hazard_instance.queue_free()
+
+
+## Returns the spawned hazard instance that owns one hazard collision area.
+func _get_hazard_instance_from_area(area: Area2D) -> HazardInstanceType:
+	return null if area == null else area.get_parent() as HazardInstanceType
+
+
+## Returns whether the hazard is still approaching from above the supplied wagon-owned area.
+func _is_hazard_ahead_of_area(hazard: HazardInstanceType, wagon_area: Area2D) -> bool:
+	if hazard == null or wagon_area == null:
+		return false
+
+	var hazard_rect := hazard.get_collision_rect()
+	var wagon_area_rect := _get_area_rect(wagon_area)
+	return hazard_rect.end.y < wagon_area_rect.get_center().y
+
+
+## Returns the authored world-space rect for one wagon-owned area shape.
+func _get_area_rect(area: Area2D) -> Rect2:
+	if area == null:
+		return Rect2(Vector2.ZERO, Vector2.ZERO)
+
+	var collision_shape := area.get_child(0) as CollisionShape2D
+	if collision_shape == null:
+		return Rect2(area.global_position, Vector2.ZERO)
+
+	var rectangle_shape := collision_shape.shape as RectangleShape2D
+	if rectangle_shape == null:
+		return Rect2(collision_shape.global_position, Vector2.ZERO)
+
+	return Rect2(
+		collision_shape.global_position - (rectangle_shape.size * 0.5),
+		rectangle_shape.size
+	)
+
+
+## Returns the shared authored collision size from the reusable hazard scene.
+func _get_shared_hazard_collision_size() -> Vector2:
+	if _shared_hazard_collision_size != Vector2.ZERO:
+		return _shared_hazard_collision_size
+
+	var hazard := HAZARD_SCENE.instantiate() as Node
+	if hazard == null:
+		return Vector2.ZERO
+
+	var collision_shape := hazard.get_node_or_null("CollisionArea/CollisionShape") as CollisionShape2D
+	var rectangle_shape := collision_shape.shape as RectangleShape2D if collision_shape != null else null
+	_shared_hazard_collision_size = Vector2.ZERO if rectangle_shape == null else rectangle_shape.size
+	hazard.free()
+	return _shared_hazard_collision_size
 
 
 class SpawnBand:

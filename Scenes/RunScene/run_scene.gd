@@ -66,7 +66,9 @@ const STEER_ACTION_POSITIVE := "steer_right"
 const PAUSE_ACTION := "pause_run"
 const STEER_SPEED := 180.0
 const ROAD_HALF_WIDTH := 104.0
-const WAGON_BASE_Y := RunPresentationType.WAGON_BASE_Y
+const HAZARD_COLLISION_LAYER := 1
+const WAGON_COLLISION_LAYER := 2
+const HAZARD_CLEANUP_COLLISION_LAYER := 4
 const WAGON_BASE_COLOR := RunPresentationType.WAGON_BASE_COLOR
 const WAGON_HIT_COLOR := RunPresentationType.WAGON_HIT_COLOR
 const CAMERA_VERTICAL_OFFSET := RunPresentationType.CAMERA_VERTICAL_OFFSET
@@ -128,7 +130,6 @@ const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := RunDirectorType.WHEEL_LOOSE_FA
 const HORSE_PANIC_FAILURE_CARGO_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_CARGO_LOSS
 const HORSE_PANIC_FAILURE_SPEED_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_SPEED_LOSS
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FAILURE_INSTABILITY_DURATION
-const NEAR_MISS_MAX_HORIZONTAL_CLEARANCE := 12.0
 const BONUS_CALLOUT_DURATION := 1.1
 const BONUS_CALLOUT_START_OFFSET := Vector2(0.0, -64.0)
 const BONUS_CALLOUT_END_OFFSET := Vector2(0.0, -82.0)
@@ -144,7 +145,6 @@ const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := RunUiPresenterType.RECOVERY_STEP
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
 const ROADSIDE_DECOR_SPACING := RunPresentationType.ROADSIDE_DECOR_SPACING
 const ROADSIDE_DECOR_COUNT := RunPresentationType.ROADSIDE_DECOR_COUNT
-const WAGON_COLLISION_SIZE := Vector2(32.0, 64.0)
 const RECOVERY_STEP_PENDING_COLOR := RunUiPresenterType.RECOVERY_STEP_PENDING_COLOR
 const RECOVERY_STEP_ACTIVE_COLOR := RunUiPresenterType.RECOVERY_STEP_ACTIVE_COLOR
 const RECOVERY_STEP_DONE_COLOR := RunUiPresenterType.RECOVERY_STEP_DONE_COLOR
@@ -201,7 +201,28 @@ var _scroll_segment_a: Node2D = %ScrollSegmentA
 var _scroll_segment_b: Node2D = %ScrollSegmentB
 
 @onready
-var _wagon: Polygon2D = %Wagon
+var _wagon: Node2D = %Wagon
+
+@onready
+var _wagon_collision_area: Area2D = %WagonCollisionArea
+
+@onready
+var _wagon_collision_shape: CollisionShape2D = %WagonCollisionShape
+
+@onready
+var _wagon_near_miss_area: Area2D = %WagonNearMissArea
+
+@onready
+var _wagon_near_miss_shape: CollisionShape2D = %WagonNearMissShape
+
+@onready
+var _hazard_cleanup_bottom_area: Area2D = %HazardCleanupBottomArea
+
+@onready
+var _hazard_cleanup_left_area: Area2D = %HazardCleanupLeftArea
+
+@onready
+var _hazard_cleanup_right_area: Area2D = %HazardCleanupRightArea
 
 @onready
 var _wagon_shadow: AnimatedSprite2D = $World/Wagon/Shadow
@@ -458,6 +479,8 @@ func _ready() -> void:
 	_configure_environment_art()
 	_ensure_scroll_visuals()
 	_configure_vehicle_sprites()
+	_configure_wagon_collision_areas()
+	_configure_hazard_cleanup_areas()
 	_configure_distance_bar_band_markers()
 	_refresh_phase_callout()
 	_configure_touch_buttons()
@@ -492,7 +515,7 @@ func _ready() -> void:
 ## Applies the imported carriage, shadow, and horse art to the existing wagon rig nodes.
 func _configure_vehicle_sprites() -> void:
 	if _wagon != null:
-		_wagon.color = Color(1, 1, 1, 0)
+		_wagon.visible = true
 		_wagon.modulate = WAGON_BASE_COLOR
 	var carriage_sprite_frames := _build_carriage_sprite_frames()
 	var horse_sprite_frames := _build_horse_sprite_frames()
@@ -516,6 +539,44 @@ func _configure_vehicle_sprites() -> void:
 		_horse_right_sprite.animation = &"default"
 		_horse_right_sprite.frame = 0
 		_horse_right_sprite.play()
+
+
+## Wires the wagon hit and near-miss areas into the active hazard-overlap layers.
+func _configure_wagon_collision_areas() -> void:
+	if _wagon_collision_area == null:
+		return
+
+	_wagon_collision_area.monitoring = true
+	_wagon_collision_area.monitorable = true
+	_wagon_collision_area.collision_layer = WAGON_COLLISION_LAYER
+	_wagon_collision_area.collision_mask = HAZARD_COLLISION_LAYER
+	if _wagon_near_miss_area != null:
+		_wagon_near_miss_area.monitoring = true
+		_wagon_near_miss_area.monitorable = true
+		_wagon_near_miss_area.collision_layer = WAGON_COLLISION_LAYER
+		_wagon_near_miss_area.collision_mask = HAZARD_COLLISION_LAYER
+	_hazard_spawner.bind_wagon_collision_area(_wagon_collision_area)
+	_hazard_spawner.bind_wagon_near_miss_area(_wagon_near_miss_area)
+
+
+## Wires the hazard cleanup boundaries into the event-based pass and despawn flow.
+func _configure_hazard_cleanup_areas() -> void:
+	var cleanup_areas: Array[Area2D] = []
+	for cleanup_area in [
+		_hazard_cleanup_bottom_area,
+		_hazard_cleanup_left_area,
+		_hazard_cleanup_right_area,
+	]:
+		if cleanup_area == null:
+			continue
+
+		cleanup_area.monitoring = true
+		cleanup_area.monitorable = true
+		cleanup_area.collision_layer = HAZARD_CLEANUP_COLLISION_LAYER
+		cleanup_area.collision_mask = HAZARD_COLLISION_LAYER
+		cleanup_areas.append(cleanup_area)
+
+	_hazard_spawner.bind_hazard_cleanup_areas(cleanup_areas)
 
 
 ## Builds the animated carriage frame set from the exported sheet texture.
@@ -560,6 +621,10 @@ func _make_horse_sheet_frame(region: Rect2i) -> AtlasTexture:
 
 ## Applies the tiled road and desert art to the world background nodes.
 func _configure_environment_art() -> void:
+	if _backdrop != null:
+		_backdrop.visible = true
+	if _road != null:
+		_road.visible = true
 	_run_presentation.configure_environment_art(DESERT_TEXTURE, ROAD_TEXTURE)
 
 
@@ -709,6 +774,7 @@ func _process(delta: float) -> void:
 		-ROAD_HALF_WIDTH,
 		ROAD_HALF_WIDTH,
 	)
+	_update_wagon_visual()
 	_run_state.recover_speed(delta)
 	_run_state.distance_remaining = max(
 		0.0,
@@ -726,10 +792,7 @@ func _process(delta: float) -> void:
 		_run_hazard_resolver.resolve_frame(
 			_hazard_spawner,
 			_run_state,
-			_run_director,
-			_wagon.position,
-			WAGON_COLLISION_SIZE,
-			NEAR_MISS_MAX_HORIZONTAL_CLEARANCE
+			_run_director
 		)
 	)
 	_advance_failure_triggers(delta)

@@ -1,0 +1,21 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Systems/HazardSpawner/hazard_instance.gd" id="1_2f3mx"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_0qv8d"]
+size = Vector2(28, 28)
+
+[node name="Hazard" type="Node2D"]
+script = ExtResource("1_2f3mx")
+
+[node name="Visual" type="AnimatedSprite2D" parent="."]
+unique_name_in_owner = true
+
+[node name="CollisionArea" type="Area2D" parent="."]
+unique_name_in_owner = true
+collision_layer = 1
+collision_mask = 6
+
+[node name="CollisionShape" type="CollisionShape2D" parent="CollisionArea"]
+unique_name_in_owner = true
+shape = SubResource("RectangleShape2D_0qv8d")
