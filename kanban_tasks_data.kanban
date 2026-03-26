@@ -29,9 +29,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"3d2ac0a2-08e5-4c87-84a4-e1e5a2fdb896"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -75,7 +73,8 @@
 				"64b6e69a-a31a-4af1-ad0a-15ef0d940d11",
 				"f1ed9a74-0f24-4257-9578-518912255330",
 				"d34d8801-e9aa-4926-9ee8-5c369500c9b6",
-				"47d2dd19-d3cf-4359-b175-dd2d08f3bfd2"
+				"47d2dd19-d3cf-4359-b175-dd2d08f3bfd2",
+				"3d2ac0a2-08e5-4c87-84a4-e1e5a2fdb896"
 			]
 		}
 	],
@@ -900,7 +899,7 @@
 				},
 				{
 					"details": "Make the result content presentation resilient when the stats list grows or values get longer, and fold very thorough automated coverage for the result-screen layout into this same pass. If needed, tighten text sizing, row spacing, button spacing, or container behavior so the current result information still fits cleanly without losing readability or usability.\n\nDone when: by winning or collapsing a run and viewing the result screen normally, a reviewer can still read the result information and use the Restart and Title buttons without overlap or cutoff, and the layout remains stable even when the result stats vary across runs.",
-					"done": false
+					"done": true
 				}
 			]
 		},

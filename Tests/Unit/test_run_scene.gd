@@ -7,6 +7,7 @@ const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_P
 const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
 const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_PATH)
 const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
+const ResultPanelUiType := preload(ProjectPaths.RESULT_PANEL_UI_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 const RunUiPresenterType := preload(ProjectPaths.RUN_UI_PRESENTER_SCRIPT_PATH)
 
@@ -96,6 +97,11 @@ func _get_run_ui_presenter(scene: Node) -> RunUiPresenterType:
 ## Returns the visible stats-row container from the structured result panel.
 func _get_result_stats_rows(scene: Node) -> VBoxContainer:
 	return scene.get_node("%ResultStatsRows") as VBoxContainer
+
+
+## Returns the bounded scroll container that owns the visible result-stat rows.
+func _get_result_stats_scroll(scene: Node) -> ScrollContainer:
+	return scene.get_node("%ResultStatsScroll") as ScrollContainer
 
 
 ## Returns the rendered value for one named result-stat row, or an empty string when absent.
@@ -2782,6 +2788,66 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() 
 	assert_true(result_stats_rows.get_global_rect().end.y <= viewport_rect.end.y)
 	assert_true(restart_button.get_global_rect().end.y <= viewport_rect.end.y)
 	assert_true(title_button.get_global_rect().end.y <= viewport_rect.end.y)
+
+
+## Verifies longer summaries and denser stat lists stay bounded without pushing result buttons off-screen.
+func test_result_panel_when_content_is_dense_then_stats_scroll_and_buttons_remain_usable() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var result_panel := scene.get_node("%ResultPanel")
+	var dense_rows: Array = []
+	dense_rows.append(
+		ResultPanelUiType.ResultStatRowData.new(
+			"Longest frontier dispatch heading used for score breakdown",
+			"1565 points after a very long route report value that needs to wrap cleanly"
+		)
+	)
+	dense_rows.append(
+		ResultPanelUiType.ResultStatRowData.new(
+			"Best dispatch note",
+			"New Best Run! Best Score 1565 Best Grade A with extra dusty detail for wrapping"
+		)
+	)
+	for i in range(12):
+		dense_rows.append(
+			ResultPanelUiType.ResultStatRowData.new(
+				"Supplemental result stat %d with a longer label" % i,
+				"Value %d that remains readable even when the summary grows wider than usual" % i
+			)
+		)
+
+	result_panel.visible = true
+	result_panel.set_result_data(
+		"Delivered to Dust Gulch",
+		"New Best Run! | Best Score: 1565 | Best Grade: A | Long trail report with extra dispatch detail",
+		dense_rows
+	)
+	await wait_process_frames(2)
+
+	var viewport_rect: Rect2 = scene.get_viewport_rect()
+	var result_summary: Label = scene.get_node("%ResultSummary")
+	var result_stats_scroll := _get_result_stats_scroll(scene)
+	var result_stats_rows := _get_result_stats_rows(scene)
+	var restart_button: Button = scene.get_node(
+		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+	)
+	var title_button: Button = scene.get_node(
+		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
+	)
+	var first_row := result_stats_rows.get_child(0) as HBoxContainer
+	var first_row_name_label := first_row.get_node("StatNameLabel") as Label
+	var first_row_value_label := first_row.get_node("StatValueLabel") as Label
+
+	assert_true(result_summary.get_line_count() > 1)
+	assert_true(first_row_name_label.get_line_count() > 1)
+	assert_true(first_row_value_label.get_line_count() > 1)
+	assert_true(result_stats_scroll.get_global_rect().position.y >= result_summary.get_global_rect().end.y)
+	assert_true(result_stats_scroll.get_global_rect().end.y <= restart_button.get_global_rect().position.y)
+	assert_true(restart_button.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(title_button.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(result_stats_rows.size.y > result_stats_scroll.size.y)
 
 
 ## Verifies the structured result panel preview helper populates title, summary, and stat rows.

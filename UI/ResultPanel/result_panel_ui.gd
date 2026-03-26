@@ -21,7 +21,10 @@ var _title_label: Label = $ResultPadding/ResultVBox/ResultTitle
 var _summary_label: Label = $ResultPadding/ResultVBox/ResultSummary
 
 @onready
-var _stats_rows: VBoxContainer = $ResultPadding/ResultVBox/ResultStatsRows
+var _stats_scroll: ScrollContainer = $ResultPadding/ResultVBox/ResultStatsScroll
+
+@onready
+var _stats_rows: VBoxContainer = $ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows
 
 
 # Public Methods
@@ -32,6 +35,7 @@ func set_result_data(title: String, summary: String, stat_rows: Array) -> void:
 	_summary_label.text = summary
 	_summary_label.visible = not summary.is_empty()
 	_rebuild_stat_rows(stat_rows)
+	_reset_stats_scroll_position()
 
 
 ## Clears all structured stat rows from the current panel.
@@ -40,6 +44,7 @@ func clear_result_data() -> void:
 	_summary_label.text = ""
 	_summary_label.visible = false
 	_rebuild_stat_rows([])
+	_reset_stats_scroll_position()
 
 
 ## Populates the panel with representative dummy data while editing the scene in Godot.
@@ -84,6 +89,15 @@ func _build_editor_preview_rows() -> Array:
 		ResultStatRowData.new("Perfect Recoveries", "3"),
 		ResultStatRowData.new("Recovery Failures", "2"),
 	]
+
+
+## Returns the stat-list scroll position to the top whenever result content is refreshed.
+func _reset_stats_scroll_position() -> void:
+	if _stats_scroll == null:
+		return
+
+	_stats_scroll.scroll_horizontal = 0
+	_stats_scroll.scroll_vertical = 0
 
 
 # Inner Classes
