@@ -2,8 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cdm6b62edidaa" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
 [ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Systems/HazardSpawner/hazard_spawner.gd" id="2_ok7u7"]
-[ext_resource type="Texture2D" uid="uid://c87jx435lsdui" path="res://Assets/Tilesets/Carriage/Carriage-32x64.png" id="3_qapb8"]
-[ext_resource type="Texture2D" uid="uid://d0fxmc8h746io" path="res://Assets/Tilesets/Horse/Horse-16x48-Sheet.png" id="4_rn5qx"]
+[ext_resource type="Script" uid="uid://mraylpyhw2iy" path="res://UI/ResultPanel/result_panel_ui.gd" id="3_2a2m5"]
 [ext_resource type="Texture2D" uid="uid://bsmtbkgrqdt63" path="res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png" id="5_vvclu"]
 [ext_resource type="Texture2D" uid="uid://de6ppq0376jbi" path="res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png" id="6_kd7yq"]
 [ext_resource type="Texture2D" uid="uid://bfo6dckq6e7jq" path="res://Assets/Tilesets/Hazards/Tumbleweed/Tumbleweed-32x32.png" id="7_l2yxu"]
@@ -121,49 +120,51 @@ position = Vector2(0, 28)
 unique_name_in_owner = true
 position = Vector2(0, -60)
 
-[node name="MusicPlayer" type="AudioStreamPlayer" parent="." unique_id=926370908]
+[node name="AudioPlayers" type="Node" parent="." unique_id=1051716591]
+
+[node name="MusicPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=926370908]
 unique_name_in_owner = true
 
-[node name="WagonLoopPlayer" type="AudioStreamPlayer" parent="." unique_id=1278103680]
+[node name="WagonLoopPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=1278103680]
 unique_name_in_owner = true
 
-[node name="ImpactPlayer" type="AudioStreamPlayer" parent="." unique_id=1681492523]
+[node name="ImpactPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=1681492523]
 unique_name_in_owner = true
 
-[node name="PotholeImpactPlayer" type="AudioStreamPlayer" parent="." unique_id=45311515]
+[node name="PotholeImpactPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=45311515]
 unique_name_in_owner = true
 
-[node name="RockImpactPlayer" type="AudioStreamPlayer" parent="." unique_id=1774152067]
+[node name="RockImpactPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=1774152067]
 unique_name_in_owner = true
 
-[node name="TumbleweedImpactPlayer" type="AudioStreamPlayer" parent="." unique_id=1446223168]
+[node name="TumbleweedImpactPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=1446223168]
 unique_name_in_owner = true
 
-[node name="WheelLooseAmbientPlayer" type="AudioStreamPlayer" parent="." unique_id=444151193]
+[node name="WheelLooseAmbientPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=444151193]
 unique_name_in_owner = true
 
-[node name="HorsePanicAmbientPlayer" type="AudioStreamPlayer" parent="." unique_id=1568543067]
+[node name="HorsePanicAmbientPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=1568543067]
 unique_name_in_owner = true
 
-[node name="RecoveryStepPlayer" type="AudioStreamPlayer" parent="." unique_id=346250577]
+[node name="RecoveryStepPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=346250577]
 unique_name_in_owner = true
 
-[node name="RecoverySuccessPlayer" type="AudioStreamPlayer" parent="." unique_id=2098813063]
+[node name="RecoverySuccessPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=2098813063]
 unique_name_in_owner = true
 
-[node name="RecoveryFailPlayer" type="AudioStreamPlayer" parent="." unique_id=401007673]
+[node name="RecoveryFailPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=401007673]
 unique_name_in_owner = true
 
-[node name="PauseTogglePlayer" type="AudioStreamPlayer" parent="." unique_id=2071713895]
+[node name="PauseTogglePlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=2071713895]
 unique_name_in_owner = true
 
-[node name="FailurePlayer" type="AudioStreamPlayer" parent="." unique_id=20840496]
+[node name="FailurePlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=20840496]
 unique_name_in_owner = true
 
-[node name="ResultPlayer" type="AudioStreamPlayer" parent="." unique_id=1948014304]
+[node name="ResultPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=1948014304]
 unique_name_in_owner = true
 
-[node name="UIClickPlayer" type="AudioStreamPlayer" parent="." unique_id=200356434]
+[node name="UIClickPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=200356434]
 unique_name_in_owner = true
 
 [node name="HUDLayer" type="CanvasLayer" parent="." unique_id=601465039]
@@ -251,7 +252,7 @@ show_percentage = false
 
 [node name="DistanceBandMarkers" type="Control" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=1734594783]
 unique_name_in_owner = true
-layout_mode = 0
+anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -293,17 +294,14 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="PhaseCalloutLayer" type="CanvasLayer" parent="." unique_id=1713599605]
-layer = 1
 
 [node name="PhaseCalloutPanel" type="PanelContainer" parent="PhaseCalloutLayer" unique_id=1557692818]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(216, 30)
-anchors_preset = 0
+anchors_preset = 5
 anchor_left = 0.5
-anchor_top = 0.0
 anchor_right = 0.5
-anchor_bottom = 0.0
 offset_left = -108.0
 offset_top = 12.0
 offset_right = 108.0
@@ -570,7 +568,7 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -210.0
-offset_top = -172.0
+offset_top = -174.0
 offset_right = 210.0
 offset_bottom = 172.0
 grow_horizontal = 2
@@ -580,24 +578,25 @@ grow_vertical = 2
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
+script = ExtResource("3_2a2m5")
 
 [node name="ResultPadding" type="MarginContainer" parent="ResultLayer/ResultMargin/ResultPanel" unique_id=1197715509]
 layout_mode = 2
 theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 10
+theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_bottom = 8
 
 [node name="ResultVBox" type="VBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding" unique_id=601728710]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 
 [node name="ResultTitle" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=781382340]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 22
-text = "Run Complete"
+text = "Delivered to Dust Gulch"
 horizontal_alignment = 1
 
 [node name="ResultSummary" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=750472307]
@@ -605,17 +604,185 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
-text = "Summary"
+text = "New Best Run! | Best Score: 1565 | Best Grade: A"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="ResultStats" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=1184964185]
+[node name="ResultStatsRows" type="VBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=1184964185]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="PreviewScoreRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows" unique_id=1792000001]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewScoreRow" unique_id=1792000002]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
-text = "Stats"
-autowrap_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Score"
+
+[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewScoreRow" unique_id=1792000003]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 16
+text = "1565"
+horizontal_alignment = 2
+
+[node name="PreviewGradeRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows" unique_id=1792000004]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewGradeRow" unique_id=1792000005]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Delivery Grade"
+
+[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewGradeRow" unique_id=1792000006]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 16
+text = "A"
+horizontal_alignment = 2
+
+[node name="PreviewHealthRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows" unique_id=1792000007]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewHealthRow" unique_id=1792000008]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Health"
+
+[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewHealthRow" unique_id=1792000009]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 16
+text = "54"
+horizontal_alignment = 2
+
+[node name="PreviewCargoRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows" unique_id=1792000010]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewCargoRow" unique_id=1792000011]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Cargo"
+
+[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewCargoRow" unique_id=1792000012]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 16
+text = "88"
+horizontal_alignment = 2
+
+[node name="PreviewDistanceRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows" unique_id=1792000013]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewDistanceRow" unique_id=1792000014]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Distance traveled"
+
+[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewDistanceRow" unique_id=1792000015]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 16
+text = "500 / 500"
+horizontal_alignment = 2
+
+[node name="PreviewDodgedRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows" unique_id=1792000016]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewDodgedRow" unique_id=1792000017]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Hazards Dodged"
+
+[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewDodgedRow" unique_id=1792000018]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 16
+text = "12"
+horizontal_alignment = 2
+
+[node name="PreviewNearMissRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows" unique_id=1792000019]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewNearMissRow" unique_id=1792000020]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Near Misses"
+
+[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewNearMissRow" unique_id=1792000021]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 16
+text = "4"
+horizontal_alignment = 2
+
+[node name="PreviewPerfectRecoveryRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows" unique_id=1792000022]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewPerfectRecoveryRow" unique_id=1792000023]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Perfect Recoveries"
+
+[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewPerfectRecoveryRow" unique_id=1792000024]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 16
+text = "3"
+horizontal_alignment = 2
+
+[node name="PreviewRecoveryFailureRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows" unique_id=1792000025]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewRecoveryFailureRow" unique_id=1792000026]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Recovery Failures"
+
+[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsRows/PreviewRecoveryFailureRow" unique_id=1792000027]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
+theme_override_font_sizes/font_size = 16
+text = "2"
+horizontal_alignment = 2
 
 [node name="ResultButtons" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=697861436]
 layout_mode = 2
@@ -631,4 +798,3 @@ text = "Restart"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Title"
-

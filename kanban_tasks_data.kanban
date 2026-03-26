@@ -22,7 +22,6 @@
 			"title": "Todo",
 			"tasks": [
 				"7184bf85-2a59-4d0a-8cd8-9f4366ca8273",
-				"3d2ac0a2-08e5-4c87-84a4-e1e5a2fdb896",
 				"0280131b-d23f-4723-993e-da5e74bcb276",
 				"313e5d7e-e509-49a5-b3d0-850b7af8d5a6"
 			]
@@ -30,7 +29,9 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": []
+			"tasks": [
+				"3d2ac0a2-08e5-4c87-84a4-e1e5a2fdb896"
+			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -895,7 +896,7 @@
 			"steps": [
 				{
 					"details": "Rework the result-screen layout so the full panel fits within the supported viewport without pushing the button row off the bottom. Adjust the result panel sizing, anchors, margins, spacing, and stat-list layout as needed to keep the title, best-run summary, core result stats, and buttons on screen at the same time while preserving the current visual style.\n\nDone when: by reaching the end of a run normally, a reviewer can see the full result title, best-run line, score summary, stats list, and both result buttons together on screen with no clipping or off-screen overflow.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Make the result content presentation resilient when the stats list grows or values get longer, and fold very thorough automated coverage for the result-screen layout into this same pass. If needed, tighten text sizing, row spacing, button spacing, or container behavior so the current result information still fits cleanly without losing readability or usability.\n\nDone when: by winning or collapsing a run and viewing the result screen normally, a reviewer can still read the result information and use the Restart and Title buttons without overlap or cutoff, and the layout remains stable even when the result stats vary across runs.",

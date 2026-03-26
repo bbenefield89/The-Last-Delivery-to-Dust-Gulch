@@ -15,6 +15,7 @@ const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GE
 const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_PATH)
 const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
 const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_PATH)
+const ResultPanelUiType := preload(ProjectPaths.RESULT_PANEL_UI_SCRIPT_PATH)
 const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 const RunUiPresenterType := preload(ProjectPaths.RUN_UI_PRESENTER_SCRIPT_PATH)
@@ -296,16 +297,7 @@ var _recovery_hint: Label = %RecoveryHint
 var _recovery_steps: HBoxContainer = %RecoverySteps
 
 @onready
-var _result_panel: PanelContainer = %ResultPanel
-
-@onready
-var _result_title: Label = %ResultTitle
-
-@onready
-var _result_summary: Label = %ResultSummary
-
-@onready
-var _result_stats: Label = %ResultStats
+var _result_panel: ResultPanelUiType = %ResultPanel
 
 @onready
 var _result_restart_button: Button = (
@@ -459,9 +451,6 @@ func _ready() -> void:
 		_recovery_hint,
 		_recovery_steps,
 		_result_panel,
-		_result_title,
-		_result_summary,
-		_result_stats,
 		_result_restart_button,
 		_result_return_button,
 		ARROW_FONT
@@ -771,9 +760,9 @@ func _refresh_bonus_callout() -> void:
 	if _bonus_callout_panel == null or _bonus_callout_label == null:
 		return
 
-	var is_visible := _bonus_callout_remaining > 0.0 and _bonus_callout_text != ""
-	_bonus_callout_panel.visible = is_visible
-	if not is_visible:
+	var should_show_callout := _bonus_callout_remaining > 0.0 and _bonus_callout_text != ""
+	_bonus_callout_panel.visible = should_show_callout
+	if not should_show_callout:
 		_bonus_callout_label.text = ""
 		_bonus_callout_panel.self_modulate = Color(1, 1, 1, 1)
 		return
@@ -792,14 +781,14 @@ func _refresh_phase_callout() -> void:
 	if _phase_callout_panel == null or _phase_callout_label == null:
 		return
 
-	var is_visible := (
+	var should_show_callout := (
 		_run_state != null
 		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
 		and _phase_callout_remaining > 0.0
 		and _phase_callout_text != ""
 	)
-	_phase_callout_panel.visible = is_visible
-	if not is_visible:
+	_phase_callout_panel.visible = should_show_callout
+	if not should_show_callout:
 		_phase_callout_label.text = ""
 		_phase_callout_panel.self_modulate = Color(1, 1, 1, 1)
 		return
@@ -837,6 +826,24 @@ func _refresh_pause_menu() -> void:
 ## Refreshes the end-of-run result panel contents and visibility.
 func _refresh_result_screen() -> void:
 	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+
+
+## Populates the result panel with representative dummy data while editing the scene in Godot.
+func _apply_editor_result_preview() -> void:
+	if not Engine.is_editor_hint():
+		return
+	if _result_panel == null:
+		return
+
+	_result_panel.visible = true
+	_result_panel.show_editor_preview()
+
+	if _onboarding_panel != null:
+		_onboarding_panel.visible = false
+	if _pause_overlay != null:
+		_pause_overlay.visible = false
+	if _recovery_panel != null:
+		_recovery_panel.visible = false
 
 
 ## Persists a newly completed run exactly once when it beats the stored best score.

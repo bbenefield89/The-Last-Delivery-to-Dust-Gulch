@@ -4,6 +4,7 @@ extends RefCounted
 
 
 # Constants
+const ResultPanelUiType := preload(ProjectPaths.RESULT_PANEL_UI_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 
@@ -67,10 +68,7 @@ var _recovery_panel: PanelContainer
 var _recovery_title: Label
 var _recovery_hint: Label
 var _recovery_steps: HBoxContainer
-var _result_panel: PanelContainer
-var _result_title: Label
-var _result_summary: Label
-var _result_stats: Label
+var _result_panel: ResultPanelUiType
 var _result_restart_button: Button
 var _result_return_button: Button
 var _arrow_font: Font
@@ -103,10 +101,7 @@ func configure_scene_nodes(
 	recovery_title: Label,
 	recovery_hint: Label,
 	recovery_steps: HBoxContainer,
-	result_panel: PanelContainer,
-	result_title: Label,
-	result_summary: Label,
-	result_stats: Label,
+	result_panel: ResultPanelUiType,
 	result_restart_button: Button,
 	result_return_button: Button,
 	arrow_font: Font
@@ -135,9 +130,6 @@ func configure_scene_nodes(
 	_recovery_hint = recovery_hint
 	_recovery_steps = recovery_steps
 	_result_panel = result_panel
-	_result_title = result_title
-	_result_summary = result_summary
-	_result_stats = result_stats
 	_result_restart_button = result_restart_button
 	_result_return_button = result_return_button
 	_arrow_font = arrow_font
@@ -239,14 +231,14 @@ func refresh_onboarding_prompt() -> void:
 	if _onboarding_panel == null or _onboarding_title == null or _onboarding_body == null or _onboarding_hint == null:
 		return
 
-	var is_visible := (
+	var should_show_panel := (
 		_run_state != null
 		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
 		and onboarding_active
 		and not pause_menu_open
 	)
-	_onboarding_panel.visible = is_visible
-	if not is_visible:
+	_onboarding_panel.visible = should_show_panel
+	if not should_show_panel:
 		return
 
 	_onboarding_title.text = ONBOARDING_TITLE
@@ -323,11 +315,15 @@ func refresh_pause_menu() -> void:
 	if _pause_overlay == null or _pause_panel == null:
 		return
 
-	var is_visible := _run_state != null and _run_state.result == RunStateType.RESULT_IN_PROGRESS and pause_menu_open
-	_pause_overlay.visible = is_visible
-	_pause_panel.visible = is_visible
+	var should_show_pause_menu := (
+		_run_state != null
+		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
+		and pause_menu_open
+	)
+	_pause_overlay.visible = should_show_pause_menu
+	_pause_panel.visible = should_show_pause_menu
 	if (
-		is_visible
+		should_show_pause_menu
 		and _pause_resume_button != null
 		and _pause_restart_button != null
 		and _pause_return_button != null
@@ -342,46 +338,15 @@ func refresh_pause_menu() -> void:
 
 ## Refreshes the end-of-run result panel contents and visibility.
 func refresh_result_screen(best_run_summary: String) -> void:
-	if _result_panel == null or _result_title == null or _result_summary == null or _result_stats == null:
+	if _result_panel == null:
 		return
 	if _run_state == null or _run_state.result == RunStateType.RESULT_IN_PROGRESS:
 		_result_panel.visible = false
-		_result_summary.visible = false
+		_result_panel.clear_result_data()
 		return
 
 	_result_panel.visible = true
-	match _run_state.result:
-		RunStateType.RESULT_SUCCESS:
-			_result_title.text = "Delivered to Dust Gulch"
-		RunStateType.RESULT_COLLAPSED:
-			_result_title.text = "Wagon Collapsed"
-		_:
-			_result_title.text = "Run Complete"
-
-	_result_summary.text = best_run_summary
-	_result_summary.visible = not _result_summary.text.is_empty()
-	_result_stats.text = (
-		"Score: %d\n"
-		+ "Delivery Grade: %s\n"
-		+ "Health: %d\n"
-		+ "Cargo: %d\n"
-		+ "Distance traveled: %.0f / %.0f\n"
-		+ "Hazards Dodged: %d\n"
-		+ "Near Misses: %d\n"
-		+ "Perfect Recoveries: %d\n"
-		+ "Recovery Failures: %d"
-	) % [
-		_run_state.get_score(),
-		_run_state.get_delivery_grade(),
-		_run_state.wagon_health,
-		_run_state.cargo_value,
-		_run_state.get_distance_traveled(),
-		_run_state.route_distance,
-		_run_state.hazards_dodged,
-		_run_state.near_misses,
-		_run_state.perfect_recoveries,
-		_run_state.recovery_failures,
-	]
+	_result_panel.set_result_data(_get_result_title(), best_run_summary, _build_result_stat_rows())
 	if (
 		_result_restart_button != null
 		and _result_return_button != null
@@ -391,20 +356,55 @@ func refresh_result_screen(best_run_summary: String) -> void:
 		focus_default_result_button()
 
 
+## Returns the visible result title that matches the active run outcome.
+func _get_result_title() -> String:
+	match _run_state.result:
+		RunStateType.RESULT_SUCCESS:
+			return "Delivered to Dust Gulch"
+		RunStateType.RESULT_COLLAPSED:
+			return "Wagon Collapsed"
+		_:
+			return "Run Complete"
+
+
+## Builds the ordered structured stat rows shown in the result panel.
+func _build_result_stat_rows() -> Array:
+	return [
+		ResultPanelUiType.ResultStatRowData.new("Score", "%d" % _run_state.get_score()),
+		ResultPanelUiType.ResultStatRowData.new("Delivery Grade", _run_state.get_delivery_grade()),
+		ResultPanelUiType.ResultStatRowData.new("Health", "%d" % _run_state.wagon_health),
+		ResultPanelUiType.ResultStatRowData.new("Cargo", "%d" % _run_state.cargo_value),
+		ResultPanelUiType.ResultStatRowData.new(
+			"Distance traveled",
+			"%.0f / %.0f" % [_run_state.get_distance_traveled(), _run_state.route_distance]
+		),
+		ResultPanelUiType.ResultStatRowData.new("Hazards Dodged", "%d" % _run_state.hazards_dodged),
+		ResultPanelUiType.ResultStatRowData.new("Near Misses", "%d" % _run_state.near_misses),
+		ResultPanelUiType.ResultStatRowData.new(
+			"Perfect Recoveries",
+			"%d" % _run_state.perfect_recoveries
+		),
+		ResultPanelUiType.ResultStatRowData.new(
+			"Recovery Failures",
+			"%d" % _run_state.recovery_failures
+		),
+	]
+
+
 ## Shows touch controls only while the run is actively playable on a supported runtime.
 func refresh_touch_controls() -> void:
 	if _touch_layer == null:
 		return
 
 	_refresh_touch_controls_runtime_state()
-	var is_visible := should_show_touch_controls()
-	_touch_layer.visible = is_visible
+	var should_show_layer := should_show_touch_controls()
+	_touch_layer.visible = should_show_layer
 	if _touch_left_button != null:
-		_touch_left_button.disabled = not is_visible
+		_touch_left_button.disabled = not should_show_layer
 	if _touch_right_button != null:
-		_touch_right_button.disabled = not is_visible
+		_touch_right_button.disabled = not should_show_layer
 	if _touch_pause_button != null:
-		_touch_pause_button.disabled = not is_visible
+		_touch_pause_button.disabled = not should_show_layer
 
 
 ## Updates the pause state and returns whether it changed this frame.

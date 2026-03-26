@@ -91,6 +91,27 @@ func _get_run_audio_presenter(scene: Node) -> RunAudioPresenterType:
 ## Returns the extracted UI presenter bound to the active test scene.
 func _get_run_ui_presenter(scene: Node) -> RunUiPresenterType:
 	return scene._run_ui_presenter as RunUiPresenterType
+
+
+## Returns the visible stats-row container from the structured result panel.
+func _get_result_stats_rows(scene: Node) -> VBoxContainer:
+	return scene.get_node("%ResultStatsRows") as VBoxContainer
+
+
+## Returns the rendered value for one named result-stat row, or an empty string when absent.
+func _get_result_stat_value(scene: Node, stat_name: String) -> String:
+	var result_stats_rows := _get_result_stats_rows(scene)
+	for child in result_stats_rows.get_children():
+		var stat_row := child as HBoxContainer
+		if stat_row == null:
+			continue
+
+		var stat_name_label := stat_row.get_node("StatNameLabel") as Label
+		var stat_value_label := stat_row.get_node("StatValueLabel") as Label
+		if stat_name_label != null and stat_name_label.text == stat_name and stat_value_label != null:
+			return stat_value_label.text
+
+	return ""
 # Public Methods
 
 
@@ -2561,21 +2582,22 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 	scene._refresh_result_screen()
 
 	var result_summary: Label = scene.get_node("%ResultSummary")
-	var result_stats: Label = scene.get_node("%ResultStats")
+	var result_stats_rows := _get_result_stats_rows(scene)
 	assert_true(result_summary.visible)
 	assert_string_contains(result_summary.text, "New Best Run!")
 	assert_string_contains(result_summary.text, "Best Score: 1565")
 	assert_string_contains(result_summary.text, "Best Grade: A")
-	assert_string_contains(result_stats.text, "Score: 1565")
-	assert_string_contains(result_stats.text, "Delivery Grade: A")
-	assert_string_contains(result_stats.text, "Health: 41")
-	assert_string_contains(result_stats.text, "Cargo: 72")
-	assert_string_contains(result_stats.text, "Distance traveled: 500 / 500")
-	assert_string_contains(result_stats.text, "Hazards Dodged: 9")
-	assert_string_contains(result_stats.text, "Near Misses: 3")
-	assert_string_contains(result_stats.text, "Perfect Recoveries: 2")
-	assert_string_contains(result_stats.text, "Recovery Failures: 1")
-	assert_false(result_stats.text.contains("Speed:"))
+	assert_eq(result_stats_rows.get_child_count(), 9)
+	assert_eq(_get_result_stat_value(scene, "Score"), "1565")
+	assert_eq(_get_result_stat_value(scene, "Delivery Grade"), "A")
+	assert_eq(_get_result_stat_value(scene, "Health"), "41")
+	assert_eq(_get_result_stat_value(scene, "Cargo"), "72")
+	assert_eq(_get_result_stat_value(scene, "Distance traveled"), "500 / 500")
+	assert_eq(_get_result_stat_value(scene, "Hazards Dodged"), "9")
+	assert_eq(_get_result_stat_value(scene, "Near Misses"), "3")
+	assert_eq(_get_result_stat_value(scene, "Perfect Recoveries"), "2")
+	assert_eq(_get_result_stat_value(scene, "Recovery Failures"), "1")
+	assert_eq(_get_result_stat_value(scene, "Speed"), "")
 
 	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
 	var return_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton")
@@ -2605,21 +2627,22 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 
 	var result_title: Label = scene.get_node("%ResultTitle")
 	var result_summary: Label = scene.get_node("%ResultSummary")
-	var result_stats: Label = scene.get_node("%ResultStats")
+	var result_stats_rows := _get_result_stats_rows(scene)
 	assert_eq(result_title.text, "Wagon Collapsed")
 	assert_true(result_summary.visible)
 	assert_string_contains(result_summary.text, "New Best Run!")
 	assert_string_contains(result_summary.text, "Best Score: 400")
 	assert_string_contains(result_summary.text, "Best Grade: F")
-	assert_string_contains(result_stats.text, "Score: 400")
-	assert_string_contains(result_stats.text, "Delivery Grade: F")
-	assert_string_contains(result_stats.text, "Health: 20")
-	assert_string_contains(result_stats.text, "Cargo: 10")
-	assert_string_contains(result_stats.text, "Distance traveled: 125 / 500")
-	assert_string_contains(result_stats.text, "Hazards Dodged: 2")
-	assert_string_contains(result_stats.text, "Near Misses: 1")
-	assert_string_contains(result_stats.text, "Perfect Recoveries: 0")
-	assert_string_contains(result_stats.text, "Recovery Failures: 3")
+	assert_eq(result_stats_rows.get_child_count(), 9)
+	assert_eq(_get_result_stat_value(scene, "Score"), "400")
+	assert_eq(_get_result_stat_value(scene, "Delivery Grade"), "F")
+	assert_eq(_get_result_stat_value(scene, "Health"), "20")
+	assert_eq(_get_result_stat_value(scene, "Cargo"), "10")
+	assert_eq(_get_result_stat_value(scene, "Distance traveled"), "125 / 500")
+	assert_eq(_get_result_stat_value(scene, "Hazards Dodged"), "2")
+	assert_eq(_get_result_stat_value(scene, "Near Misses"), "1")
+	assert_eq(_get_result_stat_value(scene, "Perfect Recoveries"), "0")
+	assert_eq(_get_result_stat_value(scene, "Recovery Failures"), "3")
 
 
 ## Verifies the completed-run result flow does not overwrite a higher stored best score.
@@ -2706,7 +2729,7 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -
 	var viewport_rect: Rect2 = scene.get_viewport_rect()
 	var result_title: Label = scene.get_node("%ResultTitle")
 	var result_summary: Label = scene.get_node("%ResultSummary")
-	var result_stats: Label = scene.get_node("%ResultStats")
+	var result_stats_rows := _get_result_stats_rows(scene)
 	var restart_button: Button = scene.get_node(
 		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
 	)
@@ -2716,7 +2739,7 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -
 
 	assert_true(result_title.get_global_rect().position.y >= viewport_rect.position.y)
 	assert_true(result_summary.get_global_rect().end.y <= viewport_rect.end.y)
-	assert_true(result_stats.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(result_stats_rows.get_global_rect().end.y <= viewport_rect.end.y)
 	assert_true(restart_button.get_global_rect().end.y <= viewport_rect.end.y)
 	assert_true(title_button.get_global_rect().end.y <= viewport_rect.end.y)
 
@@ -2746,7 +2769,7 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() 
 	var viewport_rect: Rect2 = scene.get_viewport_rect()
 	var result_title: Label = scene.get_node("%ResultTitle")
 	var result_summary: Label = scene.get_node("%ResultSummary")
-	var result_stats: Label = scene.get_node("%ResultStats")
+	var result_stats_rows := _get_result_stats_rows(scene)
 	var restart_button: Button = scene.get_node(
 		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
 	)
@@ -2756,9 +2779,60 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() 
 
 	assert_true(result_title.get_global_rect().position.y >= viewport_rect.position.y)
 	assert_true(result_summary.get_global_rect().end.y <= viewport_rect.end.y)
-	assert_true(result_stats.get_global_rect().end.y <= viewport_rect.end.y)
+	assert_true(result_stats_rows.get_global_rect().end.y <= viewport_rect.end.y)
 	assert_true(restart_button.get_global_rect().end.y <= viewport_rect.end.y)
 	assert_true(title_button.get_global_rect().end.y <= viewport_rect.end.y)
+
+
+## Verifies the structured result panel preview helper populates title, summary, and stat rows.
+func test_result_panel_preview_helper_populates_structured_dummy_data() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var result_panel := scene.get_node("%ResultPanel")
+	result_panel.show_editor_preview()
+
+	var result_title: Label = scene.get_node("%ResultTitle")
+	var result_summary: Label = scene.get_node("%ResultSummary")
+	var result_stats_rows := _get_result_stats_rows(scene)
+
+	assert_eq(result_title.text, "Delivered to Dust Gulch")
+	assert_eq(result_summary.text, "New Best Run! | Best Score: 1565 | Best Grade: A")
+	assert_eq(result_stats_rows.get_child_count(), 9)
+	assert_eq(_get_result_stat_value(scene, "Score"), "1565")
+	assert_eq(_get_result_stat_value(scene, "Distance traveled"), "500 / 500")
+	assert_eq(_get_result_stat_value(scene, "Hazards Dodged"), "12")
+	assert_eq(_get_result_stat_value(scene, "Near Misses"), "4")
+	assert_eq(_get_result_stat_value(scene, "Perfect Recoveries"), "3")
+	assert_eq(_get_result_stat_value(scene, "Recovery Failures"), "2")
+
+
+## Verifies the editor preview helper fills the result screen with representative dummy data.
+func test_apply_editor_result_preview_populates_result_screen_with_dummy_data() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	scene._apply_editor_result_preview()
+
+	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
+	var result_title: Label = scene.get_node("%ResultTitle")
+	var result_summary: Label = scene.get_node("%ResultSummary")
+	var result_stats_rows := _get_result_stats_rows(scene)
+
+	assert_eq(result_panel.visible, Engine.is_editor_hint())
+	if not Engine.is_editor_hint():
+		return
+
+	assert_eq(result_title.text, "Delivered to Dust Gulch")
+	assert_eq(result_summary.text, "New Best Run! | Best Score: 1565 | Best Grade: A")
+	assert_eq(result_stats_rows.get_child_count(), 9)
+	assert_eq(_get_result_stat_value(scene, "Score"), "1565")
+	assert_eq(_get_result_stat_value(scene, "Hazards Dodged"), "12")
+	assert_eq(_get_result_stat_value(scene, "Near Misses"), "4")
+	assert_eq(_get_result_stat_value(scene, "Perfect Recoveries"), "3")
+	assert_eq(_get_result_stat_value(scene, "Recovery Failures"), "2")
 
 
 ## Verifies result panel buttons emit restart and return signals.
@@ -2944,6 +3018,11 @@ func test_result_panel_is_darkened_without_full_screen_backdrop() -> void:
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	scene.setup(state)
+	scene._refresh_result_screen()
+
 	assert_false(scene.has_node("%ResultBackdrop"))
 
 	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
@@ -2954,10 +3033,15 @@ func test_result_panel_is_darkened_without_full_screen_backdrop() -> void:
 
 	var result_title: Label = scene.get_node("%ResultTitle")
 	var result_summary: Label = scene.get_node("%ResultSummary")
-	var result_stats: Label = scene.get_node("%ResultStats")
+	var result_stats_rows := _get_result_stats_rows(scene)
+	var sample_stat_row := result_stats_rows.get_child(0) as HBoxContainer
+	assert_not_null(sample_stat_row)
+	var stat_name_label := sample_stat_row.get_node("StatNameLabel") as Label
+	var stat_value_label := sample_stat_row.get_node("StatValueLabel") as Label
 	assert_eq(result_title.get_theme_color("font_color"), Color(1, 1, 1, 1))
 	assert_eq(result_summary.get_theme_color("font_color"), Color(1, 1, 1, 1))
-	assert_eq(result_stats.get_theme_color("font_color"), Color(1, 1, 1, 1))
+	assert_eq(stat_name_label.get_theme_color("font_color"), Color(1, 1, 1, 1))
+	assert_eq(stat_value_label.get_theme_color("font_color"), Color(0.980392, 0.929412, 0.803922, 1))
 
 
 ## Verifies step4 presentation nodes exist for dust and audio.
