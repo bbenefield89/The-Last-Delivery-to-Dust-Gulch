@@ -1,0 +1,11 @@
+[gd_resource type="Resource" format=3 uid="uid://bkym5fx7a11xt"]
+
+[ext_resource type="Script" uid="uid://f48r4not0qda" path="res://Systems/HazardSpawner/hazard_definition.gd" id="1_wfg64"]
+[ext_resource type="Texture2D" uid="uid://de6ppq0376jbi" path="res://Assets/Tilesets/Hazards/Boulder/Boulder-32x32.png" id="2_fpkpr"]
+
+[resource]
+script = ExtResource("1_wfg64")
+hazard_type = &"rock"
+damage = 18
+cargo_damage = 9
+texture = ExtResource("2_fpkpr")

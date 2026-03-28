@@ -1,13 +1,21 @@
 extends GutTest
 
 # Constants
+const HAZARD_SCENE := preload(ProjectPaths.HAZARD_SCENE_PATH)
+const HazardDefinitionType := preload(ProjectPaths.HAZARD_DEFINITION_SCRIPT_PATH)
+const HazardInstanceType := preload(ProjectPaths.HAZARD_INSTANCE_SCRIPT_PATH)
 const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
 
 
 const POTHOLE_TEXTURE := preload(AssetPaths.POTHOLE_TEXTURE_PATH)
 const ROCK_TEXTURE := preload(AssetPaths.ROCK_TEXTURE_PATH)
 const TUMBLEWEED_TEXTURE := preload(AssetPaths.TUMBLEWEED_TEXTURE_PATH)
+const HAZARD_COLLISION_LAYER := 1
+const WAGON_COLLISION_LAYER := 2
+const HAZARD_CLEANUP_COLLISION_LAYER := 4
 const LIVESTOCK_TEXTURE := preload(AssetPaths.LIVESTOCK_TEXTURE_PATH)
+
+
 # Private Methods
 
 
@@ -15,10 +23,6 @@ const LIVESTOCK_TEXTURE := preload(AssetPaths.LIVESTOCK_TEXTURE_PATH)
 ## Helper for create seeded spawner.
 func _create_seeded_spawner() -> Node:
 	var spawner := HazardSpawnerType.new()
-	spawner.pothole_texture = POTHOLE_TEXTURE
-	spawner.rock_texture = ROCK_TEXTURE
-	spawner.tumbleweed_texture = TUMBLEWEED_TEXTURE
-	spawner.livestock_texture = LIVESTOCK_TEXTURE
 	add_child_autofree(spawner)
 	return spawner
 
@@ -59,7 +63,81 @@ func _assert_route_phase_band(
 	assert_eq(band.weights.livestock, livestock_weight)
 	assert_eq(band.allows_pressure_pair, allows_pressure_pair)
 	assert_eq(band.lane_indices, expected_lane_indices)
-# Public Methods
+
+
+## Returns one spawned shared hazard instance from the spawner.
+func _get_spawned_hazard(spawner: Node, index: int) -> HazardInstanceType:
+	return spawner.get_child(index) as HazardInstanceType
+
+
+## Returns the visual node owned by one shared hazard instance.
+func _get_hazard_visual(hazard: HazardInstanceType) -> AnimatedSprite2D:
+	return hazard.get_visual()
+
+
+## Returns one frame texture from the hazard's default animation.
+func _get_hazard_frame_texture(hazard: HazardInstanceType, frame_index: int = 0) -> Texture2D:
+	return _get_hazard_visual(hazard).sprite_frames.get_frame_texture(&"default", frame_index)
+
+
+## Returns the authored collision size from the shared hazard scene.
+func _get_shared_hazard_collision_size() -> Vector2:
+	var hazard := HAZARD_SCENE.instantiate()
+	autofree(hazard)
+
+	var collision_shape := hazard.get_node("CollisionArea/CollisionShape") as CollisionShape2D
+	var rectangle_shape := collision_shape.shape as RectangleShape2D
+	return Vector2.ZERO if rectangle_shape == null else rectangle_shape.size
+
+
+## Builds one lightweight wagon collision area that hazard scenes can overlap in tests.
+func _build_wagon_collision_area(
+	spawner: HazardSpawnerType,
+	position: Vector2,
+	size: Vector2
+) -> Area2D:
+	var wagon_area := Area2D.new()
+	add_child_autofree(wagon_area)
+	wagon_area.position = position
+	wagon_area.monitoring = true
+	wagon_area.monitorable = true
+	wagon_area.collision_layer = WAGON_COLLISION_LAYER
+	wagon_area.collision_mask = HAZARD_COLLISION_LAYER
+
+	var collision_shape := CollisionShape2D.new()
+	var rectangle_shape := RectangleShape2D.new()
+	rectangle_shape.size = size
+	collision_shape.shape = rectangle_shape
+	wagon_area.add_child(collision_shape)
+	spawner.bind_wagon_collision_area(wagon_area)
+	return wagon_area
+
+
+## Builds one lightweight cleanup area that hazard scenes can exit through in tests.
+func _build_hazard_cleanup_area(position: Vector2, size: Vector2) -> Area2D:
+	var cleanup_area := Area2D.new()
+	add_child_autofree(cleanup_area)
+	cleanup_area.position = position
+	cleanup_area.monitoring = true
+	cleanup_area.monitorable = true
+	cleanup_area.collision_layer = HAZARD_CLEANUP_COLLISION_LAYER
+	cleanup_area.collision_mask = HAZARD_COLLISION_LAYER
+
+	var collision_shape := CollisionShape2D.new()
+	var rectangle_shape := RectangleShape2D.new()
+	rectangle_shape.size = size
+	collision_shape.shape = rectangle_shape
+	cleanup_area.add_child(collision_shape)
+	return cleanup_area
+
+
+## Builds one configured hazard instance using the same after-add-child flow as runtime spawning.
+func _build_configured_hazard(spawner: Node, hazard_type: StringName) -> HazardInstanceType:
+	var hazard := spawner._build_hazard_visual() as HazardInstanceType
+	add_child_autofree(hazard)
+	hazard.apply_definition(spawner._get_hazard_definition(hazard_type))
+	return hazard
+
 
 # Public Methods
 
@@ -227,12 +305,12 @@ func test_seeded_spawn_plan_advance_uses_rolled_lane_and_type_metadata() -> void
 
 	assert_eq(spawner.get_child_count(), 1)
 
-	var hazard: Sprite2D = spawner.get_child(0)
+	var hazard := _get_spawned_hazard(spawner, 0)
 	assert_eq(hazard.get_meta("hazard_type"), plan.hazard_type)
 	assert_eq(hazard.get_meta("lane_index"), plan.lane_index)
 	assert_eq(hazard.position.x, HazardSpawnerType.LANE_X_POSITIONS[plan.lane_index])
 	assert_has(HazardSpawnerType.LANE_X_POSITIONS, hazard.position.x)
-	assert_eq(hazard.texture, spawner._get_hazard_profile(plan.hazard_type)["texture"])
+	assert_eq(_get_hazard_frame_texture(hazard), spawner._get_hazard_profile(plan.hazard_type)["texture"])
 
 
 ## Verifies seeded spawn rolls keep spacing inside band ranges.
@@ -322,6 +400,10 @@ func test_final_stretch_when_phase_changes_then_spawn_plan_resets_to_finale_prof
 func test_final_stretch_when_route_remaining_distance_reaches_release_window_then_spawning_stops() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
+	var bottom_cleanup_area := _build_hazard_cleanup_area(Vector2(0.0, 284.0), Vector2(900.0, 48.0))
+	var left_cleanup_area := _build_hazard_cleanup_area(Vector2(-384.0, 0.0), Vector2(48.0, 900.0))
+	var right_cleanup_area := _build_hazard_cleanup_area(Vector2(384.0, 0.0), Vector2(48.0, 900.0))
+	spawner.bind_hazard_cleanup_areas([bottom_cleanup_area, left_cleanup_area, right_cleanup_area])
 
 	spawner._rng.seed = 53
 	var route_distance := 10000.0
@@ -349,13 +431,18 @@ func test_final_stretch_when_route_remaining_distance_reaches_release_window_the
 		0.0,
 		remaining_distance_after_last_spawn - spawner.FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE
 	)
-	spawner.advance(
-		release_travel_distance,
-		0.98,
-		spawner.FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE,
-		route_distance
-	)
-	await wait_process_frames(1)
+	var remaining_cleanup_distance := release_travel_distance
+	while remaining_cleanup_distance > 0.0:
+		var cleanup_step_distance := minf(40.0, remaining_cleanup_distance)
+		spawner.advance(
+			cleanup_step_distance,
+			0.98,
+			spawner.FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE,
+			route_distance
+		)
+		remaining_cleanup_distance = maxf(0.0, remaining_cleanup_distance - cleanup_step_distance)
+		await get_tree().physics_frame
+		await wait_process_frames(1)
 
 	assert_eq(spawner.get_child_count(), 0)
 	assert_eq(spawner._next_spawn_plan, null)
@@ -498,19 +585,51 @@ func test_static_hazard_types_use_distinct_readable_sprites() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	var pothole: Sprite2D = spawner._build_hazard_visual(&"pothole")
-	var rock: Sprite2D = spawner._build_hazard_visual(&"rock")
-	var tumbleweed: Sprite2D = spawner._build_hazard_visual(&"tumbleweed")
-	autofree(pothole)
-	autofree(rock)
-	autofree(tumbleweed)
+	var pothole := _build_configured_hazard(spawner, &"pothole")
+	var rock := _build_configured_hazard(spawner, &"rock")
+	var tumbleweed := _build_configured_hazard(spawner, &"tumbleweed")
 
-	assert_eq(pothole.texture, POTHOLE_TEXTURE)
-	assert_eq(rock.texture, ROCK_TEXTURE)
-	assert_eq(tumbleweed.texture, TUMBLEWEED_TEXTURE)
-	assert_ne(pothole.texture, rock.texture)
-	assert_ne(rock.texture, tumbleweed.texture)
-	assert_ne(pothole.texture, tumbleweed.texture)
+	assert_eq(_get_hazard_frame_texture(pothole), POTHOLE_TEXTURE)
+	assert_eq(_get_hazard_frame_texture(rock), ROCK_TEXTURE)
+	assert_eq(_get_hazard_frame_texture(tumbleweed), TUMBLEWEED_TEXTURE)
+	assert_ne(_get_hazard_frame_texture(pothole), _get_hazard_frame_texture(rock))
+	assert_ne(_get_hazard_frame_texture(rock), _get_hazard_frame_texture(tumbleweed))
+	assert_ne(_get_hazard_frame_texture(pothole), _get_hazard_frame_texture(tumbleweed))
+
+
+## Verifies hazards are instantiated from one shared scene with scene-authored collision data.
+func test_hazards_when_built_then_use_shared_scene_collision_data() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	var pothole := _build_configured_hazard(spawner, &"pothole")
+	var livestock := _build_configured_hazard(spawner, &"livestock")
+	var shared_collision_size := _get_shared_hazard_collision_size()
+
+	var pothole_collision_shape := pothole.get_node("CollisionArea/CollisionShape") as CollisionShape2D
+	var livestock_collision_shape := livestock.get_node("CollisionArea/CollisionShape") as CollisionShape2D
+	var pothole_shape := pothole_collision_shape.shape as RectangleShape2D
+	var livestock_shape := livestock_collision_shape.shape as RectangleShape2D
+
+	assert_eq(pothole_shape.size, shared_collision_size)
+	assert_eq(livestock_shape.size, shared_collision_size)
+	assert_eq(pothole_collision_shape.position, Vector2.ZERO)
+	assert_eq(livestock_collision_shape.position, Vector2.ZERO)
+	assert_eq(pothole.get_collision_rect().size, shared_collision_size)
+	assert_eq(livestock.get_collision_rect().size, shared_collision_size)
+
+
+## Verifies the shared hazard scene carries a default authored collision shape before definitions are applied.
+func test_shared_hazard_scene_has_authored_default_collision_shape() -> void:
+	var hazard := HAZARD_SCENE.instantiate()
+	autofree(hazard)
+
+	var collision_shape := hazard.get_node("CollisionArea/CollisionShape") as CollisionShape2D
+	var rectangle_shape := collision_shape.shape as RectangleShape2D
+
+	assert_not_null(collision_shape)
+	assert_not_null(rectangle_shape)
+	assert_eq(rectangle_shape.size, Vector2(28.0, 28.0))
 
 
 ## Confirms livestock hazards use the exported jackalope sheet as a looping animation.
@@ -519,19 +638,22 @@ func test_livestock_hazard_uses_animated_sheet_frames() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
-	var livestock := spawner._build_hazard_visual(&"livestock") as AnimatedSprite2D
-	autofree(livestock)
+	var livestock := _build_configured_hazard(spawner, &"livestock")
 
 	assert_not_null(livestock)
-	assert_not_null(livestock.sprite_frames)
-	assert_true(livestock.sprite_frames.has_animation("default"))
-	assert_eq(livestock.sprite_frames.get_frame_count("default"), 4)
-	assert_eq(livestock.sprite_frames.get_animation_speed("default"), spawner.LIVESTOCK_ANIMATION_FPS)
-	assert_eq(livestock.sprite_frames.get_animation_loop("default"), true)
-	assert_true(livestock.is_playing())
+	var visual := _get_hazard_visual(livestock)
+	assert_not_null(visual.sprite_frames)
+	assert_true(visual.sprite_frames.has_animation("default"))
+	assert_eq(visual.sprite_frames.get_frame_count("default"), 4)
+	assert_eq(
+		visual.sprite_frames.get_animation_speed("default"),
+		spawner.livestock_definition.animation_fps
+	)
+	assert_eq(visual.sprite_frames.get_animation_loop("default"), true)
+	assert_true(visual.is_playing())
 
-	var frame_0 := livestock.sprite_frames.get_frame_texture("default", 0) as AtlasTexture
-	var frame_3 := livestock.sprite_frames.get_frame_texture("default", 3) as AtlasTexture
+	var frame_0 := visual.sprite_frames.get_frame_texture("default", 0) as AtlasTexture
+	var frame_3 := visual.sprite_frames.get_frame_texture("default", 3) as AtlasTexture
 
 	assert_not_null(frame_0)
 	assert_not_null(frame_3)
@@ -552,18 +674,19 @@ func test_livestock_hazards_when_spawned_multiple_times_then_play_at_the_final_r
 		spawner._spawn_hazard(&"livestock", roll_index * 2)
 
 	for child in spawner.get_children():
-		var livestock := child as AnimatedSprite2D
+		var livestock := child as HazardInstanceType
+		var visual := _get_hazard_visual(livestock)
 		assert_not_null(livestock)
-		assert_not_null(livestock.sprite_frames)
-		assert_true(livestock.sprite_frames.has_animation("default"))
-		assert_eq(livestock.sprite_frames.get_frame_count("default"), 4)
+		assert_not_null(visual.sprite_frames)
+		assert_true(visual.sprite_frames.has_animation("default"))
+		assert_eq(visual.sprite_frames.get_frame_count("default"), 4)
 		assert_eq(
-			livestock.sprite_frames.get_animation_speed("default"),
-			spawner.LIVESTOCK_ANIMATION_FPS
+			visual.sprite_frames.get_animation_speed("default"),
+			spawner.livestock_definition.animation_fps
 		)
-		assert_eq(livestock.sprite_frames.get_animation_loop("default"), true)
-		assert_eq(livestock.speed_scale, 1.0)
-		assert_true(livestock.is_playing())
+		assert_eq(visual.sprite_frames.get_animation_loop("default"), true)
+		assert_eq(visual.speed_scale, 1.0)
+		assert_true(visual.is_playing())
 
 
 ## Confirms the jackalope keeps its lane target centered on the visible animal instead of the raw sheet frame.
@@ -575,7 +698,7 @@ func test_livestock_hazard_uses_directional_crossing_offset_to_center_the_body_o
 	spawner._rng.seed = 77
 	spawner._spawn_hazard(&"livestock", 2)
 
-	var livestock := spawner.get_child(0) as AnimatedSprite2D
+	var livestock := _get_spawned_hazard(spawner, 0)
 	var crossing_direction := int(livestock.get_meta("crossing_direction"))
 	var lane_index := int(livestock.get_meta("lane_index"))
 	var target_lane_x := float(livestock.get_meta("target_lane_x"))
@@ -597,28 +720,30 @@ func test_livestock_hazard_uses_directional_crossing_offset_to_center_the_body_o
 	assert_eq(absf(livestock.position.x - target_lane_x), crossing_distance)
 
 
-## Confirms the livestock hazard uses a tighter collision footprint that matches the visible jackalope body.
-
-func test_livestock_hazard_uses_tighter_collision_size_matching_the_body() -> void:
+## Confirms hazard profiles report the shared scene-authored collision size.
+func test_hazard_profiles_when_read_then_use_shared_scene_collision_size() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
+	var shared_collision_size := _get_shared_hazard_collision_size()
 	var profile: Dictionary = spawner._get_hazard_profile(&"livestock")
 
-	assert_eq(profile["size"], spawner.LIVESTOCK_COLLISION_SIZE)
-	assert_eq(profile["size"], Vector2(36.0, 32.0))
+	assert_eq(profile["size"], shared_collision_size)
+	assert_eq(profile["size"], Vector2(28.0, 28.0))
 
 
-## Verifies livestock crosses toward the road and cleans itself up after leaving the playable area.
+## Verifies livestock crosses toward the road and queues a clean pass when it reaches a side cleanup boundary.
 
-func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen() -> void:
+func test_livestock_when_spawned_then_crosses_toward_lane_and_queues_pass_at_side_cleanup_boundary() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
+	var right_cleanup_area := _build_hazard_cleanup_area(Vector2(384.0, 0.0), Vector2(48.0, 900.0))
+	spawner.bind_hazard_cleanup_areas([right_cleanup_area])
 
 	spawner._rng.seed = 77
 	spawner._spawn_hazard(&"livestock", 1)
 
-	var livestock := spawner.get_child(0) as AnimatedSprite2D
+	var livestock := _get_spawned_hazard(spawner, 0)
 	var starting_position := livestock.position
 	var target_lane_x := float(livestock.get_meta("target_lane_x"))
 
@@ -628,10 +753,14 @@ func test_livestock_when_spawned_then_crosses_toward_lane_and_despawns_offscreen
 	assert_true(absf(livestock.position.x - target_lane_x) < absf(starting_position.x - target_lane_x))
 	assert_eq(livestock.position.y, starting_position.y + 40.0)
 
-	livestock.position.x = HazardSpawnerType.HAZARD_SIDE_DESPAWN_X + 1.0
-	spawner._cleanup_hazards()
-	await wait_process_frames(1)
+	livestock.position = Vector2(384.0, 0.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 
+	var completed_passes: Array[Dictionary] = spawner.consume_completed_passes()
+	assert_eq(completed_passes.size(), 1)
+	assert_eq(completed_passes[0]["type"], &"livestock")
+	await wait_process_frames(1)
 	assert_eq(spawner.get_child_count(), 0)
 
 
@@ -707,15 +836,16 @@ func test_tumbleweed_when_moving_then_sprite_offset_bounces_within_configured_am
 	spawner._rng.seed = 91
 	spawner._spawn_hazard(&"tumbleweed", 3)
 
-	var tumbleweed := spawner.get_child(0) as Sprite2D
+	var tumbleweed := _get_spawned_hazard(spawner, 0)
+	var tumbleweed_visual := _get_hazard_visual(tumbleweed)
 	var starting_position := tumbleweed.position
 	var bounce_amplitude := float(tumbleweed.get_meta("bounce_amplitude"))
 
 	spawner._move_hazards(20.0)
 
 	assert_eq(tumbleweed.position.y, starting_position.y + 20.0)
-	assert_true(absf(tumbleweed.offset.y) > 0.0)
-	assert_true(absf(tumbleweed.offset.y) <= bounce_amplitude)
+	assert_true(absf(tumbleweed_visual.offset.y) > 0.0)
+	assert_true(absf(tumbleweed_visual.offset.y) <= bounce_amplitude)
 
 
 ## Verifies livestock enters from off-road so its crossing reads as a full surprise pass.
@@ -727,45 +857,51 @@ func test_livestock_when_spawned_then_starts_offroad_before_crossing_through_tar
 	spawner._rng.seed = 77
 	spawner._spawn_hazard(&"livestock", 2)
 
-	var livestock := spawner.get_child(0) as AnimatedSprite2D
+	var livestock := _get_spawned_hazard(spawner, 0)
 	var target_lane_x := float(livestock.get_meta("target_lane_x"))
 
 	assert_true(absf(livestock.position.x) > absf(target_lane_x))
 	assert_false(HazardSpawnerType.LANE_X_POSITIONS.has(target_lane_x))
 
 
-## Verifies advance removes hazards after they leave the screen.
+## Verifies hazards queue a clean pass and free themselves when they enter the bottom cleanup boundary.
 
-func test_advance_removes_hazards_after_they_leave_the_screen() -> void:
+func test_hazards_when_entering_bottom_cleanup_boundary_then_queue_pass_and_free() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
+	var bottom_cleanup_area := _build_hazard_cleanup_area(Vector2(0.0, 284.0), Vector2(900.0, 48.0))
+	spawner.bind_hazard_cleanup_areas([bottom_cleanup_area])
 
 	spawner._spawn_hazard(&"pothole", 1)
+	var hazard := spawner.get_child(0) as Node2D
+	hazard.position = Vector2(0.0, 284.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 
-	for child in spawner.get_children():
-		if child is Sprite2D:
-			child.position.y = HazardSpawnerType.DEFAULT_DESPAWN_Y + 40.0
-
-	spawner._cleanup_hazards()
+	var completed_passes: Array[Dictionary] = spawner.consume_completed_passes()
+	assert_eq(completed_passes.size(), 1)
+	assert_eq(completed_passes[0]["type"], &"pothole")
 	await wait_process_frames(1)
-
 	assert_eq(spawner.get_child_count(), 0)
 
 
-## Verifies collect collisions reports profile damage for intersecting hazard.
-
-func test_collect_collisions_reports_profile_damage_for_intersecting_hazard() -> void:
+## Verifies queued overlap events report profile damage for intersecting hazards.
+func test_consume_pending_collisions_reports_profile_damage_for_overlapping_hazard() -> void:
 	var spawner := _create_seeded_spawner()
 	await wait_process_frames(1)
 
 	var center_lane_index := HazardSpawnerType.LANE_X_POSITIONS.find(0.0)
 	assert_ne(center_lane_index, -1)
-	spawner._spawn_hazard(&"pothole", center_lane_index)
-
-	var collisions: Array[Dictionary] = spawner.collect_collisions(
+	_build_wagon_collision_area(
+		spawner,
 		Vector2(0.0, HazardSpawnerType.DEFAULT_SPAWN_Y),
 		Vector2(32.0, 64.0)
 	)
+	spawner._spawn_hazard(&"pothole", center_lane_index)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+
+	var collisions: Array[Dictionary] = spawner.consume_pending_collisions()
 	assert_eq(collisions.size(), 1)
 	assert_eq(collisions[0]["type"], &"pothole")
 	assert_eq(collisions[0]["damage"], 6)
@@ -927,4 +1063,3 @@ func _sample_primary_hazard_counts(
 		counts[plan.hazard_type] += 1
 
 	return counts
-

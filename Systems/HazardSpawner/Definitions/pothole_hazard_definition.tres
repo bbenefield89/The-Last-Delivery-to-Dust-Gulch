@@ -1,0 +1,10 @@
+[gd_resource type="Resource" format=3 uid="uid://xq4irpaghb8d"]
+
+[ext_resource type="Script" uid="uid://f48r4not0qda" path="res://Systems/HazardSpawner/hazard_definition.gd" id="1_cm4y0"]
+[ext_resource type="Texture2D" uid="uid://bsmtbkgrqdt63" path="res://Assets/Tilesets/Hazards/Pothole/Pothole-32x32.png" id="2_h0jap"]
+
+[resource]
+script = ExtResource("1_cm4y0")
+damage = 6
+cargo_damage = 2
+texture = ExtResource("2_h0jap")

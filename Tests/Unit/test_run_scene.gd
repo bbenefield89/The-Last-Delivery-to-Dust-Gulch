@@ -1,6 +1,7 @@
 extends GutTest
 
 # Constants
+const HazardInstanceType := preload(ProjectPaths.HAZARD_INSTANCE_SCRIPT_PATH)
 const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
 const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
 const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_PATH)
@@ -282,6 +283,7 @@ func test_final_stretch_when_route_reaches_release_window_then_spawner_holds_cle
 	_dismiss_onboarding(scene)
 
 	_get_run_director(scene).bad_luck_rng.seed = 23
+	scene._hazard_spawner._rng.seed = 23
 	scene._process(0.0)
 
 	assert_eq(_get_run_director(scene).route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
@@ -296,7 +298,15 @@ func test_final_stretch_when_route_reaches_release_window_then_spawner_holds_cle
 		state.distance_remaining - scene._hazard_spawner.FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE
 	) / state.current_speed
 	scene._process(runway_delta)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	await wait_process_frames(1)
+	for _step in range(8):
+		if scene._hazard_spawner.get_child_count() == 0:
+			break
+		scene._process(0.5)
+		await get_tree().physics_frame
+		await wait_process_frames(1)
 
 	assert_true(state.distance_remaining <= scene._hazard_spawner.FINAL_STRETCH_CLEAR_RUNWAY_DISTANCE)
 	assert_eq(scene._hazard_spawner.get_child_count(), 0)
@@ -766,7 +776,8 @@ func test_hazard_collision_reduces_health_and_records_last_hit_type() -> void:
 	_setup_active_run(scene, state)
 
 	_spawn_test_hazard(scene, &"pothole")
-	await wait_process_frames(1)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	scene._process(0.0)
 	await wait_process_frames(1)
 
@@ -793,7 +804,8 @@ func test_rock_collision_when_it_hits_then_it_causes_the_heavier_wheel_loose_pun
 	_setup_active_run(scene, state)
 
 	_spawn_test_hazard(scene, &"rock")
-	await wait_process_frames(1)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	scene._process(0.0)
 	await wait_process_frames(1)
 
@@ -814,22 +826,30 @@ func test_near_miss_when_hazard_passes_close_without_collision_then_bonus_and_ca
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
 
-	var hazard: Node2D = _spawn_test_hazard(scene, &"pothole")
-	hazard.position = Vector2(0.0, -120.0)
-	scene._process(0.1)
-	await wait_process_frames(1)
-	state.lateral_position = 44.0
+	_spawn_test_hazard(scene, &"pothole").position = Vector2(0.0, -120.0)
+	state.lateral_position = 40.0
 	scene._update_wagon_visual()
-	for _step in range(5):
+	var near_miss_awarded := false
+	var dodge_recorded := false
+	for _step in range(60):
 		scene._process(0.1)
-		await wait_process_frames(1)
+		await get_tree().physics_frame
+		scene._process(0.0)
+		if state.near_misses == 1:
+			near_miss_awarded = true
+		if state.hazards_dodged == 1:
+			dodge_recorded = true
+		if near_miss_awarded and dodge_recorded:
+			break
 
 	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
 	var bonus_callout_label: Label = scene.get_node("%BonusCalloutLabel")
-	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon: Node2D = scene.get_node("%Wagon")
 	var wagon_canvas_position: Vector2 = scene.get_viewport().get_canvas_transform() * wagon.global_position
 	var bonus_callout_center: Vector2 = bonus_callout_panel.get_global_rect().get_center()
 
+	assert_true(near_miss_awarded)
+	assert_true(dodge_recorded)
 	assert_eq(state.bonus_score, RunStateType.NEAR_MISS_BONUS_SCORE)
 	assert_eq(state.hazards_dodged, 1)
 	assert_eq(state.near_misses, 1)
@@ -859,11 +879,11 @@ func test_clean_dodge_when_hazard_passes_safely_then_only_hazards_dodged_increme
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
 
-	var hazard: Node2D = _spawn_test_hazard(scene, &"pothole")
-	hazard.position = Vector2(72.0, -120.0)
-	for _step in range(6):
+	_spawn_test_hazard(scene, &"pothole").position = Vector2(72.0, -120.0)
+	for _step in range(60):
 		scene._process(0.1)
-		await wait_process_frames(1)
+		await get_tree().physics_frame
+	scene._process(0.0)
 
 	assert_eq(state.hazards_dodged, 1)
 	assert_eq(state.near_misses, 0)
@@ -901,13 +921,17 @@ func test_near_miss_bonus_is_not_awarded_for_side_pass_then_late_swerve_toward_h
 
 	var hazard: Node2D = _spawn_test_hazard(scene, &"pothole")
 	hazard.position = Vector2(72.0, -120.0)
-	scene._process(0.2)
+	var late_swerve_delta: float = 140.0 / state.current_speed
+	scene._process(late_swerve_delta)
+	await get_tree().physics_frame
 	await wait_process_frames(1)
 	state.lateral_position = 44.0
 	scene._update_wagon_visual()
-	for _step in range(4):
-		scene._process(0.1)
-		await wait_process_frames(1)
+	var cleanup_delta: float = maxf(0.0, (284.0 - hazard.position.y) / state.current_speed)
+	scene._process(cleanup_delta)
+	await get_tree().physics_frame
+	await wait_process_frames(1)
+	scene._process(0.0)
 
 	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
 	assert_eq(state.bonus_score, 0)
@@ -925,7 +949,8 @@ func test_livestock_collision_when_it_hits_the_wagon_then_existing_failure_flow_
 	_setup_active_run(scene, state)
 
 	_spawn_test_hazard(scene, &"livestock")
-	await wait_process_frames(1)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	scene._process(0.0)
 	await wait_process_frames(1)
 
@@ -947,10 +972,11 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	_setup_active_run(scene, state)
 
 	_spawn_test_hazard(scene, &"pothole")
-	await wait_process_frames(1)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	scene._process(0.05)
 
-	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon: Node2D = scene.get_node("%Wagon")
 	var horse_team: Node2D = scene.get_node("World/Wagon/HorseTeam")
 	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
 	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
@@ -969,7 +995,7 @@ func test_hazard_collision_triggers_hit_flash_wobble_and_camera_shake() -> void:
 	assert_eq(carriage_sprite.global_rotation, wagon.global_rotation)
 	assert_eq(horse_left.global_rotation, wagon.global_rotation)
 	assert_eq(horse_right.global_rotation, wagon.global_rotation)
-	assert_ne(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
+	assert_ne(camera.position, Vector2(320.0, 180.0))
 
 
 ## Verifies impact feedback recovers after timers expire.
@@ -988,7 +1014,7 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 	state.clear_failure()
 	scene._process(0.4)
 
-	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon: Node2D = scene.get_node("%Wagon")
 	var horse_team: Node2D = scene.get_node("World/Wagon/HorseTeam")
 	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
 	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
@@ -1007,7 +1033,7 @@ func test_impact_feedback_recovers_after_timers_expire() -> void:
 	assert_eq(carriage_sprite.global_rotation, wagon.global_rotation)
 	assert_eq(horse_left.global_rotation, wagon.global_rotation)
 	assert_eq(horse_right.global_rotation, wagon.global_rotation)
-	assert_eq(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
+	assert_eq(camera.position, Vector2(320.0, 180.0))
 
 
 ## Verifies camera tracks wagon with below center offset.
@@ -1022,11 +1048,11 @@ func test_camera_tracks_wagon_with_below_center_offset() -> void:
 	scene.setup(state)
 	scene._process(0.0)
 
-	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon: Node2D = scene.get_node("%Wagon")
 	var camera: Camera2D = scene.get_node("%Camera")
 
-	assert_eq(wagon.position, Vector2(-80.0, 0.0))
-	assert_eq(camera.position, Vector2(0.0, -scene.CAMERA_VERTICAL_OFFSET))
+	assert_eq(wagon.position, Vector2(240.0, 300.0))
+	assert_eq(camera.position, Vector2(320.0, 180.0))
 
 
 ## Verifies forward motion scrolls the environment.
@@ -1533,7 +1559,7 @@ func test_wheel_loose_adds_persistent_wobble_to_wagon_visual() -> void:
 
 	scene._process(0.2)
 
-	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon: Node2D = scene.get_node("%Wagon")
 	assert_ne(wagon.rotation, 0.0)
 
 
@@ -1569,7 +1595,7 @@ func test_horse_panic_adds_distinct_wobble_to_wagon_visual() -> void:
 
 	scene._process(0.2)
 
-	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon: Node2D = scene.get_node("%Wagon")
 	assert_ne(wagon.rotation, 0.0)
 
 
@@ -2394,7 +2420,7 @@ func test_temporary_instability_resolves_back_to_normal_driving() -> void:
 	var lateral_before := state.lateral_position
 	scene._process(0.2)
 	var lateral_after := state.lateral_position
-	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon: Node2D = scene.get_node("%Wagon")
 
 	assert_eq(state.temporary_control_instability_remaining, 0.0)
 	assert_almost_eq(lateral_after - lateral_before, 0.0, 0.01)
@@ -3400,6 +3426,8 @@ func test_step4_environment_art_replaces_route_placeholder_geometry() -> void:
 	var road: Sprite2D = scene.get_node("World/Road")
 	assert_eq(backdrop.texture, scene.DESERT_TEXTURE)
 	assert_eq(road.texture, scene.ROAD_TEXTURE)
+	assert_true(backdrop.visible)
+	assert_true(road.visible)
 	assert_true(backdrop.region_enabled)
 	assert_true(road.region_enabled)
 	assert_false(scene.has_node("World/RoadStripeLeft"))
@@ -3434,10 +3462,89 @@ func test_step3_cohesion_nodes_exist_on_wagon() -> void:
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
+	assert_true(scene.has_node("World/Wagon/WagonCollisionArea"))
+	assert_true(scene.has_node("World/Wagon/WagonCollisionArea/WagonCollisionShape"))
+	assert_true(scene.has_node("World/Wagon/WagonNearMissArea"))
+	assert_true(scene.has_node("World/Wagon/WagonNearMissArea/WagonNearMissShape"))
+	assert_true(scene.has_node("World/HazardCleanupBottomArea"))
+	assert_true(scene.has_node("World/HazardCleanupBottomArea/HazardCleanupBottomShape"))
+	assert_true(scene.has_node("World/HazardCleanupLeftArea"))
+	assert_true(scene.has_node("World/HazardCleanupLeftArea/HazardCleanupLeftShape"))
+	assert_true(scene.has_node("World/HazardCleanupRightArea"))
+	assert_true(scene.has_node("World/HazardCleanupRightArea/HazardCleanupRightShape"))
 	assert_true(scene.has_node("World/Wagon/Shadow"))
 	assert_true(scene.has_node("World/Wagon/CarriageSprite"))
 	assert_true(scene.has_node("World/Wagon/HorseTeam/HorseLeft"))
 	assert_true(scene.has_node("World/Wagon/HorseTeam/HorseRight"))
+
+
+## Verifies the wagon scene owns an authored collision box that covers the visible rig footprint.
+func test_wagon_collision_box_exists_with_authored_size_and_offset() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var collision_area := scene.get_node("World/Wagon/WagonCollisionArea") as Area2D
+	var collision_shape := scene.get_node("World/Wagon/WagonCollisionArea/WagonCollisionShape") as CollisionShape2D
+	var rectangle_shape := collision_shape.shape as RectangleShape2D
+	var near_miss_area := scene.get_node("World/Wagon/WagonNearMissArea") as Area2D
+	var near_miss_shape := scene.get_node("World/Wagon/WagonNearMissArea/WagonNearMissShape") as CollisionShape2D
+	var near_miss_rectangle := near_miss_shape.shape as RectangleShape2D
+	var cleanup_bottom_area := scene.get_node("World/HazardCleanupBottomArea") as Area2D
+	var cleanup_bottom_shape := scene.get_node("World/HazardCleanupBottomArea/HazardCleanupBottomShape") as CollisionShape2D
+	var cleanup_bottom_rectangle := cleanup_bottom_shape.shape as RectangleShape2D
+	var cleanup_left_area := scene.get_node("World/HazardCleanupLeftArea") as Area2D
+	var cleanup_left_shape := scene.get_node("World/HazardCleanupLeftArea/HazardCleanupLeftShape") as CollisionShape2D
+	var cleanup_left_rectangle := cleanup_left_shape.shape as RectangleShape2D
+	var cleanup_right_area := scene.get_node("World/HazardCleanupRightArea") as Area2D
+	var cleanup_right_shape := scene.get_node("World/HazardCleanupRightArea/HazardCleanupRightShape") as CollisionShape2D
+	var cleanup_right_rectangle := cleanup_right_shape.shape as RectangleShape2D
+
+	assert_not_null(collision_area)
+	assert_not_null(collision_shape)
+	assert_not_null(rectangle_shape)
+	assert_not_null(near_miss_area)
+	assert_not_null(near_miss_shape)
+	assert_not_null(near_miss_rectangle)
+	assert_not_null(cleanup_bottom_area)
+	assert_not_null(cleanup_bottom_shape)
+	assert_not_null(cleanup_bottom_rectangle)
+	assert_not_null(cleanup_left_area)
+	assert_not_null(cleanup_left_shape)
+	assert_not_null(cleanup_left_rectangle)
+	assert_not_null(cleanup_right_area)
+	assert_not_null(cleanup_right_shape)
+	assert_not_null(cleanup_right_rectangle)
+	assert_true(collision_area.monitoring)
+	assert_true(collision_area.monitorable)
+	assert_eq(collision_area.collision_layer, 2)
+	assert_eq(collision_area.collision_mask, 1)
+	assert_true(near_miss_area.monitoring)
+	assert_true(near_miss_area.monitorable)
+	assert_eq(near_miss_area.collision_layer, 2)
+	assert_eq(near_miss_area.collision_mask, 1)
+	assert_true(cleanup_bottom_area.monitoring)
+	assert_true(cleanup_bottom_area.monitorable)
+	assert_eq(cleanup_bottom_area.collision_layer, 4)
+	assert_eq(cleanup_bottom_area.collision_mask, 1)
+	assert_true(cleanup_left_area.monitoring)
+	assert_true(cleanup_left_area.monitorable)
+	assert_eq(cleanup_left_area.collision_layer, 4)
+	assert_eq(cleanup_left_area.collision_mask, 1)
+	assert_true(cleanup_right_area.monitoring)
+	assert_true(cleanup_right_area.monitorable)
+	assert_eq(cleanup_right_area.collision_layer, 4)
+	assert_eq(cleanup_right_area.collision_mask, 1)
+	assert_eq(collision_shape.position, Vector2(0.0, -10.5))
+	assert_eq(rectangle_shape.size, Vector2(30.0, 79.0))
+	assert_eq(near_miss_shape.position, Vector2(0.0, -10.5))
+	assert_eq(near_miss_rectangle.size, Vector2(54.0, 103.0))
+	assert_eq(cleanup_bottom_area.position, Vector2(320.0, 720.0))
+	assert_eq(cleanup_bottom_rectangle.size, Vector2(900.0, 320.0))
+	assert_eq(cleanup_left_area.position, Vector2(-100.0, 300.0))
+	assert_eq(cleanup_left_rectangle.size, Vector2(120.0, 900.0))
+	assert_eq(cleanup_right_area.position, Vector2(740.0, 300.0))
+	assert_eq(cleanup_right_rectangle.size, Vector2(120.0, 900.0))
 
 
 ## Confirms the horse team sits closer to the wagon without the drawn-on harness lines.
@@ -3447,7 +3554,7 @@ func test_step1_horse_team_is_pulled_closer_to_wagon() -> void:
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon: Node2D = scene.get_node("%Wagon")
 	var horse_team: Node2D = scene.get_node("World/Wagon/HorseTeam")
 	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
 	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
@@ -3461,16 +3568,10 @@ func test_step1_horse_team_is_pulled_closer_to_wagon() -> void:
 	assert_eq(horse_team.position, Vector2(0.0, -38.0))
 	assert_eq(horse_left.position, Vector2(-8.0, 0.0))
 	assert_eq(horse_right.position, Vector2(8.0, 0.0))
-	assert_eq(horse_left.global_position, Vector2(-8.0, -38.0))
-	assert_eq(horse_right.global_position, Vector2(8.0, -38.0))
-	assert_eq(
-		horse_left.global_position.y - wagon.polygon[0].y,
-		-10.0
-	)
-	assert_eq(
-		horse_right.global_position.y - wagon.polygon[1].y,
-		-10.0
-	)
+	assert_eq(horse_left.global_position - wagon.global_position, Vector2(-8.0, -38.0))
+	assert_eq(horse_right.global_position - wagon.global_position, Vector2(8.0, -38.0))
+	assert_eq(horse_left.global_position.y - wagon.global_position.y, -38.0)
+	assert_eq(horse_right.global_position.y - wagon.global_position.y, -38.0)
 
 
 ## Confirms the animated horse sprites are wired to the exported sheet slices.
@@ -3558,7 +3659,8 @@ func test_step1_hazard_spawner_uses_animated_jackalope_sheet_resource() -> void:
 
 	var spawner := scene.get_node("%HazardSpawner") as HazardSpawnerType
 	assert_not_null(spawner)
-	assert_eq(spawner.livestock_texture, LIVESTOCK_TEXTURE)
+	assert_eq(spawner.livestock_definition.texture, LIVESTOCK_TEXTURE)
+	assert_eq(spawner.livestock_definition.hazard_type, &"livestock")
 
 
 ## Confirms spawned jackalopes keep the final readable playback cadence in the shipped run scene.
@@ -3575,18 +3677,19 @@ func test_step3_livestock_hazards_play_at_the_final_readable_speed_in_scene() ->
 		spawner._spawn_hazard(&"livestock", lane_index)
 
 	for child in spawner.get_children():
-		var livestock := child as AnimatedSprite2D
+		var livestock := child as HazardInstanceType
+		var livestock_visual := livestock.get_visual()
 		assert_not_null(livestock)
-		assert_not_null(livestock.sprite_frames)
-		assert_true(livestock.sprite_frames.has_animation("default"))
-		assert_eq(livestock.sprite_frames.get_frame_count("default"), 4)
+		assert_not_null(livestock_visual.sprite_frames)
+		assert_true(livestock_visual.sprite_frames.has_animation("default"))
+		assert_eq(livestock_visual.sprite_frames.get_frame_count("default"), 4)
 		assert_eq(
-			livestock.sprite_frames.get_animation_speed("default"),
-			spawner.LIVESTOCK_ANIMATION_FPS
+			livestock_visual.sprite_frames.get_animation_speed("default"),
+			spawner.livestock_definition.animation_fps
 		)
-		assert_eq(livestock.sprite_frames.get_animation_loop("default"), true)
-		assert_eq(livestock.speed_scale, 1.0)
-		assert_true(livestock.is_playing())
+		assert_eq(livestock_visual.sprite_frames.get_animation_loop("default"), true)
+		assert_eq(livestock_visual.speed_scale, 1.0)
+		assert_true(livestock_visual.is_playing())
 
 
 ## Confirms the wagon rig still applies the existing presentation state while the carriage animates.
@@ -3596,13 +3699,13 @@ func test_step2_vehicle_sprites_replace_placeholder_shapes() -> void:
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	var wagon: Polygon2D = scene.get_node("%Wagon")
+	var wagon: Node2D = scene.get_node("%Wagon")
 	var shadow := scene.get_node("World/Wagon/Shadow") as AnimatedSprite2D
 	var carriage_sprite := scene.get_node("World/Wagon/CarriageSprite") as AnimatedSprite2D
 	var horse_left := scene.get_node("World/Wagon/HorseTeam/HorseLeft") as AnimatedSprite2D
 	var horse_right := scene.get_node("World/Wagon/HorseTeam/HorseRight") as AnimatedSprite2D
 
-	assert_eq(wagon.color.a, 0.0)
+	assert_true(wagon.visible)
 	assert_not_null(shadow)
 	assert_not_null(carriage_sprite)
 	assert_not_null(shadow.sprite_frames)
