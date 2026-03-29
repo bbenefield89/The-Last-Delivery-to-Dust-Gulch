@@ -1,0 +1,23 @@
+{
+  "project_name": "Last Delivery to Dust Gulch",
+  "board_file": "kanban_tasks_data.kanban",
+  "board_file_exists": true,
+  "ticket_prefix": "DG",
+  "ticket_prefix_source": "board",
+  "ticket_categories": [
+    "Task",
+    "TechDebt",
+    "Bug"
+  ],
+  "base_branch": "main",
+  "has_gut": true,
+  "verification_commands": [
+    "godot --headless --path . --quit",
+    "godot --headless --path . --script res://Tests/Smoke/smoke_test_runner.gd",
+    "godot --headless --path . -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json"
+  ],
+  "forbidden_paths": [
+    "addons/**",
+    "addons/kanban_tasks/**"
+  ]
+}

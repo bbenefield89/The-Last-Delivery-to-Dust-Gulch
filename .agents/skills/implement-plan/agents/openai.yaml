@@ -1,4 +1,0 @@
-interface:
-  display_name: "Implement Plan"
-  short_description: "Execute the latest agreed implementation plan"
-  default_prompt: "Use $implement-plan to implement the plan we've already discussed for this repo."

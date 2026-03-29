@@ -112,11 +112,13 @@ Keep the center gameplay area clear. Push persistent HUD elements to edges and c
 
 ## Custom Skills
 
-- `$start-next-task` — Start or resume the next kanban ticket step by step.
-- `$merge-it` — Finish and merge the active ticket; fast-forward `main`.
-- `$implement-plan` — Execute an already-discussed agreed plan end-to-end.
-- `$plan-it` — Plan a feature or ticket collaboratively, then write the ticket.
-- `$write-ticket` — Create or retrofit a kanban ticket with proper steps.
+- `$write-ticket` - Draft or update kanban tickets using the repo-local planner guidance.
+- `$start-next-task` - Resume or start ticketed work using the repo-local implementor and reviewer.
+- `$finalize-ticket` - Mark the final step complete, move the ticket to Done, ready the draft PR, squash merge, and sync local `main`.
+- `$off-road` - Do intentional non-ticket work on the current non-main branch.
+- `$github-address-comments` - Address PR review comments with implementor/reviewer orchestration.
+- `$github-open-pr` - Publish the current branch and open a draft PR.
+- `$github-merge-pr` - Merge a PR with a clean conventional squash commit message.
 
 ## Repository Rules
 
@@ -142,16 +144,9 @@ When making design decisions:
 
 ## Verification
 
-After meaningful Godot project changes, verify them when feasible in this order:
-
 1. `godot --headless --path . --quit`
 2. `godot --headless --path . --script res://Tests/Smoke/smoke_test_runner.gd`
 3. `godot --headless --path . -s res://addons/gut/gut_cmdln.gd -gconfig=res://.gutconfig.json`
-
-- Treat the headless boot as a baseline parse/load check, not full verification.
-- When a smoke-test runner exists, run it for scene and resource coverage.
-- Use the single GUT command above to run the full test suite; do not run individual test files one by one.
-- Add newly critical gameplay scenes, overlays, hazards, failure states, and recovery sequences to smoke coverage as they are introduced.
 
 ## Agent Verification Standard
 
@@ -223,3 +218,17 @@ Write gameplay code so it can support future automated validation without forcin
 
 For shared Godot and GDScript implementation and review standards, see
 `Docs/Standards/GDSCRIPT_STANDARDS.md`.
+
+<!-- BEGIN SHARED GODOT WORKFLOW -->
+## Shared Godot Workflow
+
+All Godot repos should keep these workflow invariants in place:
+
+- Maintain `AGENTS.md` as the main repo instructions file.
+- Keep a `Docs/GDD.md` gameplay or product direction document.
+- Keep `Docs/Standards/GDSCRIPT_STANDARDS.md` as the local coding standard reference.
+- Keep repo-local `planner`, `implementor`, and `reviewer` agent docs under `.codex/agents/`.
+- Keep repo-local thin wrappers for `write-ticket` and `start-next-task` so repo facts stay local.
+- Keep `start-next-task` ticket-driven and `off-road` branch-driven.
+- Do not let GitHub comment workflows resolve review threads automatically.
+<!-- END SHARED GODOT WORKFLOW -->
