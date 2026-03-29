@@ -119,6 +119,29 @@ func _get_result_stat_value(scene: Node, stat_name: String) -> String:
 			return stat_value_label.text
 
 	return ""
+
+
+## Returns the ordered gameplay UI wrapper controls under the unified canvas layer.
+func _get_gameplay_ui_wrappers(scene: Node) -> Array[Control]:
+	var gameplay_ui_layer := scene.get_node("%GameplayUiLayer") as CanvasLayer
+	var wrappers: Array[Control] = []
+	for child in gameplay_ui_layer.get_children():
+		if child is Control:
+			wrappers.append(child as Control)
+	return wrappers
+
+
+## Asserts one gameplay UI wrapper keeps the expected visibility and mouse policy.
+func _assert_gameplay_ui_wrapper_state(
+	scene: Node,
+	layer_name: String,
+	expected_visible: bool,
+	expected_mouse_filter: Control.MouseFilter
+) -> void:
+	var layer := scene.get_node("GameplayUiLayer/%s" % layer_name) as Control
+	assert_not_null(layer)
+	assert_eq(layer.visible, expected_visible)
+	assert_eq(layer.mouse_filter, expected_mouse_filter)
 # Public Methods
 
 
@@ -2199,6 +2222,137 @@ func test_gameplay_ui_groups_live_under_single_canvas_layer_root() -> void:
 	assert_false(scene.has_node("ResultLayer"))
 
 
+## Verifies the unified gameplay UI uses explicit wrapper order and stacking indexes.
+func test_gameplay_ui_wrappers_use_explicit_overlay_order_and_stacking() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var wrappers := _get_gameplay_ui_wrappers(scene)
+	var actual_names := wrappers.map(
+		func(layer: Control) -> String:
+			return layer.name
+	)
+	var expected_names := [
+		"HUDLayer",
+		"BonusCalloutLayer",
+		"PhaseCalloutLayer",
+		"TouchLayer",
+		"OnboardingLayer",
+		"RecoveryLayer",
+		"PauseLayer",
+		"ResultLayer",
+	]
+
+	assert_eq(actual_names, expected_names)
+	for layer_index in range(wrappers.size()):
+		assert_eq(wrappers[layer_index].z_index, layer_index)
+		assert_false(wrappers[layer_index].z_as_relative)
+
+
+## Verifies onboarding starts as the only modal gameplay overlay while inactive wrappers stay non-blocking.
+func test_setup_when_run_starts_then_gameplay_ui_wrapper_visibility_and_mouse_filters_match_overlay_state() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	_assert_gameplay_ui_wrapper_state(scene, "HUDLayer", true, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "BonusCalloutLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "PhaseCalloutLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "OnboardingLayer", true, Control.MOUSE_FILTER_STOP)
+	_assert_gameplay_ui_wrapper_state(scene, "RecoveryLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "PauseLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "ResultLayer", false, Control.MOUSE_FILTER_IGNORE)
+
+
+## Verifies recovery, touch, and transient callouts can coexist without modal wrappers blocking the controls.
+func test_active_run_when_touch_recovery_and_callouts_are_visible_then_gameplay_ui_wrappers_keep_expected_stacking() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	_enable_touch_controls_for_native_mobile(scene)
+	state.start_failure(&"wheel_loose", &"rock")
+	_start_seeded_recovery_sequence(scene, state, 10)
+	scene._show_bonus_callout("NEAR MISS +50")
+	scene._show_phase_callout("First Trouble")
+	scene._refresh_recovery_prompt()
+
+	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", true, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "RecoveryLayer", true, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "BonusCalloutLayer", true, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "PhaseCalloutLayer", true, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "OnboardingLayer", false, Control.MOUSE_FILTER_IGNORE)
+	assert_true((scene.get_node("%TouchLeft") as Button).visible)
+	assert_true((scene.get_node("%RecoveryPanel") as PanelContainer).visible)
+	assert_true((scene.get_node("%BonusCalloutPanel") as Control).visible)
+	assert_true((scene.get_node("%PhaseCalloutPanel") as PanelContainer).visible)
+
+
+## Verifies the pause overlay becomes the only modal gameplay wrapper and hides touch and recovery wrappers.
+func test_pause_overlay_when_opened_then_wrapper_visibility_and_mouse_filters_become_modal() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	_enable_touch_controls_for_native_mobile(scene)
+	state.start_failure(&"wheel_loose", &"rock")
+	_start_seeded_recovery_sequence(scene, state, 10)
+	scene._refresh_recovery_prompt()
+	scene._set_pause_state(true)
+
+	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "RecoveryLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "PauseLayer", true, Control.MOUSE_FILTER_STOP)
+	assert_true((scene.get_node("%PauseOverlay") as Control).visible)
+	assert_true((scene.get_node("%PausePanel") as PanelContainer).visible)
+
+
+## Verifies onboarding starts modal on touch runtimes and yields cleanly back to the touch wrapper after dismissal.
+func test_touch_runtime_when_onboarding_is_dismissed_then_modal_wrapper_yields_to_touch_controls() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	_enable_touch_controls_for_native_mobile(scene)
+
+	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", true, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "OnboardingLayer", true, Control.MOUSE_FILTER_STOP)
+
+	_dismiss_onboarding(scene)
+
+	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", true, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "OnboardingLayer", false, Control.MOUSE_FILTER_IGNORE)
+
+
+## Verifies the result screen becomes the topmost modal wrapper and suppresses gameplay overlays.
+func test_result_screen_when_run_is_over_then_only_result_wrapper_stays_modal() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.result = RunStateType.RESULT_SUCCESS
+	scene.setup(state)
+
+	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "OnboardingLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "RecoveryLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "PauseLayer", false, Control.MOUSE_FILTER_IGNORE)
+	_assert_gameplay_ui_wrapper_state(scene, "ResultLayer", true, Control.MOUSE_FILTER_STOP)
+	assert_true((scene.get_node("%ResultPanel") as PanelContainer).visible)
+
+
 ## Verifies touch controls exist in scene corners with mobile friendly sizing.
 
 func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() -> void:
@@ -2322,6 +2476,7 @@ func test_touch_controls_reveal_on_first_mobile_web_touch_when_capability_is_del
 
 	var touch_layer: Control = scene.get_node("%TouchLayer")
 	assert_false(touch_layer.visible)
+	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", false, Control.MOUSE_FILTER_IGNORE)
 
 	var touch_event := InputEventScreenTouch.new()
 	touch_event.pressed = true
@@ -2338,6 +2493,7 @@ func test_touch_controls_reveal_on_first_mobile_web_touch_when_capability_is_del
 	assert_false(touch_left.disabled)
 	assert_false(touch_right.disabled)
 	assert_false(touch_pause.disabled)
+	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", true, Control.MOUSE_FILTER_IGNORE)
 
 
 ## Verifies touch steering buttons hold and release their actions.
