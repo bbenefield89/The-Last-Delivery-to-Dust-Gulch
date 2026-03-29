@@ -267,7 +267,7 @@ var _phase_callout_panel: PanelContainer = %PhaseCalloutPanel
 var _phase_callout_label: Label = %PhaseCalloutLabel
 
 @onready
-var _touch_layer: CanvasLayer = %TouchLayer
+var _touch_layer: Control = %TouchLayer
 
 @onready
 var _touch_left_button: Button = %TouchLeft
@@ -321,14 +321,10 @@ var _recovery_steps: HBoxContainer = %RecoverySteps
 var _result_panel: ResultPanelUiType = %ResultPanel
 
 @onready
-var _result_restart_button: Button = (
-	$ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton
-)
+var _result_restart_button: Button = %ResultRestartButton
 
 @onready
-var _result_return_button: Button = (
-	$ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton
-)
+var _result_return_button: Button = %ResultReturnButton
 
 @onready
 var _music_player: AudioStreamPlayer = %MusicPlayer

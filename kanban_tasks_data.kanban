@@ -20,21 +20,20 @@
 		{
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
-			"tasks": [
-				"313e5d7e-e509-49a5-b3d0-850b7af8d5a6"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
-				"0c47c4ef-e0ff-4edd-9bd8-cffff12e913c"
+				"313e5d7e-e509-49a5-b3d0-850b7af8d5a6"
 			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"0c47c4ef-e0ff-4edd-9bd8-cffff12e913c",
 				"7184bf85-2a59-4d0a-8cd8-9f4366ca8273",
 				"0e19ba26-061c-4130-bc02-b783323f21af",
 				"16467d80-07e9-4a7c-8693-453bd6eb1804",
@@ -75,7 +74,8 @@
 				"f1ed9a74-0f24-4257-9578-518912255330",
 				"d34d8801-e9aa-4926-9ee8-5c369500c9b6",
 				"47d2dd19-d3cf-4359-b175-dd2d08f3bfd2",
-				"3d2ac0a2-08e5-4c87-84a4-e1e5a2fdb896"
+				"3d2ac0a2-08e5-4c87-84a4-e1e5a2fdb896",
+				"0280131b-d23f-4723-993e-da5e74bcb276"
 			]
 		}
 	],
@@ -912,11 +912,11 @@
 			"steps": [
 				{
 					"details": "Refactor the wagon subtree in RunScene so the node ownership is intentional instead of relying on an invisible Polygon2D as an ambiguous do-everything wagon root. Keep the current wagon look and behavior, but make the scene structure clearly separate transform ownership, collision/shape needs, and visual presentation so the wagon subtree is understandable when opened in the editor. Fold very thorough automated coverage for the wagon scene structure and runtime wagon presence into this same pass where the refactor changes behavior-risky areas.\n\nDone when: a reviewer can open RunScene in the editor, inspect the wagon subtree, and see a wagon setup that reads as intentional rather than improvised, then run the game and confirm the wagon still appears in the same place, moves the same way, and supports the same core play flow as before.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Fix the warning-state around the wagon visual nodes so the shadow, carriage, and horse presentation nodes are valid in-editor instead of showing warning icons in the RunScene tree. If the warning state is caused by runtime-only visual setup, give those nodes the minimum safe editor-time configuration needed to remove the warnings while preserving the current runtime presentation. Fold very thorough automated coverage for the cleaned-up wagon visual setup into this same pass so the scene remains protected against regression.\n\nDone when: a reviewer can open RunScene in the editor and no longer see the current warning markers on the wagon visual nodes, then run the game and confirm the wagon shadow, carriage, and horse visuals still appear and animate correctly during normal play.",
-					"done": false
+					"done": true
 				}
 			]
 		},

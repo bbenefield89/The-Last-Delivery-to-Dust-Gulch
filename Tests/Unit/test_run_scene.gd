@@ -526,8 +526,8 @@ func test_setup_populates_hud_labels_with_run_state_values() -> void:
 	state.active_failure = &"wheel_loose"
 	scene.setup(state)
 
-	var health_tag: Label = scene.get_node("HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthTag")
-	var health_bar_margin: MarginContainer = scene.get_node("HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthBarMargin")
+	var health_tag: Label = scene.get_node("GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthTag")
+	var health_bar_margin: MarginContainer = scene.get_node("GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthBarMargin")
 	var health_bar: ProgressBar = scene.get_node("%HealthBar")
 	var health_label: Label = scene.get_node("%HealthLabel")
 	var cargo_label: Label = scene.get_node("%CargoLabel")
@@ -2133,12 +2133,12 @@ func test_hud_panel_uses_compact_health_distance_and_cargo_layout() -> void:
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	var hud_panel: PanelContainer = scene.get_node("HUDLayer/HUDPanel")
-	var health_tag: Label = scene.get_node("HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthTag")
+	var hud_panel: PanelContainer = scene.get_node("GameplayUiLayer/HUDLayer/HUDPanel")
+	var health_tag: Label = scene.get_node("GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthTag")
 	var health_bar: ProgressBar = scene.get_node("%HealthBar")
 	var distance_bar: ProgressBar = scene.get_node("%DistanceBar")
 	var distance_bar_overlay: Control = scene.get_node(
-		"HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay"
+		"GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay"
 	)
 	var distance_band_markers: Control = scene.get_node("%DistanceBandMarkers")
 	var health_label: Label = scene.get_node("%HealthLabel")
@@ -2165,6 +2165,40 @@ func test_hud_panel_uses_compact_health_distance_and_cargo_layout() -> void:
 	assert_false(scene.has_node("%ProgressBar"))
 
 
+## Verifies gameplay UI groups live under one unified canvas layer root.
+
+func test_gameplay_ui_groups_live_under_single_canvas_layer_root() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var gameplay_ui_layer := scene.get_node("%GameplayUiLayer") as CanvasLayer
+	var top_level_canvas_layers: Array[CanvasLayer] = []
+	for child in scene.get_children():
+		if child is CanvasLayer:
+			top_level_canvas_layers.append(child as CanvasLayer)
+
+	assert_not_null(gameplay_ui_layer)
+	assert_eq(top_level_canvas_layers.size(), 1)
+	assert_eq(top_level_canvas_layers[0], gameplay_ui_layer)
+	assert_true(scene.has_node("GameplayUiLayer/HUDLayer"))
+	assert_true(scene.has_node("GameplayUiLayer/BonusCalloutLayer"))
+	assert_true(scene.has_node("GameplayUiLayer/PhaseCalloutLayer"))
+	assert_true(scene.has_node("GameplayUiLayer/TouchLayer"))
+	assert_true(scene.has_node("GameplayUiLayer/OnboardingLayer"))
+	assert_true(scene.has_node("GameplayUiLayer/RecoveryLayer"))
+	assert_true(scene.has_node("GameplayUiLayer/PauseLayer"))
+	assert_true(scene.has_node("GameplayUiLayer/ResultLayer"))
+	assert_false(scene.has_node("HUDLayer"))
+	assert_false(scene.has_node("BonusCalloutLayer"))
+	assert_false(scene.has_node("PhaseCalloutLayer"))
+	assert_false(scene.has_node("TouchLayer"))
+	assert_false(scene.has_node("OnboardingLayer"))
+	assert_false(scene.has_node("RecoveryLayer"))
+	assert_false(scene.has_node("PauseLayer"))
+	assert_false(scene.has_node("ResultLayer"))
+
+
 ## Verifies touch controls exist in scene corners with mobile friendly sizing.
 
 func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() -> void:
@@ -2172,7 +2206,7 @@ func test_touch_controls_exist_in_scene_corners_with_mobile_friendly_sizing() ->
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_layer: Control = scene.get_node("%TouchLayer")
 	var touch_left: Button = scene.get_node("%TouchLeft")
 	var touch_right: Button = scene.get_node("%TouchRight")
 	var touch_pause: Button = scene.get_node("%TouchPause")
@@ -2214,7 +2248,7 @@ func test_touch_controls_stay_hidden_and_disabled_on_desktop_runtime() -> void:
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
 
-	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_layer: Control = scene.get_node("%TouchLayer")
 	var touch_left: Button = scene.get_node("%TouchLeft")
 	var touch_right: Button = scene.get_node("%TouchRight")
 	var touch_pause: Button = scene.get_node("%TouchPause")
@@ -2236,7 +2270,7 @@ func test_touch_controls_show_immediately_on_native_mobile_runtime() -> void:
 	_setup_active_run(scene, state)
 	_enable_touch_controls_for_native_mobile(scene)
 
-	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_layer: Control = scene.get_node("%TouchLayer")
 	var touch_left: Button = scene.get_node("%TouchLeft")
 	var touch_right: Button = scene.get_node("%TouchRight")
 	var touch_pause: Button = scene.get_node("%TouchPause")
@@ -2258,7 +2292,7 @@ func test_touch_controls_show_on_mobile_web_after_touch_capability_detection() -
 	_setup_active_run(scene, state)
 	_configure_mobile_web_touch_runtime(scene, false)
 
-	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_layer: Control = scene.get_node("%TouchLayer")
 	assert_false(touch_layer.visible)
 
 	_get_run_ui_presenter(scene).touchscreen_available_override = true
@@ -2286,7 +2320,7 @@ func test_touch_controls_reveal_on_first_mobile_web_touch_when_capability_is_del
 	_setup_active_run(scene, state)
 	_configure_mobile_web_touch_runtime(scene, false)
 
-	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_layer: Control = scene.get_node("%TouchLayer")
 	assert_false(touch_layer.visible)
 
 	var touch_event := InputEventScreenTouch.new()
@@ -2384,7 +2418,7 @@ func test_touch_pause_button_opens_pause_and_hides_touch_controls() -> void:
 	_setup_active_run(scene, state)
 	_enable_touch_controls_for_native_mobile(scene)
 
-	var touch_layer: CanvasLayer = scene.get_node("%TouchLayer")
+	var touch_layer: Control = scene.get_node("%TouchLayer")
 	var touch_pause: Button = scene.get_node("%TouchPause")
 	assert_true(touch_layer.visible)
 
@@ -2504,8 +2538,8 @@ func test_result_panel_when_opened_then_restart_button_has_default_focus() -> vo
 	scene._refresh_result_screen()
 	await wait_process_frames(1)
 
-	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
-	var return_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton")
+	var restart_button: Button = scene.get_node("%ResultRestartButton")
+	var return_button: Button = scene.get_node("%ResultReturnButton")
 	assert_true(restart_button.has_focus())
 	assert_false(return_button.has_focus())
 
@@ -2526,8 +2560,8 @@ func test_result_panel_when_open_then_keyboard_navigation_moves_between_actions(
 	scene._refresh_result_screen()
 	await wait_process_frames(1)
 
-	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
-	var return_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton")
+	var restart_button: Button = scene.get_node("%ResultRestartButton")
+	var return_button: Button = scene.get_node("%ResultReturnButton")
 	assert_true(restart_button.has_focus())
 
 	await _send_key_input(KEY_RIGHT)
@@ -2631,8 +2665,8 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 	assert_eq(_get_result_stat_value(scene, "Recovery Failures"), "1")
 	assert_eq(_get_result_stat_value(scene, "Speed"), "")
 
-	var restart_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton")
-	var return_button: Button = scene.get_node("ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton")
+	var restart_button: Button = scene.get_node("%ResultRestartButton")
+	var return_button: Button = scene.get_node("%ResultReturnButton")
 	assert_eq(restart_button.text, "Restart")
 	assert_eq(return_button.text, "Title")
 
@@ -2763,10 +2797,10 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -
 	var result_summary: Label = scene.get_node("%ResultSummary")
 	var result_stats_rows := _get_result_stats_rows(scene)
 	var restart_button: Button = scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+		"%ResultRestartButton"
 	)
 	var title_button: Button = scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
+		"%ResultReturnButton"
 	)
 
 	assert_true(result_title.get_global_rect().position.y >= viewport_rect.position.y)
@@ -2803,10 +2837,10 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() 
 	var result_summary: Label = scene.get_node("%ResultSummary")
 	var result_stats_rows := _get_result_stats_rows(scene)
 	var restart_button: Button = scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+		"%ResultRestartButton"
 	)
 	var title_button: Button = scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
+		"%ResultReturnButton"
 	)
 
 	assert_true(result_title.get_global_rect().position.y >= viewport_rect.position.y)
@@ -2857,10 +2891,10 @@ func test_result_panel_when_content_is_dense_then_stats_scroll_and_buttons_remai
 	var result_stats_scroll := _get_result_stats_scroll(scene)
 	var result_stats_rows := _get_result_stats_rows(scene)
 	var restart_button: Button = scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+		"%ResultRestartButton"
 	)
 	var title_button: Button = scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
+		"%ResultReturnButton"
 	)
 	var first_row := result_stats_rows.get_child(0) as HBoxContainer
 	var first_row_name_label := first_row.get_node("StatNameLabel") as Label
@@ -2937,10 +2971,10 @@ func test_result_panel_buttons_emit_restart_and_return_signals() -> void:
 	watch_signals(scene)
 	var ui_click_player: AudioStreamPlayer = scene.get_node("%UIClickPlayer")
 	var restart_button: Button = scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+		"%ResultRestartButton"
 	)
 	var return_button: Button = scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton"
+		"%ResultReturnButton"
 	)
 	restart_button.pressed.emit()
 	assert_true(ui_click_player.playing)
@@ -3059,7 +3093,7 @@ func test_pause_menu_and_result_buttons_share_ui_click_sound() -> void:
 
 	ui_click_player.stop()
 	var restart_button: Button = scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+		"%ResultRestartButton"
 	)
 	restart_button.pressed.emit()
 	assert_true(ui_click_player.playing)
@@ -3749,7 +3783,7 @@ func test_step3_panel_styles_use_western_palette() -> void:
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	var hud_panel: PanelContainer = scene.get_node("HUDLayer/HUDPanel")
+	var hud_panel: PanelContainer = scene.get_node("GameplayUiLayer/HUDLayer/HUDPanel")
 	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
 	var hud_style := hud_panel.get_theme_stylebox("panel") as StyleBoxFlat
 	var recovery_style := recovery_panel.get_theme_stylebox("panel") as StyleBoxFlat

@@ -292,43 +292,52 @@ unique_name_in_owner = true
 [node name="UIClickPlayer" type="AudioStreamPlayer" parent="AudioPlayers" unique_id=200356434]
 unique_name_in_owner = true
 
-[node name="HUDLayer" type="CanvasLayer" parent="." unique_id=601465039]
+[node name="GameplayUiLayer" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
 layer = 0
 
-[node name="HUDPanel" type="PanelContainer" parent="HUDLayer" unique_id=175091047]
+[node name="HUDLayer" type="Control" parent="GameplayUiLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HUDPanel" type="PanelContainer" parent="GameplayUiLayer/HUDLayer" unique_id=175091047]
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 156.0
 offset_bottom = 92.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_hud_panel")
 
-[node name="MarginContainer" type="MarginContainer" parent="HUDLayer/HUDPanel" unique_id=872501727]
+[node name="MarginContainer" type="MarginContainer" parent="GameplayUiLayer/HUDLayer/HUDPanel" unique_id=872501727]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 4
 
-[node name="VBoxContainer" type="VBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer" unique_id=657966756]
+[node name="VBoxContainer" type="VBoxContainer" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer" unique_id=657966756]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="HealthRow" type="HBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=1791364788]
+[node name="HealthRow" type="HBoxContainer" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=1791364788]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="HealthTag" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow" unique_id=2006925341]
+[node name="HealthTag" type="Label" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow" unique_id=2006925341]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 theme_override_font_sizes/font_size = 12
 text = "HP"
 
-[node name="HealthBarMargin" type="MarginContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow" unique_id=1456161133]
+[node name="HealthBarMargin" type="MarginContainer" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow" unique_id=1456161133]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_top = 5
 
-[node name="HealthBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthBarMargin" unique_id=1119674109]
+[node name="HealthBar" type="ProgressBar" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow/HealthBarMargin" unique_id=1119674109]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 10)
 layout_mode = 2
@@ -337,33 +346,33 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
 value = 100.0
 show_percentage = false
 
-[node name="HealthLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow" unique_id=1851579451]
+[node name="HealthLabel" type="Label" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/HealthRow" unique_id=1851579451]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 theme_override_font_sizes/font_size = 14
 text = "--"
 
-[node name="DistanceRow" type="HBoxContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=155814851]
+[node name="DistanceRow" type="HBoxContainer" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=155814851]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="DistanceTag" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow" unique_id=1472455674]
+[node name="DistanceTag" type="Label" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow" unique_id=1472455674]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 theme_override_font_sizes/font_size = 12
 text = "DST"
 
-[node name="DistanceBarMargin" type="MarginContainer" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow" unique_id=1179048258]
+[node name="DistanceBarMargin" type="MarginContainer" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow" unique_id=1179048258]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/margin_top = 5
 
-[node name="DistanceBarOverlay" type="Control" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin" unique_id=1339401107]
+[node name="DistanceBarOverlay" type="Control" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin" unique_id=1339401107]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="DistanceBar" type="ProgressBar" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=590576366]
+[node name="DistanceBar" type="ProgressBar" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=590576366]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 10)
 layout_mode = 0
@@ -375,7 +384,7 @@ theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
 theme_override_styles/fill = SubResource("StyleBoxFlat_distance_fill")
 show_percentage = false
 
-[node name="DistanceBandMarkers" type="Control" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=1734594783]
+[node name="DistanceBandMarkers" type="Control" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer/DistanceRow/DistanceBarMargin/DistanceBarOverlay" unique_id=1734594783]
 unique_name_in_owner = true
 anchors_preset = 0
 anchor_right = 1.0
@@ -384,16 +393,22 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="CargoLabel" type="Label" parent="HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=1358233989]
+[node name="CargoLabel" type="Label" parent="GameplayUiLayer/HUDLayer/HUDPanel/MarginContainer/VBoxContainer" unique_id=1358233989]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 theme_override_font_sizes/font_size = 14
 text = "Cargo --"
 
-[node name="BonusCalloutLayer" type="CanvasLayer" parent="." unique_id=752300011]
+[node name="BonusCalloutLayer" type="Control" parent="GameplayUiLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="BonusCalloutPanel" type="Control" parent="BonusCalloutLayer" unique_id=1162117734]
+[node name="BonusCalloutPanel" type="Control" parent="GameplayUiLayer/BonusCalloutLayer" unique_id=1162117734]
 unique_name_in_owner = true
 visible = false
 layout_mode = 3
@@ -402,14 +417,14 @@ offset_right = 124.0
 offset_bottom = 24.0
 mouse_filter = 2
 
-[node name="BonusCalloutMargin" type="MarginContainer" parent="BonusCalloutLayer/BonusCalloutPanel" unique_id=160018409]
+[node name="BonusCalloutMargin" type="MarginContainer" parent="GameplayUiLayer/BonusCalloutLayer/BonusCalloutPanel" unique_id=160018409]
 layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="BonusCalloutLabel" type="Label" parent="BonusCalloutLayer/BonusCalloutPanel/BonusCalloutMargin" unique_id=664986678]
+[node name="BonusCalloutLabel" type="Label" parent="GameplayUiLayer/BonusCalloutLayer/BonusCalloutPanel/BonusCalloutMargin" unique_id=664986678]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.952941, 0.8, 0.290196, 1)
@@ -418,9 +433,15 @@ text = "NEAR MISS +50"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PhaseCalloutLayer" type="CanvasLayer" parent="." unique_id=1713599605]
+[node name="PhaseCalloutLayer" type="Control" parent="GameplayUiLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="PhaseCalloutPanel" type="PanelContainer" parent="PhaseCalloutLayer" unique_id=1557692818]
+[node name="PhaseCalloutPanel" type="PanelContainer" parent="GameplayUiLayer/PhaseCalloutLayer" unique_id=1557692818]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(216, 30)
@@ -436,14 +457,14 @@ grow_vertical = 0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 
-[node name="PhaseCalloutMargin" type="MarginContainer" parent="PhaseCalloutLayer/PhaseCalloutPanel" unique_id=2087114527]
+[node name="PhaseCalloutMargin" type="MarginContainer" parent="GameplayUiLayer/PhaseCalloutLayer/PhaseCalloutPanel" unique_id=2087114527]
 layout_mode = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 6
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 6
 
-[node name="PhaseCalloutLabel" type="Label" parent="PhaseCalloutLayer/PhaseCalloutPanel/PhaseCalloutMargin" unique_id=1099225811]
+[node name="PhaseCalloutLabel" type="Label" parent="GameplayUiLayer/PhaseCalloutLayer/PhaseCalloutPanel/PhaseCalloutMargin" unique_id=1099225811]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
@@ -452,10 +473,16 @@ text = "WARM-UP"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="TouchLayer" type="CanvasLayer" parent="." unique_id=1837018594]
+[node name="TouchLayer" type="Control" parent="GameplayUiLayer"]
 unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="TouchLeft" type="Button" parent="TouchLayer" unique_id=1367813085]
+[node name="TouchLeft" type="Button" parent="GameplayUiLayer/TouchLayer" unique_id=1367813085]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 104)
 offset_left = 16.0
@@ -467,7 +494,7 @@ theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
 theme_override_font_sizes/font_size = 52
 text = "←"
 
-[node name="TouchRight" type="Button" parent="TouchLayer" unique_id=840373950]
+[node name="TouchRight" type="Button" parent="GameplayUiLayer/TouchLayer" unique_id=840373950]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 104)
 offset_left = 504.0
@@ -480,7 +507,7 @@ theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
 theme_override_font_sizes/font_size = 52
 text = "→"
 
-[node name="TouchPause" type="Button" parent="TouchLayer" unique_id=1122407603]
+[node name="TouchPause" type="Button" parent="GameplayUiLayer/TouchLayer" unique_id=1122407603]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(72, 72)
 offset_left = 552.0
@@ -492,10 +519,15 @@ theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
 theme_override_font_sizes/font_size = 52
 text = "II"
 
-[node name="OnboardingLayer" type="CanvasLayer" parent="." unique_id=702338875]
-layer = 2
+[node name="OnboardingLayer" type="Control" parent="GameplayUiLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="OnboardingMargin" type="MarginContainer" parent="OnboardingLayer" unique_id=1495918662]
+[node name="OnboardingMargin" type="MarginContainer" parent="GameplayUiLayer/OnboardingLayer" unique_id=1495918662]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -508,24 +540,24 @@ offset_bottom = 92.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="OnboardingPanel" type="PanelContainer" parent="OnboardingLayer/OnboardingMargin" unique_id=743698184]
+[node name="OnboardingPanel" type="PanelContainer" parent="GameplayUiLayer/OnboardingLayer/OnboardingMargin" unique_id=743698184]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 
-[node name="OnboardingPadding" type="MarginContainer" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel" unique_id=1537575059]
+[node name="OnboardingPadding" type="MarginContainer" parent="GameplayUiLayer/OnboardingLayer/OnboardingMargin/OnboardingPanel" unique_id=1537575059]
 layout_mode = 2
 theme_override_constants/margin_left = 22
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 22
 theme_override_constants/margin_bottom = 18
 
-[node name="OnboardingVBox" type="VBoxContainer" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding" unique_id=1837576619]
+[node name="OnboardingVBox" type="VBoxContainer" parent="GameplayUiLayer/OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding" unique_id=1837576619]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="OnboardingTitle" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox" unique_id=1459489785]
+[node name="OnboardingTitle" type="Label" parent="GameplayUiLayer/OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox" unique_id=1459489785]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
@@ -533,14 +565,14 @@ theme_override_font_sizes/font_size = 24
 text = "Last Delivery to Dust Gulch"
 horizontal_alignment = 1
 
-[node name="OnboardingBody" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox" unique_id=1891234883]
+[node name="OnboardingBody" type="Label" parent="GameplayUiLayer/OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox" unique_id=1891234883]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, and hold the wagon together until you reach Dust Gulch."
 autowrap_mode = 2
 
-[node name="OnboardingHint" type="Label" parent="OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox" unique_id=476657273]
+[node name="OnboardingHint" type="Label" parent="GameplayUiLayer/OnboardingLayer/OnboardingMargin/OnboardingPanel/OnboardingPadding/OnboardingVBox" unique_id=476657273]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.933333, 0.85098, 0.662745, 1)
@@ -548,10 +580,15 @@ text = "Press Left, Right, Enter, or click to begin the run."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="RecoveryLayer" type="CanvasLayer" parent="." unique_id=1169480302]
-layer = 3
+[node name="RecoveryLayer" type="Control" parent="GameplayUiLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="RecoveryMargin" type="MarginContainer" parent="RecoveryLayer" unique_id=1410858914]
+[node name="RecoveryMargin" type="MarginContainer" parent="GameplayUiLayer/RecoveryLayer" unique_id=1410858914]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -561,24 +598,24 @@ offset_right = 152.0
 offset_bottom = 320.0
 grow_horizontal = 2
 
-[node name="RecoveryPanel" type="PanelContainer" parent="RecoveryLayer/RecoveryMargin" unique_id=1024654356]
+[node name="RecoveryPanel" type="PanelContainer" parent="GameplayUiLayer/RecoveryLayer/RecoveryMargin" unique_id=1024654356]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_recovery_panel")
 
-[node name="RecoveryPadding" type="MarginContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel" unique_id=1404911132]
+[node name="RecoveryPadding" type="MarginContainer" parent="GameplayUiLayer/RecoveryLayer/RecoveryMargin/RecoveryPanel" unique_id=1404911132]
 layout_mode = 2
 theme_override_constants/margin_left = 14
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 10
 
-[node name="RecoveryVBox" type="VBoxContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding" unique_id=1976674278]
+[node name="RecoveryVBox" type="VBoxContainer" parent="GameplayUiLayer/RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding" unique_id=1976674278]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="RecoveryTitle" type="Label" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=1023180444]
+[node name="RecoveryTitle" type="Label" parent="GameplayUiLayer/RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=1023180444]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
@@ -586,7 +623,7 @@ theme_override_font_sizes/font_size = 18
 text = "Stabilize the Wagon"
 horizontal_alignment = 1
 
-[node name="RecoveryHint" type="Label" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=1191415005]
+[node name="RecoveryHint" type="Label" parent="GameplayUiLayer/RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=1191415005]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.933333, 0.85098, 0.662745, 1)
@@ -595,16 +632,21 @@ text = "Follow the prompts left to right."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="RecoverySteps" type="HBoxContainer" parent="RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=708124048]
+[node name="RecoverySteps" type="HBoxContainer" parent="GameplayUiLayer/RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=708124048]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 1
 
-[node name="PauseLayer" type="CanvasLayer" parent="." unique_id=1114754801]
-layer = 4
+[node name="PauseLayer" type="Control" parent="GameplayUiLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="PauseOverlay" type="Control" parent="PauseLayer" unique_id=357867026]
+[node name="PauseOverlay" type="Control" parent="GameplayUiLayer/PauseLayer" unique_id=357867026]
 unique_name_in_owner = true
 visible = false
 layout_mode = 3
@@ -614,7 +656,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PauseBackdrop" type="ColorRect" parent="PauseLayer/PauseOverlay" unique_id=305216681]
+[node name="PauseBackdrop" type="ColorRect" parent="GameplayUiLayer/PauseLayer/PauseOverlay" unique_id=305216681]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -623,7 +665,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.12)
 
-[node name="PauseCenter" type="CenterContainer" parent="PauseLayer/PauseOverlay" unique_id=72403792]
+[node name="PauseCenter" type="CenterContainer" parent="GameplayUiLayer/PauseLayer/PauseOverlay" unique_id=72403792]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -632,64 +674,69 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PausePanel" type="PanelContainer" parent="PauseLayer/PauseOverlay/PauseCenter" unique_id=1688471581]
+[node name="PausePanel" type="PanelContainer" parent="GameplayUiLayer/PauseLayer/PauseOverlay/PauseCenter" unique_id=1688471581]
 unique_name_in_owner = true
 visible = false
 custom_minimum_size = Vector2(320, 196)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 
-[node name="PausePadding" type="MarginContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel" unique_id=1022852917]
+[node name="PausePadding" type="MarginContainer" parent="GameplayUiLayer/PauseLayer/PauseOverlay/PauseCenter/PausePanel" unique_id=1022852917]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 18
 
-[node name="PauseVBox" type="VBoxContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding" unique_id=1652363556]
+[node name="PauseVBox" type="VBoxContainer" parent="GameplayUiLayer/PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding" unique_id=1652363556]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="PauseTitle" type="Label" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox" unique_id=2031204423]
+[node name="PauseTitle" type="Label" parent="GameplayUiLayer/PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox" unique_id=2031204423]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 24
 text = "Paused"
 horizontal_alignment = 1
 
-[node name="PauseSummary" type="Label" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox" unique_id=1508923937]
+[node name="PauseSummary" type="Label" parent="GameplayUiLayer/PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox" unique_id=1508923937]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "Catch your breath, then resume the run, restart, or return to title."
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="PauseButtons" type="VBoxContainer" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox" unique_id=216271012]
+[node name="PauseButtons" type="VBoxContainer" parent="GameplayUiLayer/PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox" unique_id=216271012]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="PauseResumeButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons" unique_id=681865122]
+[node name="PauseResumeButton" type="Button" parent="GameplayUiLayer/PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons" unique_id=681865122]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Resume"
 
-[node name="PauseRestartButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons" unique_id=752603341]
+[node name="PauseRestartButton" type="Button" parent="GameplayUiLayer/PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons" unique_id=752603341]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Restart"
 
-[node name="PauseReturnButton" type="Button" parent="PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons" unique_id=2015358949]
+[node name="PauseReturnButton" type="Button" parent="GameplayUiLayer/PauseLayer/PauseOverlay/PauseCenter/PausePanel/PausePadding/PauseVBox/PauseButtons" unique_id=2015358949]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Title"
 
-[node name="ResultLayer" type="CanvasLayer" parent="." unique_id=1131224537]
-layer = 5
+[node name="ResultLayer" type="Control" parent="GameplayUiLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="ResultMargin" type="MarginContainer" parent="ResultLayer" unique_id=370495141]
+[node name="ResultMargin" type="MarginContainer" parent="GameplayUiLayer/ResultLayer" unique_id=370495141]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -702,25 +749,25 @@ offset_bottom = 172.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ResultPanel" type="PanelContainer" parent="ResultLayer/ResultMargin" unique_id=70916264]
+[node name="ResultPanel" type="PanelContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin" unique_id=70916264]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_result_panel")
 script = ExtResource("3_2a2m5")
 
-[node name="ResultPadding" type="MarginContainer" parent="ResultLayer/ResultMargin/ResultPanel" unique_id=1197715509]
+[node name="ResultPadding" type="MarginContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel" unique_id=1197715509]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 8
 
-[node name="ResultVBox" type="VBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding" unique_id=601728710]
+[node name="ResultVBox" type="VBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding" unique_id=601728710]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="ResultTitle" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=781382340]
+[node name="ResultTitle" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=781382340]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -728,7 +775,7 @@ theme_override_font_sizes/font_size = 22
 text = "Delivered to Dust Gulch"
 horizontal_alignment = 1
 
-[node name="ResultSummary" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=750472307]
+[node name="ResultSummary" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=750472307]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -737,24 +784,24 @@ text = "New Best Run! | Best Score: 1565 | Best Grade: A"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="ResultStatsScroll" type="ScrollContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=1468775001]
+[node name="ResultStatsScroll" type="ScrollContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=1468775001]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="ResultStatsRows" type="VBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll" unique_id=1184964185]
+[node name="ResultStatsRows" type="VBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll" unique_id=1184964185]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 2
 
-[node name="PreviewScoreRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000001]
+[node name="PreviewScoreRow" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000001]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewScoreRow" unique_id=1792000002]
+[node name="StatNameLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewScoreRow" unique_id=1792000002]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -764,7 +811,7 @@ theme_override_font_sizes/font_size = 15
 text = "Score"
 autowrap_mode = 2
 
-[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewScoreRow" unique_id=1792000003]
+[node name="StatValueLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewScoreRow" unique_id=1792000003]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -775,12 +822,12 @@ text = "1565"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="PreviewGradeRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000004]
+[node name="PreviewGradeRow" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000004]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewGradeRow" unique_id=1792000005]
+[node name="StatNameLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewGradeRow" unique_id=1792000005]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -790,7 +837,7 @@ theme_override_font_sizes/font_size = 15
 text = "Delivery Grade"
 autowrap_mode = 2
 
-[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewGradeRow" unique_id=1792000006]
+[node name="StatValueLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewGradeRow" unique_id=1792000006]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -801,12 +848,12 @@ text = "A"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="PreviewHealthRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000007]
+[node name="PreviewHealthRow" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000007]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewHealthRow" unique_id=1792000008]
+[node name="StatNameLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewHealthRow" unique_id=1792000008]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -816,7 +863,7 @@ theme_override_font_sizes/font_size = 15
 text = "Health"
 autowrap_mode = 2
 
-[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewHealthRow" unique_id=1792000009]
+[node name="StatValueLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewHealthRow" unique_id=1792000009]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -827,12 +874,12 @@ text = "54"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="PreviewCargoRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000010]
+[node name="PreviewCargoRow" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000010]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewCargoRow" unique_id=1792000011]
+[node name="StatNameLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewCargoRow" unique_id=1792000011]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -842,7 +889,7 @@ theme_override_font_sizes/font_size = 15
 text = "Cargo"
 autowrap_mode = 2
 
-[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewCargoRow" unique_id=1792000012]
+[node name="StatValueLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewCargoRow" unique_id=1792000012]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -853,12 +900,12 @@ text = "88"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="PreviewDistanceRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000013]
+[node name="PreviewDistanceRow" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000013]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewDistanceRow" unique_id=1792000014]
+[node name="StatNameLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewDistanceRow" unique_id=1792000014]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -868,7 +915,7 @@ theme_override_font_sizes/font_size = 15
 text = "Distance traveled"
 autowrap_mode = 2
 
-[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewDistanceRow" unique_id=1792000015]
+[node name="StatValueLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewDistanceRow" unique_id=1792000015]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -879,12 +926,12 @@ text = "500 / 500"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="PreviewDodgedRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000016]
+[node name="PreviewDodgedRow" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000016]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewDodgedRow" unique_id=1792000017]
+[node name="StatNameLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewDodgedRow" unique_id=1792000017]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -894,7 +941,7 @@ theme_override_font_sizes/font_size = 15
 text = "Hazards Dodged"
 autowrap_mode = 2
 
-[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewDodgedRow" unique_id=1792000018]
+[node name="StatValueLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewDodgedRow" unique_id=1792000018]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -905,12 +952,12 @@ text = "12"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="PreviewNearMissRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000019]
+[node name="PreviewNearMissRow" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000019]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewNearMissRow" unique_id=1792000020]
+[node name="StatNameLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewNearMissRow" unique_id=1792000020]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -920,7 +967,7 @@ theme_override_font_sizes/font_size = 15
 text = "Near Misses"
 autowrap_mode = 2
 
-[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewNearMissRow" unique_id=1792000021]
+[node name="StatValueLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewNearMissRow" unique_id=1792000021]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -931,12 +978,12 @@ text = "4"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="PreviewPerfectRecoveryRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000022]
+[node name="PreviewPerfectRecoveryRow" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000022]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewPerfectRecoveryRow" unique_id=1792000023]
+[node name="StatNameLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewPerfectRecoveryRow" unique_id=1792000023]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -946,7 +993,7 @@ theme_override_font_sizes/font_size = 15
 text = "Perfect Recoveries"
 autowrap_mode = 2
 
-[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewPerfectRecoveryRow" unique_id=1792000024]
+[node name="StatValueLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewPerfectRecoveryRow" unique_id=1792000024]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -957,12 +1004,12 @@ text = "3"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="PreviewRecoveryFailureRow" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000025]
+[node name="PreviewRecoveryFailureRow" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows" unique_id=1792000025]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="StatNameLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewRecoveryFailureRow" unique_id=1792000026]
+[node name="StatNameLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewRecoveryFailureRow" unique_id=1792000026]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -972,7 +1019,7 @@ theme_override_font_sizes/font_size = 15
 text = "Recovery Failures"
 autowrap_mode = 2
 
-[node name="StatValueLabel" type="Label" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewRecoveryFailureRow" unique_id=1792000027]
+[node name="StatValueLabel" type="Label" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultStatsScroll/ResultStatsRows/PreviewRecoveryFailureRow" unique_id=1792000027]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
@@ -983,17 +1030,19 @@ text = "2"
 horizontal_alignment = 2
 autowrap_mode = 2
 
-[node name="ResultButtons" type="HBoxContainer" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=697861436]
+[node name="ResultButtons" type="HBoxContainer" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox" unique_id=697861436]
 layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 1
 
-[node name="ResultRestartButton" type="Button" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_id=1659100565]
+[node name="ResultRestartButton" type="Button" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_id=1659100565]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Restart"
 
-[node name="ResultReturnButton" type="Button" parent="ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_id=1757694312]
+[node name="ResultReturnButton" type="Button" parent="GameplayUiLayer/ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons" unique_id=1757694312]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Title"
