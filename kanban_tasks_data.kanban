@@ -28,13 +28,14 @@
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
 			"tasks": [
-				"7184bf85-2a59-4d0a-8cd8-9f4366ca8273"
+				"0c47c4ef-e0ff-4edd-9bd8-cffff12e913c"
 			]
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"7184bf85-2a59-4d0a-8cd8-9f4366ca8273",
 				"0e19ba26-061c-4130-bc02-b783323f21af",
 				"16467d80-07e9-4a7c-8693-453bd6eb1804",
 				"037b4f73-bbb7-4e50-a02e-168e0499b67b",
@@ -875,15 +876,15 @@
 			"steps": [
 				{
 					"details": "Add explicit wagon collision boxes for the carriage and horse team in the run scene, and update the gameplay collision query path to use those boxes instead of one broad wagon approximation. Fold very thorough automated coverage for wagon hit registration and clean misses into this step.\n\nDone when: by playing a run and steering near hazards, a reviewer can see that contacts against the horse team and carriage register where the visible wagon rig is, while obviously empty space around the rig no longer causes early hits.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add actual collision boxes for the static hazards and wire the hazard collision path to use them for potholes and boulders instead of the current size-only approximation. Fold very thorough automated coverage for static-hazard collisions and clean non-collisions into this step.\n\nDone when: by playing a run and clipping or narrowly avoiding potholes and boulders, a reviewer can see that those hits now follow the visible obstacle footprints more closely without changing the overall hazard pacing or failure behavior.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add actual collision boxes for the moving hazards and update collision, dodge, and near-miss handling to use them for tumbleweeds and jackalopes while preserving the current authored outcomes. Fold very thorough automated coverage for moving-hazard collisions, dodges, and near misses into this step.\n\nDone when: by playing a run and interacting with tumbleweeds and jackalopes, a reviewer can see that moving-hazard hits and clean near misses follow the visible bodies more closely, and the same hazards still trigger the expected run feedback and failure flow.",
-					"done": false
+					"done": true
 				}
 			]
 		},
@@ -934,6 +935,13 @@
 					"done": false
 				}
 			]
+		},
+		{
+			"uuid": "0c47c4ef-e0ff-4edd-9bd8-cffff12e913c",
+			"title": "DG-44",
+			"description": "Install codex plugins etc.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": []
 		}
 	],
 	"layout": {
