@@ -928,7 +928,7 @@
 			"steps": [
 				{
 					"details": "Refactor the RunScene UI tree so the gameplay UI lives under one unified CanvasLayer instead of multiple top-level CanvasLayers. Preserve the current visual hierarchy by reorganizing the HUD, callouts, touch controls, onboarding, recovery, pause, and result UI into a clearer subtree that still reads correctly in the editor and in play.\n\nDone when: a reviewer can open RunScene in the editor and see a single gameplay UI CanvasLayer containing the current gameplay UI elements in a structure that is easier to understand, then run the game and confirm those UI elements still appear in the same places they are expected during normal play.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Update the RunScene UI wiring so the consolidated hierarchy still supports the current overlay timing, visibility toggles, and stacking behavior, and fold very thorough automated coverage for the changed UI hierarchy and behavior into this same pass. Preserve the current HUD, callout, touch, onboarding, recovery, pause, and result flows without redesigning them.\n\nDone when: by starting a run, triggering callouts, using touch controls where applicable, opening onboarding and recovery states, pausing, and reaching the result screen, a reviewer can confirm the UI still appears in the right order, does not hide the wrong elements, and remains usable throughout the run.",
