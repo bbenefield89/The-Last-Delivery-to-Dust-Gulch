@@ -10,7 +10,8 @@ const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_P
 const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
 const ResultPanelUiType := preload(ProjectPaths.RESULT_PANEL_UI_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
-const RunUiPresenterType := preload(ProjectPaths.RUN_UI_PRESENTER_SCRIPT_PATH)
+const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
+const RunUiPresenterType := GameplayUiLayerType
 
 
 const RUN_SCENE := preload(ProjectPaths.RUN_SCENE_PATH)
@@ -93,6 +94,11 @@ func _get_run_audio_presenter(scene: Node) -> RunAudioPresenterType:
 ## Returns the extracted UI presenter bound to the active test scene.
 func _get_run_ui_presenter(scene: Node) -> RunUiPresenterType:
 	return scene._run_ui_presenter as RunUiPresenterType
+
+
+## Returns the node-backed gameplay UI owner attached to the run scene canvas layer.
+func _get_gameplay_ui_layer(scene: Node) -> GameplayUiLayerType:
+	return scene.get_node("%GameplayUiLayer") as GameplayUiLayerType
 
 
 ## Returns the visible stats-row container from the structured result panel.
@@ -455,6 +461,31 @@ func test_setup_binds_run_ui_presenter_without_scene_ui_state_mirrors() -> void:
 	assert_false(property_names.has("_mobile_web_runtime_override"))
 	assert_false(property_names.has("_has_touchscreen_available_override"))
 	assert_false(property_names.has("_touchscreen_available_override"))
+
+
+## Confirms the gameplay UI owner is attached to the canvas layer and the scene no longer mirrors UI subtree nodes.
+func test_setup_uses_node_backed_gameplay_ui_layer_without_scene_ui_node_refs() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+
+	var property_names := scene.get_property_list().map(
+		func(property_data: Dictionary) -> String:
+			return property_data.get("name", "")
+	)
+	var gameplay_ui_layer := _get_gameplay_ui_layer(scene)
+
+	assert_not_null(gameplay_ui_layer)
+	assert_eq(_get_run_ui_presenter(scene), gameplay_ui_layer)
+	assert_eq(gameplay_ui_layer.get_script().resource_path, ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
+	assert_false(property_names.has("_gameplay_ui_layer"))
+	assert_false(property_names.has("_hud_layer"))
+	assert_false(property_names.has("_touch_left_button"))
+	assert_false(property_names.has("_pause_overlay"))
+	assert_false(property_names.has("_result_panel"))
 
 
 ## Confirms the run scene delegates audio transition state to the extracted audio presenter.
@@ -2636,6 +2667,30 @@ func test_touch_pause_button_opens_pause_and_hides_touch_controls() -> void:
 	assert_false(Input.is_action_pressed("steer_left"))
 
 
+## Verifies the node-backed gameplay UI layer emits touch pause only when touch controls are currently active.
+func test_gameplay_ui_layer_when_touch_pause_is_pressed_then_it_emits_only_for_active_touch_runtime() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	var gameplay_ui_layer := _get_gameplay_ui_layer(scene)
+	var touch_pause: Button = scene.get_node("%TouchPause")
+
+	touch_pause.pressed.emit()
+	await wait_process_frames(1)
+	assert_false(gameplay_ui_layer.pause_menu_open)
+
+	_enable_touch_controls_for_native_mobile(scene)
+	watch_signals(gameplay_ui_layer)
+	touch_pause.pressed.emit()
+	await wait_process_frames(1)
+
+	assert_signal_emitted(gameplay_ui_layer, "touch_pause_requested")
+	assert_true(gameplay_ui_layer.pause_menu_open)
+
+
 ## Verifies temporary instability resolves back to normal driving.
 
 func test_temporary_instability_resolves_back_to_normal_driving() -> void:
@@ -3188,6 +3243,45 @@ func test_result_panel_buttons_emit_restart_and_return_signals() -> void:
 
 	assert_signal_emitted(scene, "restart_requested")
 	assert_signal_emitted(scene, "return_to_title_requested")
+
+
+## Verifies the node-backed gameplay UI layer emits pause menu button intents from its own button handlers.
+func test_gameplay_ui_layer_pause_buttons_emit_owner_intent_signals() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var gameplay_ui_layer := _get_gameplay_ui_layer(scene)
+	watch_signals(gameplay_ui_layer)
+
+	var resume_button: Button = scene.get_node("%PauseResumeButton")
+	var restart_button: Button = scene.get_node("%PauseRestartButton")
+	var return_button: Button = scene.get_node("%PauseReturnButton")
+	resume_button.pressed.emit()
+	restart_button.pressed.emit()
+	return_button.pressed.emit()
+
+	assert_signal_emitted(gameplay_ui_layer, "pause_resume_requested")
+	assert_signal_emitted(gameplay_ui_layer, "pause_restart_requested")
+	assert_signal_emitted(gameplay_ui_layer, "pause_return_to_title_requested")
+
+
+## Verifies the node-backed gameplay UI layer emits result button intents from its own button handlers.
+func test_gameplay_ui_layer_result_buttons_emit_owner_intent_signals() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var gameplay_ui_layer := _get_gameplay_ui_layer(scene)
+	watch_signals(gameplay_ui_layer)
+
+	var restart_button: Button = scene.get_node("%ResultRestartButton")
+	var return_button: Button = scene.get_node("%ResultReturnButton")
+	restart_button.pressed.emit()
+	return_button.pressed.emit()
+
+	assert_signal_emitted(gameplay_ui_layer, "result_restart_requested")
+	assert_signal_emitted(gameplay_ui_layer, "result_return_to_title_requested")
 
 
 ## Verifies pause menu toggles tree pause and visibility.

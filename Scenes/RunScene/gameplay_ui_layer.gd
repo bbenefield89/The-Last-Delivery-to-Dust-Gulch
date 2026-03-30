@@ -1,6 +1,16 @@
-extends RefCounted
+extends CanvasLayer
 
-## Owns run-scene gameplay UI presentation, transient overlays, touch-control behavior, and UI input interpretation.
+## Owns the run-scene UI subtree, transient overlays, touch-control behavior, and UI input interpretation.
+
+
+# Signals
+
+signal touch_pause_requested
+signal pause_resume_requested
+signal pause_restart_requested
+signal pause_return_to_title_requested
+signal result_restart_requested
+signal result_return_to_title_requested
 
 
 # Imports
@@ -33,7 +43,6 @@ const BONUS_CALLOUT_END_OFFSET := Vector2(0.0, -82.0)
 const PHASE_CALLOUT_DURATION := 0.95
 const TOUCH_LEFT_ACTION: StringName = &"steer_left"
 const TOUCH_RIGHT_ACTION: StringName = &"steer_right"
-const TOUCH_PAUSE_ACTION: StringName = &"pause_run"
 const PAUSE_MENU_ACTION_NONE: StringName = &""
 const PAUSE_MENU_ACTION_RESUME: StringName = &"resume"
 const PAUSE_MENU_ACTION_RESTART: StringName = &"restart"
@@ -51,6 +60,7 @@ const GAMEPLAY_UI_LAYER_NAMES: Array[StringName] = [
 	&"PauseLayer",
 	&"ResultLayer",
 ]
+const ARROW_FONT := preload(AssetPaths.ARROW_FONT_PATH)
 
 
 # Public Fields
@@ -67,44 +77,6 @@ var touchscreen_available_override := false
 
 # Private Fields
 var _run_state: RunStateType
-var _gameplay_ui_layer: CanvasLayer
-var _hud_layer: Control
-var _bonus_callout_layer: Control
-var _phase_callout_layer: Control
-var _health_bar: ProgressBar
-var _health_label: Label
-var _distance_bar: ProgressBar
-var _distance_band_markers: Control
-var _cargo_label: Label
-var _bonus_callout_panel: Control
-var _bonus_callout_label: Label
-var _phase_callout_panel: PanelContainer
-var _phase_callout_label: Label
-var _touch_layer: Control
-var _touch_left_button: Button
-var _touch_right_button: Button
-var _touch_pause_button: Button
-var _onboarding_layer: Control
-var _onboarding_panel: PanelContainer
-var _onboarding_title: Label
-var _onboarding_body: Label
-var _onboarding_hint: Label
-var _pause_overlay: Control
-var _pause_panel: PanelContainer
-var _pause_resume_button: Button
-var _pause_restart_button: Button
-var _pause_return_button: Button
-var _recovery_layer: Control
-var _recovery_panel: PanelContainer
-var _recovery_title: Label
-var _recovery_hint: Label
-var _recovery_steps: HBoxContainer
-var _pause_layer: Control
-var _result_panel: ResultPanelUiType
-var _result_restart_button: Button
-var _result_return_button: Button
-var _result_layer: Control
-var _arrow_font: Font
 var _bonus_callout_text := ""
 var _bonus_callout_remaining := 0.0
 var _bonus_callout_anchor_world_position := Vector2.ZERO
@@ -112,90 +84,220 @@ var _phase_callout_text := ""
 var _phase_callout_remaining := 0.0
 
 
+# Private Fields: OnReady
+@onready
+var _hud_layer: Control = $HUDLayer
+
+@onready
+var _bonus_callout_layer: Control = $BonusCalloutLayer
+
+@onready
+var _phase_callout_layer: Control = $PhaseCalloutLayer
+
+@onready
+var _health_bar: ProgressBar = %HealthBar
+
+@onready
+var _health_label: Label = %HealthLabel
+
+@onready
+var _distance_bar: ProgressBar = %DistanceBar
+
+@onready
+var _distance_band_markers: Control = %DistanceBandMarkers
+
+@onready
+var _cargo_label: Label = %CargoLabel
+
+@onready
+var _bonus_callout_panel: Control = %BonusCalloutPanel
+
+@onready
+var _bonus_callout_label: Label = %BonusCalloutLabel
+
+@onready
+var _phase_callout_panel: PanelContainer = %PhaseCalloutPanel
+
+@onready
+var _phase_callout_label: Label = %PhaseCalloutLabel
+
+@onready
+var _touch_layer: Control = %TouchLayer
+
+@onready
+var _touch_left_button: Button = %TouchLeft
+
+@onready
+var _touch_right_button: Button = %TouchRight
+
+@onready
+var _touch_pause_button: Button = %TouchPause
+
+@onready
+var _onboarding_layer: Control = $OnboardingLayer
+
+@onready
+var _onboarding_panel: PanelContainer = %OnboardingPanel
+
+@onready
+var _onboarding_title: Label = %OnboardingTitle
+
+@onready
+var _onboarding_body: Label = %OnboardingBody
+
+@onready
+var _onboarding_hint: Label = %OnboardingHint
+
+@onready
+var _pause_overlay: Control = %PauseOverlay
+
+@onready
+var _pause_panel: PanelContainer = %PausePanel
+
+@onready
+var _pause_resume_button: Button = %PauseResumeButton
+
+@onready
+var _pause_restart_button: Button = %PauseRestartButton
+
+@onready
+var _pause_return_button: Button = %PauseReturnButton
+
+@onready
+var _recovery_layer: Control = $RecoveryLayer
+
+@onready
+var _recovery_panel: PanelContainer = %RecoveryPanel
+
+@onready
+var _recovery_title: Label = %RecoveryTitle
+
+@onready
+var _recovery_hint: Label = %RecoveryHint
+
+@onready
+var _recovery_steps: HBoxContainer = %RecoverySteps
+
+@onready
+var _pause_layer: Control = $PauseLayer
+
+@onready
+var _result_panel: ResultPanelUiType = %ResultPanel
+
+@onready
+var _result_restart_button: Button = %ResultRestartButton
+
+@onready
+var _result_return_button: Button = %ResultReturnButton
+
+@onready
+var _result_layer: Control = $ResultLayer
+
+
+# Lifecycle Methods
+
+## Configures UI subtree ownership and internal button wiring once the layer enters the scene tree.
+func _ready() -> void:
+	configure_gameplay_ui_layers()
+	configure_touch_buttons()
+	configure_pause_menu_navigation()
+	configure_result_menu_navigation()
+	_set_process_mode_recursive(_pause_overlay, Node.PROCESS_MODE_ALWAYS)
+
+	if _touch_left_button != null and not _touch_left_button.button_down.is_connected(_on_touch_left_button_down):
+		_touch_left_button.button_down.connect(_on_touch_left_button_down)
+	if _touch_left_button != null and not _touch_left_button.button_up.is_connected(_on_touch_left_button_up):
+		_touch_left_button.button_up.connect(_on_touch_left_button_up)
+	if _touch_right_button != null and not _touch_right_button.button_down.is_connected(_on_touch_right_button_down):
+		_touch_right_button.button_down.connect(_on_touch_right_button_down)
+	if _touch_right_button != null and not _touch_right_button.button_up.is_connected(_on_touch_right_button_up):
+		_touch_right_button.button_up.connect(_on_touch_right_button_up)
+	if _touch_pause_button != null and not _touch_pause_button.pressed.is_connected(_on_touch_pause_button_pressed):
+		_touch_pause_button.pressed.connect(_on_touch_pause_button_pressed)
+	if _pause_resume_button != null and not _pause_resume_button.pressed.is_connected(_on_pause_resume_button_pressed):
+		_pause_resume_button.pressed.connect(_on_pause_resume_button_pressed)
+	if _pause_restart_button != null and not _pause_restart_button.pressed.is_connected(_on_pause_restart_button_pressed):
+		_pause_restart_button.pressed.connect(_on_pause_restart_button_pressed)
+	if (
+		_pause_return_button != null
+		and not _pause_return_button.pressed.is_connected(_on_pause_return_button_pressed)
+	):
+		_pause_return_button.pressed.connect(_on_pause_return_button_pressed)
+	if (
+		_result_restart_button != null
+		and not _result_restart_button.pressed.is_connected(_on_result_restart_button_pressed)
+	):
+		_result_restart_button.pressed.connect(_on_result_restart_button_pressed)
+	if (
+		_result_return_button != null
+		and not _result_return_button.pressed.is_connected(_on_result_return_button_pressed)
+	):
+		_result_return_button.pressed.connect(_on_result_return_button_pressed)
+
+
+# Event Handlers
+
+## Emits a pause intent when the touch pause button is pressed during active gameplay.
+func _on_touch_pause_button_pressed() -> void:
+	if not should_open_pause_from_touch():
+		return
+	touch_pause_requested.emit()
+
+
+## Presses the left steering action while the mobile left button is held.
+func _on_touch_left_button_down() -> void:
+	if not should_show_touch_controls():
+		return
+	_parse_touch_action_event(TOUCH_LEFT_ACTION, true)
+
+
+## Releases the left steering action when the mobile left button is released.
+func _on_touch_left_button_up() -> void:
+	if not touch_controls_enabled_for_runtime:
+		return
+	_parse_touch_action_event(TOUCH_LEFT_ACTION, false)
+
+
+## Presses the right steering action while the mobile right button is held.
+func _on_touch_right_button_down() -> void:
+	if not should_show_touch_controls():
+		return
+	_parse_touch_action_event(TOUCH_RIGHT_ACTION, true)
+
+
+## Releases the right steering action when the mobile right button is released.
+func _on_touch_right_button_up() -> void:
+	if not touch_controls_enabled_for_runtime:
+		return
+	_parse_touch_action_event(TOUCH_RIGHT_ACTION, false)
+
+
+## Emits the pause-menu resume intent upward.
+func _on_pause_resume_button_pressed() -> void:
+	pause_resume_requested.emit()
+
+
+## Emits the pause-menu restart intent upward.
+func _on_pause_restart_button_pressed() -> void:
+	pause_restart_requested.emit()
+
+
+## Emits the pause-menu return-to-title intent upward.
+func _on_pause_return_button_pressed() -> void:
+	pause_return_to_title_requested.emit()
+
+
+## Emits the result-screen restart intent upward.
+func _on_result_restart_button_pressed() -> void:
+	result_restart_requested.emit()
+
+
+## Emits the result-screen return-to-title intent upward.
+func _on_result_return_button_pressed() -> void:
+	result_return_to_title_requested.emit()
+
+
 # Public Methods
-
-## Binds the scene-owned UI nodes and shared resources used by runtime UI presentation.
-func configure_scene_nodes(
-	run_state: RunStateType,
-	gameplay_ui_layer: CanvasLayer,
-	hud_layer: Control,
-	bonus_callout_layer: Control,
-	phase_callout_layer: Control,
-	health_bar: ProgressBar,
-	health_label: Label,
-	distance_bar: ProgressBar,
-	distance_band_markers: Control,
-	cargo_label: Label,
-	bonus_callout_panel: Control,
-	bonus_callout_label: Label,
-	phase_callout_panel: PanelContainer,
-	phase_callout_label: Label,
-	touch_layer: Control,
-	touch_left_button: Button,
-	touch_right_button: Button,
-	touch_pause_button: Button,
-	onboarding_layer: Control,
-	onboarding_panel: PanelContainer,
-	onboarding_title: Label,
-	onboarding_body: Label,
-	onboarding_hint: Label,
-	pause_overlay: Control,
-	pause_panel: PanelContainer,
-	pause_resume_button: Button,
-	pause_restart_button: Button,
-	pause_return_button: Button,
-	recovery_layer: Control,
-	recovery_panel: PanelContainer,
-	recovery_title: Label,
-	recovery_hint: Label,
-	recovery_steps: HBoxContainer,
-	pause_layer: Control,
-	result_panel: ResultPanelUiType,
-	result_restart_button: Button,
-	result_return_button: Button,
-	result_layer: Control,
-	arrow_font: Font
-) -> void:
-	_run_state = run_state
-	_gameplay_ui_layer = gameplay_ui_layer
-	_hud_layer = hud_layer
-	_bonus_callout_layer = bonus_callout_layer
-	_phase_callout_layer = phase_callout_layer
-	_health_bar = health_bar
-	_health_label = health_label
-	_distance_bar = distance_bar
-	_distance_band_markers = distance_band_markers
-	_cargo_label = cargo_label
-	_bonus_callout_panel = bonus_callout_panel
-	_bonus_callout_label = bonus_callout_label
-	_phase_callout_panel = phase_callout_panel
-	_phase_callout_label = phase_callout_label
-	_touch_layer = touch_layer
-	_touch_left_button = touch_left_button
-	_touch_right_button = touch_right_button
-	_touch_pause_button = touch_pause_button
-	_onboarding_layer = onboarding_layer
-	_onboarding_panel = onboarding_panel
-	_onboarding_title = onboarding_title
-	_onboarding_body = onboarding_body
-	_onboarding_hint = onboarding_hint
-	_pause_overlay = pause_overlay
-	_pause_panel = pause_panel
-	_pause_resume_button = pause_resume_button
-	_pause_restart_button = pause_restart_button
-	_pause_return_button = pause_return_button
-	_recovery_layer = recovery_layer
-	_recovery_panel = recovery_panel
-	_recovery_title = recovery_title
-	_recovery_hint = recovery_hint
-	_recovery_steps = recovery_steps
-	_pause_layer = pause_layer
-	_result_panel = result_panel
-	_result_restart_button = result_restart_button
-	_result_return_button = result_return_button
-	_result_layer = result_layer
-	_arrow_font = arrow_font
-
 
 ## Binds the active run state so runtime UI follows the current run.
 func bind_run_state(run_state: RunStateType) -> void:
@@ -239,16 +341,13 @@ func configure_distance_bar_band_markers(
 
 ## Applies explicit gameplay UI wrapper order, stacking, and mouse-filter policy.
 func configure_gameplay_ui_layers() -> void:
-	if _gameplay_ui_layer == null:
-		return
-
 	for layer_index in range(GAMEPLAY_UI_LAYER_NAMES.size()):
 		var layer_name := GAMEPLAY_UI_LAYER_NAMES[layer_index]
-		var layer_node := _gameplay_ui_layer.get_node_or_null(NodePath(String(layer_name))) as Control
+		var layer_node := get_node_or_null(NodePath(String(layer_name))) as Control
 		if layer_node == null:
 			continue
 
-		_gameplay_ui_layer.move_child(layer_node, layer_index)
+		move_child(layer_node, layer_index)
 		layer_node.z_as_relative = false
 		layer_node.z_index = layer_index
 
@@ -258,7 +357,7 @@ func configure_gameplay_ui_layers() -> void:
 ## Applies the shared input-prompt font styling to the mobile touch buttons.
 func configure_touch_buttons() -> void:
 	if _touch_left_button != null:
-		_touch_left_button.add_theme_font_override("font", _arrow_font)
+		_touch_left_button.add_theme_font_override("font", ARROW_FONT)
 		_touch_left_button.add_theme_stylebox_override("normal", _make_touch_button_stylebox())
 		_touch_left_button.add_theme_stylebox_override(
 			"hover",
@@ -270,7 +369,7 @@ func configure_touch_buttons() -> void:
 		)
 		_touch_left_button.text = char(0xE020)
 	if _touch_right_button != null:
-		_touch_right_button.add_theme_font_override("font", _arrow_font)
+		_touch_right_button.add_theme_font_override("font", ARROW_FONT)
 		_touch_right_button.add_theme_stylebox_override("normal", _make_touch_button_stylebox())
 		_touch_right_button.add_theme_stylebox_override(
 			"hover",
@@ -283,7 +382,7 @@ func configure_touch_buttons() -> void:
 		_touch_right_button.text = char(0xE022)
 	if _touch_pause_button != null:
 		_touch_pause_button.text = char(0xE061)
-		_touch_pause_button.add_theme_font_override("font", _arrow_font)
+		_touch_pause_button.add_theme_font_override("font", ARROW_FONT)
 		_touch_pause_button.add_theme_font_size_override("font_size", 52)
 		_touch_pause_button.add_theme_stylebox_override("normal", _make_touch_button_stylebox())
 		_touch_pause_button.add_theme_stylebox_override(
@@ -351,8 +450,8 @@ func refresh_recovery_prompt() -> void:
 	_recovery_steps.custom_minimum_size.x = RECOVERY_STEP_ROW_MAX_WIDTH
 	_recovery_steps.add_theme_constant_override("separation", RECOVERY_STEP_SPACING)
 
-	for i in range(_run_state.recovery_sequence.size()):
-		_recovery_steps.add_child(build_recovery_step(i))
+	for step_index in range(_run_state.recovery_sequence.size()):
+		_recovery_steps.add_child(build_recovery_step(step_index))
 
 	_refresh_gameplay_ui_layer_state()
 
@@ -689,37 +788,27 @@ func refresh_phase_callout() -> void:
 	_refresh_gameplay_ui_layer_state()
 
 
+## Shows representative result data while editing the scene in Godot.
+func apply_editor_result_preview() -> void:
+	if not Engine.is_editor_hint():
+		return
+	if _result_panel == null:
+		return
+
+	_result_panel.visible = true
+	_result_panel.show_editor_preview()
+
+	if _onboarding_panel != null:
+		_onboarding_panel.visible = false
+	if _pause_overlay != null:
+		_pause_overlay.visible = false
+	if _recovery_panel != null:
+		_recovery_panel.visible = false
+
+
 ## Returns whether a touch pause press should open the pause menu.
 func should_open_pause_from_touch() -> bool:
 	return should_show_touch_controls()
-
-
-## Presses the left steering action while the mobile left button is held.
-func on_touch_left_button_down() -> void:
-	if not should_show_touch_controls():
-		return
-	_parse_touch_action_event(TOUCH_LEFT_ACTION, true)
-
-
-## Releases the left steering action when the mobile left button is released.
-func on_touch_left_button_up() -> void:
-	if not touch_controls_enabled_for_runtime:
-		return
-	_parse_touch_action_event(TOUCH_LEFT_ACTION, false)
-
-
-## Presses the right steering action while the mobile right button is held.
-func on_touch_right_button_down() -> void:
-	if not should_show_touch_controls():
-		return
-	_parse_touch_action_event(TOUCH_RIGHT_ACTION, true)
-
-
-## Releases the right steering action when the mobile right button is released.
-func on_touch_right_button_up() -> void:
-	if not touch_controls_enabled_for_runtime:
-		return
-	_parse_touch_action_event(TOUCH_RIGHT_ACTION, false)
 
 
 ## Releases both steering actions to avoid held touch state leaking across scene transitions.
@@ -823,8 +912,8 @@ func build_recovery_step(index: int) -> PanelContainer:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	label.add_theme_font_size_override("font_size", get_recovery_step_font_size())
-	if _arrow_font != null:
-		label.add_theme_font_override("font", _arrow_font)
+	if ARROW_FONT != null:
+		label.add_theme_font_override("font", ARROW_FONT)
 	panel.add_child(label)
 	return panel
 
@@ -1020,6 +1109,16 @@ func _get_recovery_action(event: InputEvent) -> StringName:
 	if event.is_action_pressed(TOUCH_RIGHT_ACTION, false, true):
 		return TOUCH_RIGHT_ACTION
 	return &""
+
+
+## Ensures overlay controls keep running while the rest of the scene updates around them.
+func _set_process_mode_recursive(node: Node, mode: ProcessMode) -> void:
+	if node == null:
+		return
+
+	node.process_mode = mode
+	for child in node.get_children():
+		_set_process_mode_recursive(child, mode)
 
 
 # Inner Classes

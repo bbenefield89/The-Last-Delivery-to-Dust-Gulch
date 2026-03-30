@@ -15,10 +15,9 @@ const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GE
 const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_PATH)
 const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
 const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_PATH)
-const ResultPanelUiType := preload(ProjectPaths.RESULT_PANEL_UI_SCRIPT_PATH)
 const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
-const RunUiPresenterType := preload(ProjectPaths.RUN_UI_PRESENTER_SCRIPT_PATH)
+const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
 
 
 const BACKGROUND_MUSIC := preload(AssetPaths.RUN_BACKGROUND_MUSIC_AUDIO_PATH)
@@ -130,43 +129,30 @@ const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := RunDirectorType.WHEEL_LOOSE_FA
 const HORSE_PANIC_FAILURE_CARGO_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_CARGO_LOSS
 const HORSE_PANIC_FAILURE_SPEED_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_SPEED_LOSS
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FAILURE_INSTABILITY_DURATION
-const BONUS_CALLOUT_DURATION := 1.1
-const BONUS_CALLOUT_START_OFFSET := Vector2(0.0, -64.0)
-const BONUS_CALLOUT_END_OFFSET := Vector2(0.0, -82.0)
-const RECOVERY_STEP_ROW_MAX_WIDTH := RunUiPresenterType.RECOVERY_STEP_ROW_MAX_WIDTH
-const RECOVERY_STEP_MIN_WIDTH := RunUiPresenterType.RECOVERY_STEP_MIN_WIDTH
-const RECOVERY_STEP_HEIGHT := RunUiPresenterType.RECOVERY_STEP_HEIGHT
-const RECOVERY_STEP_MAX_WIDTH := RunUiPresenterType.RECOVERY_STEP_MAX_WIDTH
-const RECOVERY_STEP_FONT_SIZE_RATIO := RunUiPresenterType.RECOVERY_STEP_FONT_SIZE_RATIO
-const RECOVERY_STEP_MIN_FONT_SIZE := RunUiPresenterType.RECOVERY_STEP_MIN_FONT_SIZE
-const RECOVERY_STEP_MAX_FONT_SIZE := RunUiPresenterType.RECOVERY_STEP_MAX_FONT_SIZE
-const RECOVERY_STEP_SPACING := RunUiPresenterType.RECOVERY_STEP_SPACING
-const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := RunUiPresenterType.RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH
+const RECOVERY_STEP_ROW_MAX_WIDTH := GameplayUiLayerType.RECOVERY_STEP_ROW_MAX_WIDTH
+const RECOVERY_STEP_MIN_WIDTH := GameplayUiLayerType.RECOVERY_STEP_MIN_WIDTH
+const RECOVERY_STEP_HEIGHT := GameplayUiLayerType.RECOVERY_STEP_HEIGHT
+const RECOVERY_STEP_MAX_WIDTH := GameplayUiLayerType.RECOVERY_STEP_MAX_WIDTH
+const RECOVERY_STEP_FONT_SIZE_RATIO := GameplayUiLayerType.RECOVERY_STEP_FONT_SIZE_RATIO
+const RECOVERY_STEP_MIN_FONT_SIZE := GameplayUiLayerType.RECOVERY_STEP_MIN_FONT_SIZE
+const RECOVERY_STEP_MAX_FONT_SIZE := GameplayUiLayerType.RECOVERY_STEP_MAX_FONT_SIZE
+const RECOVERY_STEP_SPACING := GameplayUiLayerType.RECOVERY_STEP_SPACING
+const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := GameplayUiLayerType.RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
 const ROADSIDE_DECOR_SPACING := RunPresentationType.ROADSIDE_DECOR_SPACING
 const ROADSIDE_DECOR_COUNT := RunPresentationType.ROADSIDE_DECOR_COUNT
-const RECOVERY_STEP_PENDING_COLOR := RunUiPresenterType.RECOVERY_STEP_PENDING_COLOR
-const RECOVERY_STEP_ACTIVE_COLOR := RunUiPresenterType.RECOVERY_STEP_ACTIVE_COLOR
-const RECOVERY_STEP_DONE_COLOR := RunUiPresenterType.RECOVERY_STEP_DONE_COLOR
+const RECOVERY_STEP_PENDING_COLOR := GameplayUiLayerType.RECOVERY_STEP_PENDING_COLOR
+const RECOVERY_STEP_ACTIVE_COLOR := GameplayUiLayerType.RECOVERY_STEP_ACTIVE_COLOR
+const RECOVERY_STEP_DONE_COLOR := GameplayUiLayerType.RECOVERY_STEP_DONE_COLOR
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
 const DUST_BASE_AMOUNT_RATIO := RunPresentationType.DUST_BASE_AMOUNT_RATIO
-const ONBOARDING_TITLE := RunUiPresenterType.ONBOARDING_TITLE
-const ONBOARDING_BODY := RunUiPresenterType.ONBOARDING_BODY
-const ONBOARDING_HINT := RunUiPresenterType.ONBOARDING_HINT
+const ONBOARDING_TITLE := GameplayUiLayerType.ONBOARDING_TITLE
+const ONBOARDING_BODY := GameplayUiLayerType.ONBOARDING_BODY
+const ONBOARDING_HINT := GameplayUiLayerType.ONBOARDING_HINT
 const WAGON_LOOP_START_SECONDS := 5.0
 const WAGON_LOOP_END_SECONDS := 10.0
-const GAMEPLAY_UI_LAYER_NAMES: Array[StringName] = [
-	&"HUDLayer",
-	&"BonusCalloutLayer",
-	&"PhaseCalloutLayer",
-	&"TouchLayer",
-	&"OnboardingLayer",
-	&"RecoveryLayer",
-	&"PauseLayer",
-	&"ResultLayer",
-]
 
 
 # Private Fields
@@ -174,7 +160,6 @@ const GAMEPLAY_UI_LAYER_NAMES: Array[StringName] = [
 var _run_state: RunStateType
 var _run_presentation: RunPresentationType = RunPresentationType.new()
 var _run_audio_presenter: RunAudioPresenterType = RunAudioPresenterType.new()
-var _run_ui_presenter: RunUiPresenterType = RunUiPresenterType.new()
 var _run_director: RefCounted = RunDirectorType.new()
 var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
 var _navigation_click_in_progress := false
@@ -245,115 +230,7 @@ var _horse_right_sprite: AnimatedSprite2D = $World/Wagon/HorseTeam/HorseRight
 var _dust_trail: CPUParticles2D = %DustTrail
 
 @onready
-var _gameplay_ui_layer: CanvasLayer = %GameplayUiLayer
-
-@onready
-var _hud_layer: Control = $GameplayUiLayer/HUDLayer
-
-@onready
-var _bonus_callout_layer: Control = $GameplayUiLayer/BonusCalloutLayer
-
-@onready
-var _phase_callout_layer: Control = $GameplayUiLayer/PhaseCalloutLayer
-
-@onready
-var _health_bar: ProgressBar = %HealthBar
-
-@onready
-var _health_label: Label = %HealthLabel
-
-@onready
-var _distance_bar: ProgressBar = %DistanceBar
-
-@onready
-var _distance_band_markers: Control = %DistanceBandMarkers
-
-@onready
-var _cargo_label: Label = %CargoLabel
-
-@onready
-var _bonus_callout_panel: Control = %BonusCalloutPanel
-
-@onready
-var _bonus_callout_label: Label = %BonusCalloutLabel
-
-@onready
-var _phase_callout_panel: PanelContainer = %PhaseCalloutPanel
-
-@onready
-var _phase_callout_label: Label = %PhaseCalloutLabel
-
-@onready
-var _touch_layer: Control = %TouchLayer
-
-@onready
-var _touch_left_button: Button = %TouchLeft
-
-@onready
-var _touch_right_button: Button = %TouchRight
-
-@onready
-var _touch_pause_button: Button = %TouchPause
-
-@onready
-var _onboarding_layer: Control = $GameplayUiLayer/OnboardingLayer
-
-@onready
-var _onboarding_panel: PanelContainer = %OnboardingPanel
-
-@onready
-var _onboarding_title: Label = %OnboardingTitle
-
-@onready
-var _onboarding_body: Label = %OnboardingBody
-
-@onready
-var _onboarding_hint: Label = %OnboardingHint
-
-@onready
-var _pause_overlay: Control = %PauseOverlay
-
-@onready
-var _pause_panel: PanelContainer = %PausePanel
-
-@onready
-var _pause_resume_button: Button = %PauseResumeButton
-
-@onready
-var _pause_restart_button: Button = %PauseRestartButton
-
-@onready
-var _pause_return_button: Button = %PauseReturnButton
-
-@onready
-var _recovery_layer: Control = $GameplayUiLayer/RecoveryLayer
-
-@onready
-var _recovery_panel: PanelContainer = %RecoveryPanel
-
-@onready
-var _recovery_title: Label = %RecoveryTitle
-
-@onready
-var _recovery_hint: Label = %RecoveryHint
-
-@onready
-var _recovery_steps: HBoxContainer = %RecoverySteps
-
-@onready
-var _pause_layer: Control = $GameplayUiLayer/PauseLayer
-
-@onready
-var _result_panel: ResultPanelUiType = %ResultPanel
-
-@onready
-var _result_restart_button: Button = %ResultRestartButton
-
-@onready
-var _result_return_button: Button = %ResultReturnButton
-
-@onready
-var _result_layer: Control = $GameplayUiLayer/ResultLayer
+var _run_ui_presenter: GameplayUiLayerType = %GameplayUiLayer
 
 @onready
 var _music_player: AudioStreamPlayer = %MusicPlayer
@@ -467,71 +344,27 @@ func _ready() -> void:
 		_result_player,
 		_ui_click_player
 	)
-	_run_ui_presenter.configure_scene_nodes(
-		_run_state,
-		_gameplay_ui_layer,
-		_hud_layer,
-		_bonus_callout_layer,
-		_phase_callout_layer,
-		_health_bar,
-		_health_label,
-		_distance_bar,
-		_distance_band_markers,
-		_cargo_label,
-		_bonus_callout_panel,
-		_bonus_callout_label,
-		_phase_callout_panel,
-		_phase_callout_label,
-		_touch_layer,
-		_touch_left_button,
-		_touch_right_button,
-		_touch_pause_button,
-		_onboarding_layer,
-		_onboarding_panel,
-		_onboarding_title,
-		_onboarding_body,
-		_onboarding_hint,
-		_pause_overlay,
-		_pause_panel,
-		_pause_resume_button,
-		_pause_restart_button,
-		_pause_return_button,
-		_recovery_layer,
-		_recovery_panel,
-		_recovery_title,
-		_recovery_hint,
-		_recovery_steps,
-		_pause_layer,
-		_result_panel,
-		_result_restart_button,
-		_result_return_button,
-		_result_layer,
-		ARROW_FONT
-	)
 	_configure_environment_art()
 	_ensure_scroll_visuals()
 	_configure_vehicle_sprites()
 	_configure_wagon_collision_areas()
 	_configure_hazard_cleanup_areas()
 	_configure_distance_bar_band_markers()
-	_run_ui_presenter.configure_gameplay_ui_layers()
 	_refresh_phase_callout()
-	_run_ui_presenter.configure_touch_buttons()
 	_configure_dust_trail()
 	_configure_audio_players()
-	_set_process_mode_recursive(_pause_overlay, Node.PROCESS_MODE_ALWAYS)
-	_touch_left_button.button_down.connect(_run_ui_presenter.on_touch_left_button_down)
-	_touch_left_button.button_up.connect(_run_ui_presenter.on_touch_left_button_up)
-	_touch_right_button.button_down.connect(_run_ui_presenter.on_touch_right_button_down)
-	_touch_right_button.button_up.connect(_run_ui_presenter.on_touch_right_button_up)
-	_touch_pause_button.pressed.connect(_on_touch_pause_button_pressed)
-	_pause_resume_button.pressed.connect(_on_pause_resume_pressed)
-	_pause_restart_button.pressed.connect(_on_pause_restart_pressed)
-	_pause_return_button.pressed.connect(_on_pause_return_to_title_pressed)
-	_result_restart_button.pressed.connect(_on_result_restart_pressed)
-	_result_return_button.pressed.connect(_on_result_return_to_title_pressed)
-	_configure_pause_menu_navigation()
-	_configure_result_menu_navigation()
+	if not _run_ui_presenter.touch_pause_requested.is_connected(_on_touch_pause_button_pressed):
+		_run_ui_presenter.touch_pause_requested.connect(_on_touch_pause_button_pressed)
+	if not _run_ui_presenter.pause_resume_requested.is_connected(_on_pause_resume_pressed):
+		_run_ui_presenter.pause_resume_requested.connect(_on_pause_resume_pressed)
+	if not _run_ui_presenter.pause_restart_requested.is_connected(_on_pause_restart_pressed):
+		_run_ui_presenter.pause_restart_requested.connect(_on_pause_restart_pressed)
+	if not _run_ui_presenter.pause_return_to_title_requested.is_connected(_on_pause_return_to_title_pressed):
+		_run_ui_presenter.pause_return_to_title_requested.connect(_on_pause_return_to_title_pressed)
+	if not _run_ui_presenter.result_restart_requested.is_connected(_on_result_restart_pressed):
+		_run_ui_presenter.result_restart_requested.connect(_on_result_restart_pressed)
+	if not _run_ui_presenter.result_return_to_title_requested.is_connected(_on_result_return_to_title_pressed):
+		_run_ui_presenter.result_return_to_title_requested.connect(_on_result_return_to_title_pressed)
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
@@ -818,17 +651,6 @@ func _refresh_recovery_prompt() -> void:
 func _refresh_onboarding_prompt() -> void:
 	_run_ui_presenter.refresh_onboarding_prompt()
 
-
-## Configures explicit keyboard focus traversal for the pause menu buttons.
-func _configure_pause_menu_navigation() -> void:
-	_run_ui_presenter.configure_pause_menu_navigation()
-
-
-## Configures explicit keyboard focus traversal for the result screen buttons.
-func _configure_result_menu_navigation() -> void:
-	_run_ui_presenter.configure_result_menu_navigation()
-
-
 ## Refreshes pause-menu visibility for the active run.
 func _refresh_pause_menu() -> void:
 	_run_ui_presenter.refresh_pause_menu()
@@ -841,20 +663,7 @@ func _refresh_result_screen() -> void:
 
 ## Populates the result panel with representative dummy data while editing the scene in Godot.
 func _apply_editor_result_preview() -> void:
-	if not Engine.is_editor_hint():
-		return
-	if _result_panel == null:
-		return
-
-	_result_panel.visible = true
-	_result_panel.show_editor_preview()
-
-	if _onboarding_panel != null:
-		_onboarding_panel.visible = false
-	if _pause_overlay != null:
-		_pause_overlay.visible = false
-	if _recovery_panel != null:
-		_recovery_panel.visible = false
+	_run_ui_presenter.apply_editor_result_preview()
 
 
 ## Persists a newly completed run exactly once when it beats the stored best score.
@@ -894,21 +703,21 @@ func _refresh_touch_controls() -> void:
 ## Routes pause, onboarding, and recovery input for the run scene.
 func _input(event: InputEvent) -> void:
 	var ui_input_result := _run_ui_presenter.route_input(event, PAUSE_ACTION)
-	if ui_input_result.pause_command == RunUiPresenterType.PAUSE_COMMAND_TOGGLE:
+	if ui_input_result.pause_command == GameplayUiLayerType.PAUSE_COMMAND_TOGGLE:
 		_set_pause_state(not _run_ui_presenter.pause_menu_open)
 		return
-	if ui_input_result.pause_command == RunUiPresenterType.PAUSE_COMMAND_CLOSE:
+	if ui_input_result.pause_command == GameplayUiLayerType.PAUSE_COMMAND_CLOSE:
 		_set_pause_state(false)
 		return
 
 	match ui_input_result.navigation_action:
-		RunUiPresenterType.PAUSE_MENU_ACTION_RESUME:
+		GameplayUiLayerType.PAUSE_MENU_ACTION_RESUME:
 			_on_pause_resume_pressed()
 			return
-		RunUiPresenterType.PAUSE_MENU_ACTION_RESTART:
+		GameplayUiLayerType.PAUSE_MENU_ACTION_RESTART:
 			_on_pause_restart_pressed()
 			return
-		RunUiPresenterType.PAUSE_MENU_ACTION_RETURN_TO_TITLE:
+		GameplayUiLayerType.PAUSE_MENU_ACTION_RETURN_TO_TITLE:
 			_on_pause_return_to_title_pressed()
 			return
 		_:
@@ -1097,16 +906,6 @@ func _register_action(action_name: StringName, keys: Array[int]) -> void:
 		event.physical_keycode = keycode
 		if not InputMap.action_has_event(action_name, event):
 			InputMap.action_add_event(action_name, event)
-
-
-## Helper for set process mode recursive.
-func _set_process_mode_recursive(node: Node, mode: ProcessMode) -> void:
-	if node == null:
-		return
-
-	node.process_mode = mode
-	for child in node.get_children():
-		_set_process_mode_recursive(child, mode)
 
 
 ## Preserves compatibility for legacy scene-state property access now owned by extracted presenters.
