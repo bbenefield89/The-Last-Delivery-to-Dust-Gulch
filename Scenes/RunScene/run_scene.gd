@@ -603,14 +603,14 @@ func _refresh_gameplay_ui_layer_state() -> void:
 ## Applies one gameplay UI wrapper visibility and mouse policy without touching its children.
 func _set_gameplay_ui_wrapper_state(
 	layer: Control,
-	visible: bool,
+	should_be_visible: bool,
 	mouse_filter: Control.MouseFilter
 ) -> void:
 	if layer == null:
 		return
 
-	layer.visible = visible
-	layer.mouse_filter = mouse_filter if visible else Control.MOUSE_FILTER_IGNORE
+	layer.visible = should_be_visible
+	layer.mouse_filter = mouse_filter if should_be_visible else Control.MOUSE_FILTER_IGNORE
 
 
 ## Applies the imported carriage, shadow, and horse art to the existing wagon rig nodes.
