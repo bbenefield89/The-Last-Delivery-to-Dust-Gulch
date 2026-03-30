@@ -20,7 +20,9 @@
 		{
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
-			"tasks": []
+			"tasks": [
+				"f33330b5-2e0e-4288-a20b-f14ffed81ce3"
+			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
@@ -932,6 +934,26 @@
 				},
 				{
 					"details": "Update the RunScene UI wiring so the consolidated hierarchy still supports the current overlay timing, visibility toggles, and stacking behavior, and fold very thorough automated coverage for the changed UI hierarchy and behavior into this same pass. Preserve the current HUD, callout, touch, onboarding, recovery, pause, and result flows without redesigning them.\n\nDone when: by starting a run, triggering callouts, using touch controls where applicable, opening onboarding and recovery states, pausing, and reaching the result screen, a reviewer can confirm the UI still appears in the right order, does not hide the wrong elements, and remains usable throughout the run.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "f33330b5-2e0e-4288-a20b-f14ffed81ce3",
+			"title": "DG-45",
+			"description": "TechDebt: Finish moving gameplay UI behavior out of Scenes/RunScene/run_scene.gd.\n\nDG-38 introduced Systems/RunUiPresenter and DG-43 is consolidating the gameplay UI hierarchy, but Scenes/RunScene/run_scene.gd still owns a large amount of gameplay UI behavior. The scene script currently binds most UI nodes directly, controls gameplay UI wrapper visibility and mouse filtering, styles the touch buttons, drives bonus and phase callouts, routes onboarding, pause, recovery, and result input, and preserves legacy UI compatibility shims. That leaves UI behavior split across the scene and the presenter instead of delegated cleanly to explicit UI owners.\n\nThis ticket should finish that cleanup without redesigning the run UI. Keep the current HUD, callouts, onboarding card, recovery overlay, touch controls, pause flow, and result screen behavior the same, but move the remaining UI-specific presentation and interaction policy behind explicit systems under Systems/. If one owner becomes too broad, split the work into smaller UI owners under Systems/<Owner>/ rather than pushing more behavior back into RunScene.\n\nLikely affected files:\n- Scenes/RunScene/run_scene.gd\n- Systems/RunUiPresenter/run_ui_presenter.gd\n- Systems/RunUiPresenter/* or new sibling UI-owner files under Systems/\n- Scenes/RunScene/RunScene.tscn if node ownership or exported references need cleanup\n- Tests/Unit/test_run_scene.gd\n- Any new focused UI-owner tests added to cover the extracted behavior\n\nDone when: a reviewer can play through onboarding, normal driving, bonus and phase callouts, recovery prompts, touch input, pause flow, and the result screen with no behavior regression, while run_scene.gd mainly coordinates scene composition and high-level gameplay events instead of directly owning the remaining gameplay UI behavior.",
+			"category": "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+			"steps": [
+				{
+					"details": "Move gameplay UI wrapper ordering and state, mouse-filter policy, bonus and phase callout presentation, and touch-button styling and theming out of run_scene.gd into explicit UI-owner code under Systems/. Keep the current visual order, timing, and touch-button appearance. Fold very thorough automated coverage for wrapper state and callout visibility into this step.\n\nDone when: the gameplay UI subtree still layers and behaves the same in play, but wrapper-state and callout presentation logic no longer live directly in run_scene.gd.",
+					"done": false
+				},
+				{
+					"details": "Move UI interaction routing for onboarding dismissal, pause-menu click handling and focus flow, touch-button action injection, and recovery-input interpretation behind explicit UI-owner APIs or signals so RunScene does not inspect raw UI controls to decide most UI behavior. Keep the current controls and modal behavior unchanged. Fold very thorough automated coverage for desktop and touch-capable UI interaction paths into this step.\n\nDone when: the same onboarding, pause, touch, and recovery interactions still work, but their UI-specific routing is owned by Systems code instead of direct scene-script branching.",
+					"done": false
+				},
+				{
+					"details": "Remove leftover RunScene UI pass-throughs, duplicated UI constants and helpers, and legacy compatibility shims that are no longer needed after the extraction, then update tests to target the final ownership boundaries cleanly. Preserve the current scene entry points and high-level gameplay coordination responsibilities in RunScene. Fold very thorough verification for the final ownership split into this step.\n\nDone when: run_scene.gd mainly wires scene composition, run-state updates, and high-level signals between systems, and the extracted UI behavior is covered by automated tests without relying on the old scene-owned shims.",
 					"done": false
 				}
 			]
