@@ -682,6 +682,29 @@ func test_pause_menu_when_opened_with_escape_then_resume_button_has_default_focu
 	assert_true(resume_button.has_focus())
 
 
+## Verifies the UI presenter owns pause-menu click routing once the modal is open.
+
+func test_ui_presenter_when_pause_resume_button_is_clicked_then_route_input_returns_resume_action() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	scene._set_pause_state(true)
+
+	var resume_button: Button = scene.get_node("%PauseResumeButton")
+	var click_event := InputEventMouseButton.new()
+	click_event.button_index = MOUSE_BUTTON_LEFT
+	click_event.pressed = true
+	click_event.position = resume_button.get_global_rect().get_center()
+
+	var ui_input_result := _get_run_ui_presenter(scene).route_input(click_event, scene.PAUSE_ACTION)
+
+	assert_true(ui_input_result.consumed)
+	assert_eq(ui_input_result.navigation_action, RunUiPresenterType.PAUSE_MENU_ACTION_RESUME)
+
+
 ## Verifies pause-menu keyboard navigation and confirm activate the expected action.
 
 func test_pause_menu_when_open_then_keyboard_navigation_and_restart_confirm_work() -> void:
@@ -1839,6 +1862,28 @@ func test_recovery_prompt_advances_highlight_with_direct_input_actions() -> void
 	var second_step: PanelContainer = recovery_steps.get_child(1)
 	assert_eq(first_step.modulate, scene.RECOVERY_STEP_DONE_COLOR)
 	assert_eq(second_step.modulate, scene.RECOVERY_STEP_ACTIVE_COLOR)
+
+
+## Verifies the UI presenter owns recovery-input extraction while a recovery sequence is active.
+
+func test_ui_presenter_when_recovery_sequence_is_active_then_route_input_returns_matching_recovery_action() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	_setup_active_run(scene, state)
+	var expected_sequence := _start_seeded_recovery_sequence(scene, state, 10)
+
+	var recovery_event := InputEventAction.new()
+	recovery_event.action = expected_sequence[0]
+	recovery_event.pressed = true
+
+	var ui_input_result := _get_run_ui_presenter(scene).route_input(recovery_event, scene.PAUSE_ACTION)
+
+	assert_true(ui_input_result.consumed)
+	assert_eq(ui_input_result.recovery_action, expected_sequence[0])
 
 
 ## Verifies recovery step audio plays on non final correct input.
