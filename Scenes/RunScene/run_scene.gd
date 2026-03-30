@@ -157,6 +157,16 @@ const ONBOARDING_BODY := RunUiPresenterType.ONBOARDING_BODY
 const ONBOARDING_HINT := RunUiPresenterType.ONBOARDING_HINT
 const WAGON_LOOP_START_SECONDS := 5.0
 const WAGON_LOOP_END_SECONDS := 10.0
+const GAMEPLAY_UI_LAYER_NAMES: Array[StringName] = [
+	&"HUDLayer",
+	&"BonusCalloutLayer",
+	&"PhaseCalloutLayer",
+	&"TouchLayer",
+	&"OnboardingLayer",
+	&"RecoveryLayer",
+	&"PauseLayer",
+	&"ResultLayer",
+]
 
 
 # Private Fields
@@ -240,6 +250,18 @@ var _horse_right_sprite: AnimatedSprite2D = $World/Wagon/HorseTeam/HorseRight
 var _dust_trail: CPUParticles2D = %DustTrail
 
 @onready
+var _gameplay_ui_layer: CanvasLayer = %GameplayUiLayer
+
+@onready
+var _hud_layer: Control = $GameplayUiLayer/HUDLayer
+
+@onready
+var _bonus_callout_layer: Control = $GameplayUiLayer/BonusCalloutLayer
+
+@onready
+var _phase_callout_layer: Control = $GameplayUiLayer/PhaseCalloutLayer
+
+@onready
 var _health_bar: ProgressBar = %HealthBar
 
 @onready
@@ -267,7 +289,7 @@ var _phase_callout_panel: PanelContainer = %PhaseCalloutPanel
 var _phase_callout_label: Label = %PhaseCalloutLabel
 
 @onready
-var _touch_layer: CanvasLayer = %TouchLayer
+var _touch_layer: Control = %TouchLayer
 
 @onready
 var _touch_left_button: Button = %TouchLeft
@@ -277,6 +299,9 @@ var _touch_right_button: Button = %TouchRight
 
 @onready
 var _touch_pause_button: Button = %TouchPause
+
+@onready
+var _onboarding_layer: Control = $GameplayUiLayer/OnboardingLayer
 
 @onready
 var _onboarding_panel: PanelContainer = %OnboardingPanel
@@ -306,6 +331,9 @@ var _pause_restart_button: Button = %PauseRestartButton
 var _pause_return_button: Button = %PauseReturnButton
 
 @onready
+var _recovery_layer: Control = $GameplayUiLayer/RecoveryLayer
+
+@onready
 var _recovery_panel: PanelContainer = %RecoveryPanel
 
 @onready
@@ -318,17 +346,19 @@ var _recovery_hint: Label = %RecoveryHint
 var _recovery_steps: HBoxContainer = %RecoverySteps
 
 @onready
+var _pause_layer: Control = $GameplayUiLayer/PauseLayer
+
+@onready
 var _result_panel: ResultPanelUiType = %ResultPanel
 
 @onready
-var _result_restart_button: Button = (
-	$ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton
-)
+var _result_restart_button: Button = %ResultRestartButton
 
 @onready
-var _result_return_button: Button = (
-	$ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultReturnButton
-)
+var _result_return_button: Button = %ResultReturnButton
+
+@onready
+var _result_layer: Control = $GameplayUiLayer/ResultLayer
 
 @onready
 var _music_player: AudioStreamPlayer = %MusicPlayer
@@ -482,6 +512,7 @@ func _ready() -> void:
 	_configure_wagon_collision_areas()
 	_configure_hazard_cleanup_areas()
 	_configure_distance_bar_band_markers()
+	_configure_gameplay_ui_layers()
 	_refresh_phase_callout()
 	_configure_touch_buttons()
 	_configure_dust_trail()
@@ -510,6 +541,76 @@ func _ready() -> void:
 	_refresh_result_screen()
 	_refresh_touch_controls()
 	_refresh_audio_presentation()
+
+
+## Makes the unified gameplay UI subtree use explicit wrapper order, stacking, and mouse behavior.
+func _configure_gameplay_ui_layers() -> void:
+	if _gameplay_ui_layer == null:
+		return
+
+	for layer_index in range(GAMEPLAY_UI_LAYER_NAMES.size()):
+		var layer_name := GAMEPLAY_UI_LAYER_NAMES[layer_index]
+		var layer_node := _gameplay_ui_layer.get_node_or_null(NodePath(String(layer_name))) as Control
+		if layer_node == null:
+			continue
+		_gameplay_ui_layer.move_child(layer_node, layer_index)
+		layer_node.z_as_relative = false
+		layer_node.z_index = layer_index
+
+	_refresh_gameplay_ui_layer_state()
+
+
+## Keeps each gameplay UI wrapper aligned with the currently visible overlay state.
+func _refresh_gameplay_ui_layer_state() -> void:
+	_set_gameplay_ui_wrapper_state(_hud_layer, true, Control.MOUSE_FILTER_IGNORE)
+	_set_gameplay_ui_wrapper_state(
+		_bonus_callout_layer,
+		_bonus_callout_panel != null and _bonus_callout_panel.visible,
+		Control.MOUSE_FILTER_IGNORE
+	)
+	_set_gameplay_ui_wrapper_state(
+		_phase_callout_layer,
+		_phase_callout_panel != null and _phase_callout_panel.visible,
+		Control.MOUSE_FILTER_IGNORE
+	)
+	_set_gameplay_ui_wrapper_state(
+		_touch_layer,
+		_touch_layer != null and _touch_layer.visible,
+		Control.MOUSE_FILTER_IGNORE
+	)
+	_set_gameplay_ui_wrapper_state(
+		_onboarding_layer,
+		_onboarding_panel != null and _onboarding_panel.visible,
+		Control.MOUSE_FILTER_STOP
+	)
+	_set_gameplay_ui_wrapper_state(
+		_recovery_layer,
+		_recovery_panel != null and _recovery_panel.visible,
+		Control.MOUSE_FILTER_IGNORE
+	)
+	_set_gameplay_ui_wrapper_state(
+		_pause_layer,
+		_pause_overlay != null and _pause_overlay.visible,
+		Control.MOUSE_FILTER_STOP
+	)
+	_set_gameplay_ui_wrapper_state(
+		_result_layer,
+		_result_panel != null and _result_panel.visible,
+		Control.MOUSE_FILTER_STOP
+	)
+
+
+## Applies one gameplay UI wrapper visibility and mouse policy without touching its children.
+func _set_gameplay_ui_wrapper_state(
+	layer: Control,
+	should_be_visible: bool,
+	mouse_filter: Control.MouseFilter
+) -> void:
+	if layer == null:
+		return
+
+	layer.visible = should_be_visible
+	layer.mouse_filter = mouse_filter if should_be_visible else Control.MOUSE_FILTER_IGNORE
 
 
 ## Applies the imported carriage, shadow, and horse art to the existing wagon rig nodes.
@@ -828,6 +929,7 @@ func _refresh_bonus_callout() -> void:
 	if not should_show_callout:
 		_bonus_callout_label.text = ""
 		_bonus_callout_panel.self_modulate = Color(1, 1, 1, 1)
+		_refresh_gameplay_ui_layer_state()
 		return
 
 	_bonus_callout_label.text = _bonus_callout_text
@@ -837,6 +939,7 @@ func _refresh_bonus_callout() -> void:
 	var panel_size: Vector2 = _bonus_callout_panel.size
 	_bonus_callout_panel.position = canvas_position + flyout_offset - (panel_size * 0.5)
 	_bonus_callout_panel.self_modulate = Color(1, 1, 1, 1.0 - progress_ratio)
+	_refresh_gameplay_ui_layer_state()
 
 
 ## Shows a short route-phase cue while an authored phase transition is active.
@@ -854,21 +957,25 @@ func _refresh_phase_callout() -> void:
 	if not should_show_callout:
 		_phase_callout_label.text = ""
 		_phase_callout_panel.self_modulate = Color(1, 1, 1, 1)
+		_refresh_gameplay_ui_layer_state()
 		return
 
 	_phase_callout_label.text = _phase_callout_text
 	var progress_ratio: float = 1.0 - (_phase_callout_remaining / PHASE_CALLOUT_DURATION)
 	_phase_callout_panel.self_modulate = Color(1, 1, 1, 1.0 - (progress_ratio * 0.25))
+	_refresh_gameplay_ui_layer_state()
 
 
 ## Shows only the active recovery sequence prompt when gameplay allows it.
 func _refresh_recovery_prompt() -> void:
 	_run_ui_presenter.refresh_recovery_prompt()
+	_refresh_gameplay_ui_layer_state()
 
 
 ## Refreshes onboarding visibility for the active run.
 func _refresh_onboarding_prompt() -> void:
 	_run_ui_presenter.refresh_onboarding_prompt()
+	_refresh_gameplay_ui_layer_state()
 
 
 ## Configures explicit keyboard focus traversal for the pause menu buttons.
@@ -884,11 +991,13 @@ func _configure_result_menu_navigation() -> void:
 ## Refreshes pause-menu visibility for the active run.
 func _refresh_pause_menu() -> void:
 	_run_ui_presenter.refresh_pause_menu()
+	_refresh_gameplay_ui_layer_state()
 
 
 ## Refreshes the end-of-run result panel contents and visibility.
 func _refresh_result_screen() -> void:
 	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+	_refresh_gameplay_ui_layer_state()
 
 
 ## Populates the result panel with representative dummy data while editing the scene in Godot.
@@ -942,6 +1051,7 @@ func _refresh_touch_controls() -> void:
 	_run_ui_presenter.refresh_touch_controls()
 	if was_visible and not _run_ui_presenter.should_show_touch_controls():
 		_release_touch_steer_actions()
+	_refresh_gameplay_ui_layer_state()
 
 
 ## Enables touch controls automatically for native mobile and touch-capable mobile web runtimes.
@@ -972,6 +1082,7 @@ func _should_show_touch_controls() -> bool:
 ## Reveals touch controls after the first real touch on mobile web runtimes with delayed capability reporting.
 func _reveal_touch_controls_from_first_touch(event: InputEvent) -> void:
 	_run_ui_presenter.reveal_touch_controls_from_first_touch(event)
+	_refresh_gameplay_ui_layer_state()
 
 
 # Event Handlers

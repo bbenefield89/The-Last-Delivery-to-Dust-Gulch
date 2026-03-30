@@ -161,7 +161,7 @@ func test_app_root_when_keyboard_only_loop_reaches_result_then_restart_starts_ne
 	await wait_process_frames(1)
 
 	var restart_button: Button = app_root._run_scene.get_node(
-		"ResultLayer/ResultMargin/ResultPanel/ResultPadding/ResultVBox/ResultButtons/ResultRestartButton"
+		"%ResultRestartButton"
 	)
 	assert_true(restart_button.has_focus())
 

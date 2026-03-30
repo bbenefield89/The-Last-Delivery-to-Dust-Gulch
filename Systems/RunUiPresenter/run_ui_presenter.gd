@@ -51,7 +51,7 @@ var _health_label: Label
 var _distance_bar: ProgressBar
 var _distance_band_markers: Control
 var _cargo_label: Label
-var _touch_layer: CanvasLayer
+var _touch_layer: Control
 var _touch_left_button: Button
 var _touch_right_button: Button
 var _touch_pause_button: Button
@@ -84,7 +84,7 @@ func configure_scene_nodes(
 	distance_bar: ProgressBar,
 	distance_band_markers: Control,
 	cargo_label: Label,
-	touch_layer: CanvasLayer,
+	touch_layer: Control,
 	touch_left_button: Button,
 	touch_right_button: Button,
 	touch_pause_button: Button,
