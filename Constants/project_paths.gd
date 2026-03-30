@@ -28,4 +28,7 @@ const RUN_HAZARD_RESOLVER_SCRIPT_PATH := "res://Systems/RunHazardResolver/run_ha
 const RUN_PRESENTATION_SCRIPT_PATH := "res://Systems/RunPresentation/run_presentation.gd"
 const RUN_STATE_SCRIPT_PATH := "res://Systems/RunState/run_state.gd"
 const GAMEPLAY_UI_LAYER_SCRIPT_PATH := "res://Scenes/RunScene/gameplay_ui_layer.gd"
+const PAUSE_LAYER_SCRIPT_PATH := "res://Scenes/RunScene/pause_layer.gd"
+const RESULT_LAYER_SCRIPT_PATH := "res://Scenes/RunScene/result_layer.gd"
+const TOUCH_LAYER_SCRIPT_PATH := "res://Scenes/RunScene/touch_layer.gd"
 const TUMBLEWEED_HAZARD_DEFINITION_RESOURCE_PATH := "res://Systems/HazardSpawner/Definitions/tumbleweed_hazard_definition.tres"

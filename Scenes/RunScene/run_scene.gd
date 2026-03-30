@@ -18,6 +18,9 @@ const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_P
 const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
+const TouchLayerType := preload(ProjectPaths.TOUCH_LAYER_SCRIPT_PATH)
+const PauseLayerType := preload(ProjectPaths.PAUSE_LAYER_SCRIPT_PATH)
+const ResultLayerType := preload(ProjectPaths.RESULT_LAYER_SCRIPT_PATH)
 
 
 const BACKGROUND_MUSIC := preload(AssetPaths.RUN_BACKGROUND_MUSIC_AUDIO_PATH)
@@ -233,6 +236,15 @@ var _dust_trail: CPUParticles2D = %DustTrail
 var _run_ui_presenter: GameplayUiLayerType = %GameplayUiLayer
 
 @onready
+var _touch_layer: TouchLayerType = %TouchLayer
+
+@onready
+var _pause_layer: PauseLayerType = %PauseLayer
+
+@onready
+var _result_layer: ResultLayerType = %ResultLayer
+
+@onready
 var _music_player: AudioStreamPlayer = %MusicPlayer
 
 @onready
@@ -291,14 +303,14 @@ func setup(run_state: RunStateType) -> void:
 	_run_ui_presenter.reset_for_new_run()
 	_run_director.bind_run_state(_run_state, _recovery_sequence_generator)
 	_run_presentation.bind_run_state(_run_state)
-	_refresh_status()
-	_refresh_onboarding_prompt()
-	_refresh_bonus_callout()
-	_refresh_phase_callout()
-	_refresh_recovery_prompt()
-	_refresh_pause_menu()
-	_refresh_result_screen()
-	_refresh_touch_controls()
+	_run_ui_presenter.refresh_status()
+	_run_ui_presenter.refresh_onboarding_prompt()
+	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
+	_run_ui_presenter.refresh_phase_callout()
+	_run_ui_presenter.refresh_recovery_prompt()
+	_run_ui_presenter.refresh_pause_menu()
+	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+	_run_ui_presenter.refresh_touch_controls()
 	_refresh_audio_presentation()
 
 
@@ -350,31 +362,37 @@ func _ready() -> void:
 	_configure_wagon_collision_areas()
 	_configure_hazard_cleanup_areas()
 	_configure_distance_bar_band_markers()
-	_refresh_phase_callout()
+	_run_ui_presenter.refresh_phase_callout()
 	_configure_dust_trail()
 	_configure_audio_players()
-	if not _run_ui_presenter.touch_pause_requested.is_connected(_on_touch_pause_button_pressed):
-		_run_ui_presenter.touch_pause_requested.connect(_on_touch_pause_button_pressed)
-	if not _run_ui_presenter.pause_resume_requested.is_connected(_on_pause_resume_pressed):
-		_run_ui_presenter.pause_resume_requested.connect(_on_pause_resume_pressed)
-	if not _run_ui_presenter.pause_restart_requested.is_connected(_on_pause_restart_pressed):
-		_run_ui_presenter.pause_restart_requested.connect(_on_pause_restart_pressed)
-	if not _run_ui_presenter.pause_return_to_title_requested.is_connected(_on_pause_return_to_title_pressed):
-		_run_ui_presenter.pause_return_to_title_requested.connect(_on_pause_return_to_title_pressed)
-	if not _run_ui_presenter.result_restart_requested.is_connected(_on_result_restart_pressed):
-		_run_ui_presenter.result_restart_requested.connect(_on_result_restart_pressed)
-	if not _run_ui_presenter.result_return_to_title_requested.is_connected(_on_result_return_to_title_pressed):
-		_run_ui_presenter.result_return_to_title_requested.connect(_on_result_return_to_title_pressed)
+	if _touch_layer != null and not _touch_layer.pause_requested.is_connected(_on_touch_pause_button_pressed):
+		_touch_layer.pause_requested.connect(_on_touch_pause_button_pressed)
+	if _pause_layer != null and not _pause_layer.resume_requested.is_connected(_on_pause_resume_pressed):
+		_pause_layer.resume_requested.connect(_on_pause_resume_pressed)
+	if _pause_layer != null and not _pause_layer.restart_requested.is_connected(_on_pause_restart_pressed):
+		_pause_layer.restart_requested.connect(_on_pause_restart_pressed)
+	if (
+		_pause_layer != null
+		and not _pause_layer.return_to_title_requested.is_connected(_on_pause_return_to_title_pressed)
+	):
+		_pause_layer.return_to_title_requested.connect(_on_pause_return_to_title_pressed)
+	if _result_layer != null and not _result_layer.restart_requested.is_connected(_on_result_restart_pressed):
+		_result_layer.restart_requested.connect(_on_result_restart_pressed)
+	if (
+		_result_layer != null
+		and not _result_layer.return_to_title_requested.is_connected(_on_result_return_to_title_pressed)
+	):
+		_result_layer.return_to_title_requested.connect(_on_result_return_to_title_pressed)
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
-	_refresh_status()
-	_refresh_onboarding_prompt()
-	_refresh_bonus_callout()
-	_refresh_pause_menu()
-	_refresh_recovery_prompt()
-	_refresh_result_screen()
-	_refresh_touch_controls()
+	_run_ui_presenter.refresh_status()
+	_run_ui_presenter.refresh_onboarding_prompt()
+	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
+	_run_ui_presenter.refresh_pause_menu()
+	_run_ui_presenter.refresh_recovery_prompt()
+	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+	_run_ui_presenter.refresh_touch_controls()
 	_refresh_audio_presentation()
 
 
@@ -535,11 +553,11 @@ func _process(delta: float) -> void:
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		return
 	if _run_ui_presenter.pause_menu_open:
-		_refresh_onboarding_prompt()
+		_run_ui_presenter.refresh_onboarding_prompt()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-		_refresh_pause_menu()
-		_refresh_result_screen()
-		_refresh_touch_controls()
+		_run_ui_presenter.refresh_pause_menu()
+		_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+		_run_ui_presenter.refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
@@ -547,12 +565,12 @@ func _process(delta: float) -> void:
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
 		_update_camera_framing()
-		_refresh_status()
-		_refresh_onboarding_prompt()
-		_refresh_pause_menu()
-		_refresh_recovery_prompt()
-		_refresh_result_screen()
-		_refresh_touch_controls()
+		_run_ui_presenter.refresh_status()
+		_run_ui_presenter.refresh_onboarding_prompt()
+		_run_ui_presenter.refresh_pause_menu()
+		_run_ui_presenter.refresh_recovery_prompt()
+		_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+		_run_ui_presenter.refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
 	if _run_ui_presenter.onboarding_active:
@@ -562,12 +580,12 @@ func _process(delta: float) -> void:
 		_update_wagon_visual()
 		_update_scroll_visuals()
 		_update_camera_framing()
-		_refresh_status()
-		_refresh_onboarding_prompt()
-		_refresh_pause_menu()
-		_refresh_recovery_prompt()
-		_refresh_result_screen()
-		_refresh_touch_controls()
+		_run_ui_presenter.refresh_status()
+		_run_ui_presenter.refresh_onboarding_prompt()
+		_run_ui_presenter.refresh_pause_menu()
+		_run_ui_presenter.refresh_recovery_prompt()
+		_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+		_run_ui_presenter.refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
 
@@ -619,51 +637,13 @@ func _process(delta: float) -> void:
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
-	_refresh_status()
-	_refresh_onboarding_prompt()
-	_refresh_pause_menu()
-	_refresh_recovery_prompt()
-	_refresh_result_screen()
-	_refresh_touch_controls()
-	_refresh_audio_presentation()
-
-## Refreshes the compact run HUD values from the bound run state.
-func _refresh_status() -> void:
 	_run_ui_presenter.refresh_status()
-
-
-## Shows a short in-run score callout while a bonus announcement is active.
-func _refresh_bonus_callout() -> void:
-	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
-
-
-## Shows a short route-phase cue while an authored phase transition is active.
-func _refresh_phase_callout() -> void:
-	_run_ui_presenter.refresh_phase_callout()
-
-
-## Shows only the active recovery sequence prompt when gameplay allows it.
-func _refresh_recovery_prompt() -> void:
-	_run_ui_presenter.refresh_recovery_prompt()
-
-
-## Refreshes onboarding visibility for the active run.
-func _refresh_onboarding_prompt() -> void:
 	_run_ui_presenter.refresh_onboarding_prompt()
-
-## Refreshes pause-menu visibility for the active run.
-func _refresh_pause_menu() -> void:
 	_run_ui_presenter.refresh_pause_menu()
-
-
-## Refreshes the end-of-run result panel contents and visibility.
-func _refresh_result_screen() -> void:
+	_run_ui_presenter.refresh_recovery_prompt()
 	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
-
-
-## Populates the result panel with representative dummy data while editing the scene in Godot.
-func _apply_editor_result_preview() -> void:
-	_run_ui_presenter.apply_editor_result_preview()
+	_run_ui_presenter.refresh_touch_controls()
+	_refresh_audio_presentation()
 
 
 ## Persists a newly completed run exactly once when it beats the stored best score.
@@ -691,12 +671,6 @@ func _build_best_run_summary() -> String:
 		_run_state.best_run.score,
 		_run_state.best_run.grade,
 	]
-
-
-## Shows touch controls only while the run is actively playable on a supported runtime.
-func _refresh_touch_controls() -> void:
-	_run_ui_presenter.refresh_touch_controls()
-
 
 # Event Handlers
 
@@ -743,8 +717,8 @@ func _input(event: InputEvent) -> void:
 	if recovery_result.recovery_completed:
 		_run_audio_presenter.play_recovery_success()
 
-	_refresh_status()
-	_refresh_recovery_prompt()
+	_run_ui_presenter.refresh_status()
+	_run_ui_presenter.refresh_recovery_prompt()
 
 
 ## Updates the wagon position to match the current lateral run-state offset.
@@ -967,47 +941,12 @@ func _set(property: StringName, value: Variant) -> bool:
 			return false
 
 
-## Helper for get recovery title.
-func _get_recovery_title(failure_type: StringName) -> String:
-	return _run_ui_presenter.get_recovery_title(failure_type)
-
-
-## Helper for get recovery hint.
-func _get_recovery_hint(failure_type: StringName) -> String:
-	return _run_ui_presenter.get_recovery_hint(failure_type)
-
-
 ## Helper for apply recovery failure penalty.
 func _apply_recovery_failure_penalty() -> void:
 	_run_director.apply_recovery_failure_penalty()
 	_run_audio_presenter.play_recovery_fail()
-	_refresh_status()
-	_refresh_recovery_prompt()
-
-
-## Returns the chip size that keeps the full recovery row inside a fixed width budget.
-func _get_recovery_step_minimum_size() -> Vector2:
-	return _run_ui_presenter.get_recovery_step_minimum_size()
-
-
-## Returns the prompt font size that matches the active recovery chip width.
-func _get_recovery_step_font_size() -> int:
-	return _run_ui_presenter.get_recovery_step_font_size()
-
-
-## Builds one recovery-step chip using the current compactness rules for the active sequence.
-func _build_recovery_step(index: int) -> PanelContainer:
-	return _run_ui_presenter.build_recovery_step(index)
-
-
-## Helper for get recovery step color.
-func _get_recovery_step_color(index: int) -> Color:
-	return _run_ui_presenter.get_recovery_step_color(index)
-
-
-## Helper for format recovery action.
-func _format_recovery_action(action_name: StringName) -> String:
-	return _run_ui_presenter.format_recovery_action(action_name)
+	_run_ui_presenter.refresh_status()
+	_run_ui_presenter.refresh_recovery_prompt()
 
 
 ## Starts or refreshes the short-lived in-run bonus callout text.
@@ -1023,16 +962,6 @@ func _show_bonus_callout(text: String) -> void:
 ## Starts or refreshes the short-lived on-screen phase cue.
 func _show_phase_callout(text: String) -> void:
 	_run_ui_presenter.show_phase_callout(text)
-
-
-## Counts down the active bonus callout and hides it after the display window expires.
-func _tick_bonus_callout(delta: float) -> void:
-	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-
-
-## Counts down the active phase cue and hides it after the display window expires.
-func _tick_phase_callout(delta: float) -> void:
-	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 
 
 ## Plays the shared menu click cue for pause and result buttons.
@@ -1071,18 +1000,8 @@ func _set_pause_state(paused: bool) -> void:
 	if not _run_ui_presenter.set_pause_state(paused):
 		return
 	_run_audio_presenter.play_pause_toggle()
-	if _run_ui_presenter.pause_menu_open and not was_paused:
-		_focus_default_pause_button()
-
-
-## Gives the pause menu a deterministic starting focus for keyboard-only play.
-func _focus_default_pause_button() -> void:
-	_run_ui_presenter.focus_default_pause_button()
-
-
-## Gives the result screen a deterministic starting focus for keyboard-only play.
-func _focus_default_result_button() -> void:
-	_run_ui_presenter.focus_default_result_button()
+	if _run_ui_presenter.pause_menu_open and not was_paused and _pause_layer != null:
+		_pause_layer.focus_default_pause_button()
 
 
 ## Resumes gameplay after playing the pause-menu click cue.
@@ -1115,6 +1034,4 @@ func _on_pause_return_to_title_pressed() -> void:
 
 ## Opens the pause menu from the mobile pause button when gameplay is active.
 func _on_touch_pause_button_pressed() -> void:
-	if not _run_ui_presenter.should_open_pause_from_touch():
-		return
 	_set_pause_state(true)

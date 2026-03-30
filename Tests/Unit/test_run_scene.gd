@@ -11,6 +11,9 @@ const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
 const ResultPanelUiType := preload(ProjectPaths.RESULT_PANEL_UI_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
+const PauseLayerType := preload(ProjectPaths.PAUSE_LAYER_SCRIPT_PATH)
+const ResultLayerType := preload(ProjectPaths.RESULT_LAYER_SCRIPT_PATH)
+const TouchLayerType := preload(ProjectPaths.TOUCH_LAYER_SCRIPT_PATH)
 const RunUiPresenterType := GameplayUiLayerType
 
 
@@ -101,6 +104,21 @@ func _get_gameplay_ui_layer(scene: Node) -> GameplayUiLayerType:
 	return scene.get_node("%GameplayUiLayer") as GameplayUiLayerType
 
 
+## Returns the node-backed touch owner attached to the gameplay UI layer.
+func _get_touch_layer(scene: Node) -> TouchLayerType:
+	return scene.get_node("%TouchLayer") as TouchLayerType
+
+
+## Returns the node-backed pause owner attached to the gameplay UI layer.
+func _get_pause_layer(scene: Node) -> PauseLayerType:
+	return scene.get_node("%PauseLayer") as PauseLayerType
+
+
+## Returns the node-backed result owner attached to the gameplay UI layer.
+func _get_result_layer(scene: Node) -> ResultLayerType:
+	return scene.get_node("%ResultLayer") as ResultLayerType
+
+
 ## Returns the visible stats-row container from the structured result panel.
 func _get_result_stats_rows(scene: Node) -> VBoxContainer:
 	return scene.get_node("%ResultStatsRows") as VBoxContainer
@@ -148,6 +166,51 @@ func _assert_gameplay_ui_wrapper_state(
 	assert_not_null(layer)
 	assert_eq(layer.visible, expected_visible)
 	assert_eq(layer.mouse_filter, expected_mouse_filter)
+
+
+## Refreshes the gameplay UI status through the node-backed UI owner.
+func _refresh_status(scene: Node) -> void:
+	_get_gameplay_ui_layer(scene).refresh_status()
+
+
+## Refreshes the gameplay recovery prompt through the node-backed UI owner.
+func _refresh_recovery_prompt(scene: Node) -> void:
+	_get_gameplay_ui_layer(scene).refresh_recovery_prompt()
+
+
+## Refreshes gameplay touch controls through the node-backed UI owner.
+func _refresh_touch_controls(scene: Node) -> void:
+	_get_gameplay_ui_layer(scene).refresh_touch_controls()
+
+
+## Refreshes the gameplay result screen through the node-backed UI owner.
+func _refresh_result_screen(scene: Node) -> void:
+	_get_gameplay_ui_layer(scene).refresh_result_screen(scene._build_best_run_summary())
+
+
+## Applies the editor preview through the node-backed UI owner.
+func _apply_editor_result_preview(scene: Node) -> void:
+	_get_gameplay_ui_layer(scene).apply_editor_result_preview()
+
+
+## Advances gameplay callouts through the node-backed UI owner.
+func _advance_callouts(scene: Node, delta: float) -> void:
+	_get_gameplay_ui_layer(scene).advance_callouts(delta, scene.get_viewport().get_canvas_transform())
+
+
+## Returns the current recovery chip minimum size from the node-backed UI owner.
+func _get_recovery_step_minimum_size(scene: Node) -> Vector2:
+	return _get_run_ui_presenter(scene).get_recovery_step_minimum_size()
+
+
+## Returns the current recovery chip font size from the node-backed UI owner.
+func _get_recovery_step_font_size(scene: Node) -> int:
+	return _get_run_ui_presenter(scene).get_recovery_step_font_size()
+
+
+## Formats one recovery action using the node-backed UI owner.
+func _format_recovery_action(scene: Node, action_name: StringName) -> String:
+	return _get_run_ui_presenter(scene).format_recovery_action(action_name)
 # Public Methods
 
 
@@ -185,7 +248,7 @@ func _assert_phase_callout_for_transition(
 	var phase_callout_panel: PanelContainer = scene.get_node("%PhaseCalloutPanel")
 	var phase_callout_label: Label = scene.get_node("%PhaseCalloutLabel")
 	if phase_callout_panel.visible:
-		scene._tick_phase_callout(scene.PHASE_CALLOUT_DURATION)
+		_advance_callouts(scene, scene.PHASE_CALLOUT_DURATION)
 	assert_false(phase_callout_panel.visible)
 
 	scene._process(delta)
@@ -199,7 +262,7 @@ func _assert_phase_callout_for_transition(
 	assert_true(phase_callout_rect.position.x >= 0.0)
 	assert_true(phase_callout_rect.end.x <= viewport_size.x)
 
-	scene._tick_phase_callout(scene.PHASE_CALLOUT_DURATION)
+	_advance_callouts(scene, scene.PHASE_CALLOUT_DURATION)
 
 	assert_false(phase_callout_panel.visible)
 	assert_eq(phase_callout_label.text, "")
@@ -368,7 +431,7 @@ func test_dismissing_onboarding_when_run_starts_then_warm_up_callout_appears() -
 func _enable_touch_controls_for_native_mobile(scene: Node) -> void:
 	_get_run_ui_presenter(scene).has_native_mobile_runtime_override = true
 	_get_run_ui_presenter(scene).native_mobile_runtime_override = true
-	scene._refresh_touch_controls()
+	_refresh_touch_controls(scene)
 
 
 ## Configures the test scene to behave like a mobile web runtime with controllable touch capability.
@@ -377,7 +440,7 @@ func _configure_mobile_web_touch_runtime(scene: Node, touchscreen_available: boo
 	_get_run_ui_presenter(scene).mobile_web_runtime_override = true
 	_get_run_ui_presenter(scene).has_touchscreen_available_override = true
 	_get_run_ui_presenter(scene).touchscreen_available_override = touchscreen_available
-	scene._refresh_touch_controls()
+	_refresh_touch_controls(scene)
 
 
 ## Confirms RunScene binds the extracted rule owners without keeping duplicate route-state fields.
@@ -477,10 +540,19 @@ func test_setup_uses_node_backed_gameplay_ui_layer_without_scene_ui_node_refs() 
 			return property_data.get("name", "")
 	)
 	var gameplay_ui_layer := _get_gameplay_ui_layer(scene)
+	var touch_layer := _get_touch_layer(scene)
+	var pause_layer := _get_pause_layer(scene)
+	var result_layer := _get_result_layer(scene)
 
 	assert_not_null(gameplay_ui_layer)
+	assert_not_null(touch_layer)
+	assert_not_null(pause_layer)
+	assert_not_null(result_layer)
 	assert_eq(_get_run_ui_presenter(scene), gameplay_ui_layer)
 	assert_eq(gameplay_ui_layer.get_script().resource_path, ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
+	assert_eq(touch_layer.get_script().resource_path, ProjectPaths.TOUCH_LAYER_SCRIPT_PATH)
+	assert_eq(pause_layer.get_script().resource_path, ProjectPaths.PAUSE_LAYER_SCRIPT_PATH)
+	assert_eq(result_layer.get_script().resource_path, ProjectPaths.RESULT_LAYER_SCRIPT_PATH)
 	assert_false(property_names.has("_gameplay_ui_layer"))
 	assert_false(property_names.has("_hud_layer"))
 	assert_false(property_names.has("_touch_left_button"))
@@ -1712,12 +1784,12 @@ func test_wheel_loose_starts_recovery_sequence_prompt() -> void:
 
 	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
-	scene._refresh_recovery_prompt()
+	_refresh_recovery_prompt(scene)
 
 	assert_true(recovery_panel.visible)
 	assert_eq(recovery_steps.get_child_count(), expected_sequence.size())
 	for index in range(expected_sequence.size()):
-		assert_eq((recovery_steps.get_child(index).get_child(0) as Label).text, scene._format_recovery_action(expected_sequence[index]))
+		assert_eq((recovery_steps.get_child(index).get_child(0) as Label).text, _format_recovery_action(scene, expected_sequence[index]))
 
 
 ## Verifies recovery prompt steps use embedded arrow font.
@@ -1731,7 +1803,7 @@ func test_recovery_prompt_steps_use_embedded_arrow_font() -> void:
 	state.start_failure(&"wheel_loose", &"rock")
 	scene.setup(state)
 	_start_seeded_recovery_sequence(scene, state, 10)
-	scene._refresh_recovery_prompt()
+	_refresh_recovery_prompt(scene)
 
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
 	var first_step := recovery_steps.get_child(0) as PanelContainer
@@ -1740,8 +1812,8 @@ func test_recovery_prompt_steps_use_embedded_arrow_font() -> void:
 	assert_not_null(first_step)
 	assert_eq(arrow_label.get_theme_font("font"), scene.ARROW_FONT)
 	assert_eq(recovery_steps.custom_minimum_size.x, scene.RECOVERY_STEP_ROW_MAX_WIDTH)
-	assert_eq(arrow_label.get_theme_font_size("font_size"), scene._get_recovery_step_font_size())
-	assert_eq(first_step.custom_minimum_size, scene._get_recovery_step_minimum_size())
+	assert_eq(arrow_label.get_theme_font_size("font_size"), _get_recovery_step_font_size(scene))
+	assert_eq(first_step.custom_minimum_size, _get_recovery_step_minimum_size(scene))
 
 
 ## Verifies long recovery sequence uses same row width with smaller prompt chips.
@@ -1762,7 +1834,7 @@ func test_long_recovery_sequence_uses_same_row_width_with_smaller_prompt_chips()
 		&"steer_left",
 		&"steer_right",
 	], 3.0)
-	scene._refresh_recovery_prompt()
+	_refresh_recovery_prompt(scene)
 
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
 	var first_step := recovery_steps.get_child(0) as PanelContainer
@@ -1784,8 +1856,8 @@ func test_recovery_panel_stays_inside_viewport_during_touch_recovery() -> void:
 	_setup_active_run(scene, state)
 	_start_seeded_recovery_sequence(scene, state, 10)
 	_enable_touch_controls_for_native_mobile(scene)
-	scene._refresh_recovery_prompt()
-	scene._refresh_touch_controls()
+	_refresh_recovery_prompt(scene)
+	_refresh_touch_controls(scene)
 	await wait_process_frames(1)
 
 	var viewport_rect := scene.get_viewport().get_visible_rect()
@@ -1822,8 +1894,8 @@ func test_recovery_panel_does_not_overlap_touch_steering_buttons() -> void:
 		&"steer_right",
 	], 3.0)
 	_enable_touch_controls_for_native_mobile(scene)
-	scene._refresh_recovery_prompt()
-	scene._refresh_touch_controls()
+	_refresh_recovery_prompt(scene)
+	_refresh_touch_controls(scene)
 	await wait_process_frames(1)
 
 	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
@@ -1959,12 +2031,12 @@ func test_horse_panic_starts_distinct_recovery_sequence_prompt() -> void:
 
 	var recovery_title: Label = scene.get_node("%RecoveryTitle")
 	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
-	scene._refresh_recovery_prompt()
+	_refresh_recovery_prompt(scene)
 
 	assert_eq(recovery_title.text, "Horse Panic: Calm the Team")
 	assert_eq(recovery_steps.get_child_count(), expected_sequence.size())
 	for index in range(expected_sequence.size()):
-		assert_eq((recovery_steps.get_child(index).get_child(0) as Label).text, scene._format_recovery_action(expected_sequence[index]))
+		assert_eq((recovery_steps.get_child(index).get_child(0) as Label).text, _format_recovery_action(scene, expected_sequence[index]))
 
 
 ## Verifies horse panic recovery sequence clears failure on success.
@@ -2219,7 +2291,7 @@ func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window(
 	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
 
 	scene._process(3.0)
-	scene._refresh_status()
+	_refresh_status(scene)
 
 	assert_eq(state.last_recovery_outcome, &"")
 	assert_eq(state.recovery_cooldown_remaining, 0.0)
@@ -2358,7 +2430,7 @@ func test_active_run_when_touch_recovery_and_callouts_are_visible_then_gameplay_
 	_start_seeded_recovery_sequence(scene, state, 10)
 	scene._show_bonus_callout("NEAR MISS +50")
 	scene._show_phase_callout("First Trouble")
-	scene._refresh_recovery_prompt()
+	_refresh_recovery_prompt(scene)
 
 	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", true, Control.MOUSE_FILTER_IGNORE)
 	_assert_gameplay_ui_wrapper_state(scene, "RecoveryLayer", true, Control.MOUSE_FILTER_IGNORE)
@@ -2382,7 +2454,7 @@ func test_pause_overlay_when_opened_then_wrapper_visibility_and_mouse_filters_be
 	_enable_touch_controls_for_native_mobile(scene)
 	state.start_failure(&"wheel_loose", &"rock")
 	_start_seeded_recovery_sequence(scene, state, 10)
-	scene._refresh_recovery_prompt()
+	_refresh_recovery_prompt(scene)
 	scene._set_pause_state(true)
 
 	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", false, Control.MOUSE_FILTER_IGNORE)
@@ -2526,7 +2598,7 @@ func test_touch_controls_show_on_mobile_web_after_touch_capability_detection() -
 	assert_false(touch_layer.visible)
 
 	_get_run_ui_presenter(scene).touchscreen_available_override = true
-	scene._refresh_touch_controls()
+	_refresh_touch_controls(scene)
 
 	var touch_left: Button = scene.get_node("%TouchLeft")
 	var touch_right: Button = scene.get_node("%TouchRight")
@@ -2676,6 +2748,7 @@ func test_gameplay_ui_layer_when_touch_pause_is_pressed_then_it_emits_only_for_a
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
 	var gameplay_ui_layer := _get_gameplay_ui_layer(scene)
+	var touch_layer := _get_touch_layer(scene)
 	var touch_pause: Button = scene.get_node("%TouchPause")
 
 	touch_pause.pressed.emit()
@@ -2683,12 +2756,78 @@ func test_gameplay_ui_layer_when_touch_pause_is_pressed_then_it_emits_only_for_a
 	assert_false(gameplay_ui_layer.pause_menu_open)
 
 	_enable_touch_controls_for_native_mobile(scene)
-	watch_signals(gameplay_ui_layer)
+	watch_signals(touch_layer)
 	touch_pause.pressed.emit()
 	await wait_process_frames(1)
 
-	assert_signal_emitted(gameplay_ui_layer, "touch_pause_requested")
+	assert_signal_emitted(touch_layer, "pause_requested")
 	assert_true(gameplay_ui_layer.pause_menu_open)
+
+
+## Verifies touch, pause, and result intent signals now live on their own wrapper scripts.
+func test_ui_intent_signals_live_on_touch_pause_and_result_wrappers() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var gameplay_ui_layer := _get_gameplay_ui_layer(scene)
+	var touch_layer := _get_touch_layer(scene)
+	var pause_layer := _get_pause_layer(scene)
+	var result_layer := _get_result_layer(scene)
+
+	assert_false(gameplay_ui_layer.has_signal("touch_pause_requested"))
+	assert_false(gameplay_ui_layer.has_signal("pause_resume_requested"))
+	assert_false(gameplay_ui_layer.has_signal("pause_restart_requested"))
+	assert_false(gameplay_ui_layer.has_signal("pause_return_to_title_requested"))
+	assert_false(gameplay_ui_layer.has_signal("result_restart_requested"))
+	assert_false(gameplay_ui_layer.has_signal("result_return_to_title_requested"))
+	assert_true(touch_layer.has_signal("pause_requested"))
+	assert_true(pause_layer.has_signal("resume_requested"))
+	assert_true(pause_layer.has_signal("restart_requested"))
+	assert_true(pause_layer.has_signal("return_to_title_requested"))
+	assert_true(result_layer.has_signal("restart_requested"))
+	assert_true(result_layer.has_signal("return_to_title_requested"))
+
+
+## Verifies onboarding copy stays scene-authored after refresh and is not rewritten from code.
+func test_onboarding_prompt_uses_scene_authored_copy_when_refreshed() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	var onboarding_title: Label = scene.get_node("%OnboardingTitle")
+	var onboarding_body: Label = scene.get_node("%OnboardingBody")
+	var onboarding_hint: Label = scene.get_node("%OnboardingHint")
+	var initial_title := onboarding_title.text
+	var initial_body := onboarding_body.text
+	var initial_hint := onboarding_hint.text
+
+	scene.setup(state)
+	_get_gameplay_ui_layer(scene).refresh_onboarding_prompt()
+
+	assert_eq(initial_title, scene.ONBOARDING_TITLE)
+	assert_eq(initial_body, scene.ONBOARDING_BODY)
+	assert_eq(initial_hint, scene.ONBOARDING_HINT)
+	assert_eq(onboarding_title.text, initial_title)
+	assert_eq(onboarding_body.text, initial_body)
+	assert_eq(onboarding_hint.text, initial_hint)
+
+
+## Verifies status bars keep their editor-authored max values after status refresh.
+func test_status_bars_keep_editor_authored_max_values_after_refresh() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	var health_bar: ProgressBar = scene.get_node("%HealthBar")
+	var distance_bar: ProgressBar = scene.get_node("%DistanceBar")
+	scene.setup(state)
+	_refresh_status(scene)
+
+	assert_eq(health_bar.max_value, 100.0)
+	assert_eq(distance_bar.max_value, 100.0)
 
 
 ## Verifies temporary instability resolves back to normal driving.
@@ -2728,7 +2867,7 @@ func test_recovery_panel_title_shows_active_failure_warning() -> void:
 	state.start_failure(&"wheel_loose", &"rock")
 	scene.setup(state)
 	scene._advance_failure_triggers(0.0)
-	scene._refresh_recovery_prompt()
+	_refresh_recovery_prompt(scene)
 
 	var recovery_title: Label = scene.get_node("%RecoveryTitle")
 	var recovery_hint: Label = scene.get_node("%RecoveryHint")
@@ -2757,7 +2896,7 @@ func test_recovery_hint_matches_active_failure_type() -> void:
 	state.start_failure(&"horse_panic", &"tumbleweed")
 	scene.setup(state)
 	scene._advance_failure_triggers(0.0)
-	scene._refresh_recovery_prompt()
+	_refresh_recovery_prompt(scene)
 
 	var recovery_hint: Label = scene.get_node("%RecoveryHint")
 	assert_string_contains(recovery_hint.text, "left-right pattern")
@@ -2772,7 +2911,7 @@ func test_result_panel_stays_hidden_during_active_run() -> void:
 
 	var state := RunStateType.new()
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 
 	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
 	assert_false(result_panel.visible)
@@ -2791,7 +2930,7 @@ func test_result_panel_when_opened_then_restart_button_has_default_focus() -> vo
 	state.cargo_value = 88
 	state.wagon_health = 54
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 	await wait_process_frames(1)
 
 	var restart_button: Button = scene.get_node("%ResultRestartButton")
@@ -2813,7 +2952,7 @@ func test_result_panel_when_open_then_keyboard_navigation_moves_between_actions(
 	state.cargo_value = 10
 	state.wagon_health = 20
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 	await wait_process_frames(1)
 
 	var restart_button: Button = scene.get_node("%ResultRestartButton")
@@ -2844,7 +2983,7 @@ func test_result_panel_when_confirming_focused_restart_then_restart_requested_em
 	state.cargo_value = 88
 	state.wagon_health = 54
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 	await wait_process_frames(1)
 
 	var ui_click_player: AudioStreamPlayer = scene.get_node("%UIClickPlayer")
@@ -2869,7 +3008,7 @@ func test_result_panel_when_confirming_focused_return_then_return_to_title_reque
 	state.cargo_value = 88
 	state.wagon_health = 54
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 	await wait_process_frames(1)
 
 	var ui_click_player: AudioStreamPlayer = scene.get_node("%UIClickPlayer")
@@ -2901,7 +3040,7 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 	state.perfect_recoveries = 2
 	state.recovery_failures = 1
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 
 	var result_summary: Label = scene.get_node("%ResultSummary")
 	var result_stats_rows := _get_result_stats_rows(scene)
@@ -2945,7 +3084,7 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	state.perfect_recoveries = 0
 	state.recovery_failures = 3
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 
 	var result_title: Label = scene.get_node("%ResultTitle")
 	var result_summary: Label = scene.get_node("%ResultSummary")
@@ -3045,7 +3184,7 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -
 	state.perfect_recoveries = 3
 	state.recovery_failures = 2
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 	await wait_process_frames(1)
 
 	var viewport_rect: Rect2 = scene.get_viewport_rect()
@@ -3085,7 +3224,7 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() 
 	state.perfect_recoveries = 1
 	state.recovery_failures = 1
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 	await wait_process_frames(1)
 
 	var viewport_rect: Rect2 = scene.get_viewport_rect()
@@ -3196,7 +3335,7 @@ func test_apply_editor_result_preview_populates_result_screen_with_dummy_data() 
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	scene._apply_editor_result_preview()
+	_apply_editor_result_preview(scene)
 
 	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
 	var result_title: Label = scene.get_node("%ResultTitle")
@@ -3245,14 +3384,14 @@ func test_result_panel_buttons_emit_restart_and_return_signals() -> void:
 	assert_signal_emitted(scene, "return_to_title_requested")
 
 
-## Verifies the node-backed gameplay UI layer emits pause menu button intents from its own button handlers.
+## Verifies the pause layer emits pause menu button intents from its own button handlers.
 func test_gameplay_ui_layer_pause_buttons_emit_owner_intent_signals() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	var gameplay_ui_layer := _get_gameplay_ui_layer(scene)
-	watch_signals(gameplay_ui_layer)
+	var pause_layer := _get_pause_layer(scene)
+	watch_signals(pause_layer)
 
 	var resume_button: Button = scene.get_node("%PauseResumeButton")
 	var restart_button: Button = scene.get_node("%PauseRestartButton")
@@ -3261,27 +3400,27 @@ func test_gameplay_ui_layer_pause_buttons_emit_owner_intent_signals() -> void:
 	restart_button.pressed.emit()
 	return_button.pressed.emit()
 
-	assert_signal_emitted(gameplay_ui_layer, "pause_resume_requested")
-	assert_signal_emitted(gameplay_ui_layer, "pause_restart_requested")
-	assert_signal_emitted(gameplay_ui_layer, "pause_return_to_title_requested")
+	assert_signal_emitted(pause_layer, "resume_requested")
+	assert_signal_emitted(pause_layer, "restart_requested")
+	assert_signal_emitted(pause_layer, "return_to_title_requested")
 
 
-## Verifies the node-backed gameplay UI layer emits result button intents from its own button handlers.
+## Verifies the result layer emits result button intents from its own button handlers.
 func test_gameplay_ui_layer_result_buttons_emit_owner_intent_signals() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	var gameplay_ui_layer := _get_gameplay_ui_layer(scene)
-	watch_signals(gameplay_ui_layer)
+	var result_layer := _get_result_layer(scene)
+	watch_signals(result_layer)
 
 	var restart_button: Button = scene.get_node("%ResultRestartButton")
 	var return_button: Button = scene.get_node("%ResultReturnButton")
 	restart_button.pressed.emit()
 	return_button.pressed.emit()
 
-	assert_signal_emitted(gameplay_ui_layer, "result_restart_requested")
-	assert_signal_emitted(gameplay_ui_layer, "result_return_to_title_requested")
+	assert_signal_emitted(result_layer, "restart_requested")
+	assert_signal_emitted(result_layer, "return_to_title_requested")
 
 
 ## Verifies pause menu toggles tree pause and visibility.
@@ -3426,7 +3565,7 @@ func test_recovery_panel_hides_when_run_is_over() -> void:
 	state.result = RunStateType.RESULT_COLLAPSED
 	scene.setup(state)
 	scene._advance_failure_triggers(0.0)
-	scene._refresh_recovery_prompt()
+	_refresh_recovery_prompt(scene)
 
 	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
 	assert_false(recovery_panel.visible)
@@ -3442,7 +3581,7 @@ func test_result_panel_is_darkened_without_full_screen_backdrop() -> void:
 	var state := RunStateType.new()
 	state.result = RunStateType.RESULT_SUCCESS
 	scene.setup(state)
-	scene._refresh_result_screen()
+	_refresh_result_screen(scene)
 
 	assert_false(scene.has_node("%ResultBackdrop"))
 

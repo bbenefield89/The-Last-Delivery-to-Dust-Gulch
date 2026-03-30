@@ -4,6 +4,9 @@
 [ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Systems/HazardSpawner/hazard_spawner.gd" id="2_ok7u7"]
 [ext_resource type="Script" uid="uid://mraylpyhw2iy" path="res://UI/ResultPanel/result_panel_ui.gd" id="3_2a2m5"]
 [ext_resource type="Script" path="res://Scenes/RunScene/gameplay_ui_layer.gd" id="4_ui0er"]
+[ext_resource type="Script" path="res://Scenes/RunScene/touch_layer.gd" id="5_wx8pf"]
+[ext_resource type="Script" path="res://Scenes/RunScene/pause_layer.gd" id="6_8yhlp"]
+[ext_resource type="Script" path="res://Scenes/RunScene/result_layer.gd" id="7_4cce2"]
 [ext_resource type="Texture2D" uid="uid://bm35sy7bc1e45" path="res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png" id="9_k3x0m"]
 [ext_resource type="Texture2D" uid="uid://d0fxmc8h746io" path="res://Assets/Tilesets/Horse/Horse-16x48-Sheet.png" id="10_lu4m1"]
 [ext_resource type="Texture2D" uid="uid://dryxakr4r1w65" path="res://Assets/Tilesets/Desert/Desert-3-32x32.png" id="11_hmcd6"]
@@ -343,6 +346,7 @@ theme_override_constants/margin_top = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 10)
 layout_mode = 2
+max_value = 100.0
 theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
 theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
 value = 100.0
@@ -382,6 +386,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+max_value = 100.0
 theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
 theme_override_styles/fill = SubResource("StyleBoxFlat_distance_fill")
 show_percentage = false
@@ -483,6 +488,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("5_wx8pf")
 
 [node name="TouchLeft" type="Button" parent="GameplayUiLayer/TouchLayer" unique_id=1367813085]
 unique_name_in_owner = true
@@ -641,12 +647,14 @@ theme_override_constants/separation = 10
 alignment = 1
 
 [node name="PauseLayer" type="Control" parent="GameplayUiLayer"]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("6_8yhlp")
 
 [node name="PauseOverlay" type="Control" parent="GameplayUiLayer/PauseLayer" unique_id=357867026]
 unique_name_in_owner = true
@@ -731,12 +739,14 @@ theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Title"
 
 [node name="ResultLayer" type="Control" parent="GameplayUiLayer"]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("7_4cce2")
 
 [node name="ResultMargin" type="MarginContainer" parent="GameplayUiLayer/ResultLayer" unique_id=370495141]
 anchors_preset = 8
