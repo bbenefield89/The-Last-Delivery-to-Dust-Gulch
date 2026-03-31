@@ -8,21 +8,25 @@ const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 
 # Constants
-const STEP_ROW_MAX_WIDTH := 240.0
-const STEP_MIN_WIDTH := 36.0
-const STEP_HEIGHT := 60.0
-const STEP_MAX_WIDTH := 72.0
-const STEP_FONT_SIZE_RATIO := 0.52
-const STEP_MIN_FONT_SIZE := 24
-const STEP_MAX_FONT_SIZE := 38
-const STEP_SPACING := 4
-const STEP_BASELINE_SEQUENCE_LENGTH := 3
-const STEP_PENDING_COLOR := Color(0.25098, 0.203922, 0.145098, 0.92)
-const STEP_ACTIVE_COLOR := Color(0.780392, 0.623529, 0.317647, 0.98)
-const STEP_DONE_COLOR := Color(0.419608, 0.54902, 0.290196, 0.95)
 const TOUCH_LEFT_ACTION: StringName = &"steer_left"
 const TOUCH_RIGHT_ACTION: StringName = &"steer_right"
-const ARROW_FONT := preload(AssetPaths.ARROW_FONT_PATH)
+const DEFAULT_STEP_MIN_FONT_SIZE := 24
+const DEFAULT_STEP_MAX_WIDTH := 72.0
+const DEFAULT_STEP_HEIGHT := 60.0
+
+
+# Private Fields: Export
+@export var _step_font: Font
+@export var _step_min_width := 36.0
+@export var _step_height := 60.0
+@export var _step_max_width := 72.0
+@export var _step_font_size_ratio := 0.52
+@export var _step_min_font_size := 24
+@export var _step_max_font_size := 38
+@export var _step_baseline_sequence_length := 3
+@export var _pending_step_color := Color(0.25098, 0.203922, 0.145098, 0.92)
+@export var _active_step_color := Color(0.780392, 0.623529, 0.317647, 0.98)
+@export var _completed_step_color := Color(0.419608, 0.54902, 0.290196, 0.95)
 
 
 # Private Fields
@@ -44,6 +48,10 @@ var _steps_container: HBoxContainer = %RecoverySteps
 
 
 # Public Methods
+
+## Returns the fallback recovery-step size used when the layer node is unavailable.
+static func get_default_step_minimum_size() -> Vector2:
+	return Vector2(DEFAULT_STEP_MAX_WIDTH, DEFAULT_STEP_HEIGHT)
 
 ## Binds the active run state so recovery prompt rendering follows the current failure state.
 func bind_run_state(run_state: RunStateType) -> void:
@@ -113,25 +121,25 @@ func get_hint(failure_type: StringName) -> String:
 ## Returns the chip size that keeps the full recovery row inside a fixed width budget.
 func get_step_minimum_size() -> Vector2:
 	if _run_state == null:
-		return Vector2(STEP_MAX_WIDTH, STEP_HEIGHT)
+		return Vector2(_step_max_width, _step_height)
 
-	var sequence_size: int = max(_run_state.recovery_sequence.size(), STEP_BASELINE_SEQUENCE_LENGTH)
-	var available_width: float = STEP_ROW_MAX_WIDTH - ((sequence_size - 1) * STEP_SPACING)
+	var sequence_size: int = max(_run_state.recovery_sequence.size(), _step_baseline_sequence_length)
+	var available_width: float = get_step_row_max_width() - ((sequence_size - 1) * get_step_spacing())
 	var step_width: float = clampf(
 		floor(available_width / float(sequence_size)),
-		STEP_MIN_WIDTH,
-		STEP_MAX_WIDTH
+		_step_min_width,
+		_step_max_width
 	)
-	return Vector2(step_width, STEP_HEIGHT)
+	return Vector2(step_width, _step_height)
 
 
 ## Returns the prompt font size that matches the active recovery chip width.
 func get_step_font_size() -> int:
 	var step_width := get_step_minimum_size().x
 	return clampi(
-		int(floor(step_width * STEP_FONT_SIZE_RATIO)),
-		STEP_MIN_FONT_SIZE,
-		STEP_MAX_FONT_SIZE
+		int(floor(step_width * _step_font_size_ratio)),
+		_step_min_font_size,
+		_step_max_font_size
 	)
 
 
@@ -148,8 +156,8 @@ func build_step(index: int) -> PanelContainer:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	label.add_theme_font_size_override("font_size", get_step_font_size())
-	if ARROW_FONT != null:
-		label.add_theme_font_override("font", ARROW_FONT)
+	if _step_font != null:
+		label.add_theme_font_override("font", _step_font)
 	panel.add_child(label)
 	return panel
 
@@ -157,10 +165,10 @@ func build_step(index: int) -> PanelContainer:
 ## Returns the authored color for one recovery-step chip based on current progress.
 func get_step_color(index: int) -> Color:
 	if index < _run_state.recovery_prompt_index:
-		return STEP_DONE_COLOR
+		return _completed_step_color
 	if index == _run_state.recovery_prompt_index:
-		return STEP_ACTIVE_COLOR
-	return STEP_PENDING_COLOR
+		return _active_step_color
+	return _pending_step_color
 
 
 ## Returns the arrow-font glyph for one recovery action.
@@ -192,8 +200,7 @@ func _rebuild_steps() -> void:
 	_clear_steps()
 	_title_label.text = get_title(_run_state.active_failure)
 	_hint_label.text = get_hint(_run_state.active_failure)
-	_steps_container.custom_minimum_size.x = STEP_ROW_MAX_WIDTH
-	_steps_container.add_theme_constant_override("separation", STEP_SPACING)
+	_steps_container.custom_minimum_size.x = get_step_row_max_width()
 
 	for step_index in range(_run_state.recovery_sequence.size()):
 		_steps_container.add_child(build_step(step_index))
@@ -206,3 +213,17 @@ func _clear_steps() -> void:
 
 	for child in _steps_container.get_children():
 		child.queue_free()
+
+
+## Returns the authored recovery-step row width budget from the steps container.
+func get_step_row_max_width() -> float:
+	if _steps_container == null:
+		return 0.0
+	return _steps_container.custom_minimum_size.x
+
+
+## Returns the authored recovery-step spacing from the steps container theme.
+func get_step_spacing() -> int:
+	if _steps_container == null:
+		return 0
+	return _steps_container.get_theme_constant("separation")

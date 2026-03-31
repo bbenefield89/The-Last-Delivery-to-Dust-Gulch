@@ -20,7 +20,6 @@ const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 const PhaseCalloutLayerType := preload(ProjectPaths.PHASE_CALLOUT_LAYER_SCRIPT_PATH)
 const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
 const PauseLayerType := preload(ProjectPaths.PAUSE_LAYER_SCRIPT_PATH)
-const RecoveryLayerType := preload(ProjectPaths.RECOVERY_LAYER_SCRIPT_PATH)
 const ResultLayerType := preload(ProjectPaths.RESULT_LAYER_SCRIPT_PATH)
 const TouchLayerType := preload(ProjectPaths.TOUCH_LAYER_SCRIPT_PATH)
 
@@ -134,21 +133,9 @@ const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := RunDirectorType.WHEEL_LOOSE_FA
 const HORSE_PANIC_FAILURE_CARGO_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_CARGO_LOSS
 const HORSE_PANIC_FAILURE_SPEED_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_SPEED_LOSS
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FAILURE_INSTABILITY_DURATION
-const RECOVERY_STEP_ROW_MAX_WIDTH := RecoveryLayerType.STEP_ROW_MAX_WIDTH
-const RECOVERY_STEP_MIN_WIDTH := RecoveryLayerType.STEP_MIN_WIDTH
-const RECOVERY_STEP_HEIGHT := RecoveryLayerType.STEP_HEIGHT
-const RECOVERY_STEP_MAX_WIDTH := RecoveryLayerType.STEP_MAX_WIDTH
-const RECOVERY_STEP_FONT_SIZE_RATIO := RecoveryLayerType.STEP_FONT_SIZE_RATIO
-const RECOVERY_STEP_MIN_FONT_SIZE := RecoveryLayerType.STEP_MIN_FONT_SIZE
-const RECOVERY_STEP_MAX_FONT_SIZE := RecoveryLayerType.STEP_MAX_FONT_SIZE
-const RECOVERY_STEP_SPACING := RecoveryLayerType.STEP_SPACING
-const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := RecoveryLayerType.STEP_BASELINE_SEQUENCE_LENGTH
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
 const ROADSIDE_DECOR_SPACING := RunPresentationType.ROADSIDE_DECOR_SPACING
 const ROADSIDE_DECOR_COUNT := RunPresentationType.ROADSIDE_DECOR_COUNT
-const RECOVERY_STEP_PENDING_COLOR := RecoveryLayerType.STEP_PENDING_COLOR
-const RECOVERY_STEP_ACTIVE_COLOR := RecoveryLayerType.STEP_ACTIVE_COLOR
-const RECOVERY_STEP_DONE_COLOR := RecoveryLayerType.STEP_DONE_COLOR
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
@@ -563,7 +550,7 @@ func _process(delta: float) -> void:
 	if _run_state == null:
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		return
-	if _run_ui_presenter.pause_menu_open:
+	if _run_ui_presenter.is_pause_menu_open:
 		_run_ui_presenter.refresh_onboarding_prompt()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		_run_ui_presenter.refresh_pause_menu()
@@ -584,7 +571,7 @@ func _process(delta: float) -> void:
 		_run_ui_presenter.refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
-	if _run_ui_presenter.onboarding_active:
+	if _run_ui_presenter.is_onboarding_active:
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		_run_presentation.advance_scroll(_run_state.current_speed, delta)
 		_update_impact_feedback(delta)
@@ -689,13 +676,13 @@ func _build_best_run_summary() -> String:
 func _input(event: InputEvent) -> void:
 	var ui_input_result := _run_ui_presenter.route_input(event, PAUSE_ACTION)
 	if ui_input_result.pause_command == GameplayUiLayerType.PAUSE_COMMAND_TOGGLE:
-		_set_pause_state(not _run_ui_presenter.pause_menu_open)
+		_set_pause_state(not _run_ui_presenter.is_pause_menu_open)
 		return
 	if ui_input_result.pause_command == GameplayUiLayerType.PAUSE_COMMAND_CLOSE:
 		_set_pause_state(false)
 		return
 
-	if ui_input_result.dismissed_onboarding:
+	if ui_input_result.did_dismiss_onboarding:
 		_run_ui_presenter.dismiss_onboarding()
 		if _run_director.route_phase_callout_zone == ROUTE_PHASE_WARM_UP:
 			_show_phase_callout(_get_route_phase_display_name(_run_director.route_phase_callout_zone))
@@ -884,23 +871,23 @@ func _register_action(action_name: StringName, keys: Array[int]) -> void:
 func _get(property: StringName) -> Variant:
 	match property:
 		&"_onboarding_active":
-			return _run_ui_presenter.onboarding_active
+			return _run_ui_presenter.is_onboarding_active
 		&"_pause_menu_open":
-			return _run_ui_presenter.pause_menu_open
+			return _run_ui_presenter.is_pause_menu_open
 		&"_touch_controls_enabled_for_runtime":
-			return _run_ui_presenter.touch_controls_enabled_for_runtime
+			return _run_ui_presenter.are_touch_controls_enabled_for_runtime
 		&"_has_native_mobile_runtime_override":
 			return _run_ui_presenter.has_native_mobile_runtime_override
 		&"_native_mobile_runtime_override":
-			return _run_ui_presenter.native_mobile_runtime_override
+			return _run_ui_presenter.is_native_mobile_runtime_override
 		&"_has_mobile_web_runtime_override":
 			return _run_ui_presenter.has_mobile_web_runtime_override
 		&"_mobile_web_runtime_override":
-			return _run_ui_presenter.mobile_web_runtime_override
+			return _run_ui_presenter.is_mobile_web_runtime_override
 		&"_has_touchscreen_available_override":
 			return _run_ui_presenter.has_touchscreen_available_override
 		&"_touchscreen_available_override":
-			return _run_ui_presenter.touchscreen_available_override
+			return _run_ui_presenter.is_touchscreen_available_override
 		_:
 			return null
 
@@ -909,31 +896,31 @@ func _get(property: StringName) -> Variant:
 func _set(property: StringName, value: Variant) -> bool:
 	match property:
 		&"_onboarding_active":
-			_run_ui_presenter.onboarding_active = bool(value)
+			_run_ui_presenter.is_onboarding_active = bool(value)
 			return true
 		&"_pause_menu_open":
-			_run_ui_presenter.pause_menu_open = bool(value)
+			_run_ui_presenter.is_pause_menu_open = bool(value)
 			return true
 		&"_touch_controls_enabled_for_runtime":
-			_run_ui_presenter.touch_controls_enabled_for_runtime = bool(value)
+			_run_ui_presenter.are_touch_controls_enabled_for_runtime = bool(value)
 			return true
 		&"_has_native_mobile_runtime_override":
 			_run_ui_presenter.has_native_mobile_runtime_override = bool(value)
 			return true
 		&"_native_mobile_runtime_override":
-			_run_ui_presenter.native_mobile_runtime_override = bool(value)
+			_run_ui_presenter.is_native_mobile_runtime_override = bool(value)
 			return true
 		&"_has_mobile_web_runtime_override":
 			_run_ui_presenter.has_mobile_web_runtime_override = bool(value)
 			return true
 		&"_mobile_web_runtime_override":
-			_run_ui_presenter.mobile_web_runtime_override = bool(value)
+			_run_ui_presenter.is_mobile_web_runtime_override = bool(value)
 			return true
 		&"_has_touchscreen_available_override":
 			_run_ui_presenter.has_touchscreen_available_override = bool(value)
 			return true
 		&"_touchscreen_available_override":
-			_run_ui_presenter.touchscreen_available_override = bool(value)
+			_run_ui_presenter.is_touchscreen_available_override = bool(value)
 			return true
 		_:
 			return false
@@ -994,11 +981,11 @@ func _on_result_return_to_title_pressed() -> void:
 
 ## Updates the pause state and keeps the keyboard focus anchored to the active pause menu.
 func _set_pause_state(paused: bool) -> void:
-	var was_paused := _run_ui_presenter.pause_menu_open
+	var was_paused := _run_ui_presenter.is_pause_menu_open
 	if not _run_ui_presenter.set_pause_state(paused):
 		return
 	_run_audio_presenter.play_pause_toggle()
-	if _run_ui_presenter.pause_menu_open and not was_paused and _pause_layer != null:
+	if _run_ui_presenter.is_pause_menu_open and not was_paused and _pause_layer != null:
 		_pause_layer.focus_default_button()
 
 

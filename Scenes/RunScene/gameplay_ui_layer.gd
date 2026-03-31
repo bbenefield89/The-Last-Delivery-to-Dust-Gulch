@@ -32,26 +32,26 @@ const GAMEPLAY_UI_LAYER_NAMES: Array[StringName] = [
 
 
 # Public Fields
-var onboarding_active := false
-var pause_menu_open := false:
+var is_onboarding_active := false
+var is_pause_menu_open := false:
 	get:
-		return _pause_layer.menu_open if _pause_layer != null else _pause_menu_open
+		return _pause_layer.is_menu_open if _pause_layer != null else _is_pause_menu_open
 	set(value):
-		_pause_menu_open = value
+		_is_pause_menu_open = value
 		if _pause_layer != null:
-			_pause_layer.menu_open = value
+			_pause_layer.is_menu_open = value
 
-var touch_controls_enabled_for_runtime := false:
+var are_touch_controls_enabled_for_runtime := false:
 	get:
 		return (
-			_touch_layer.touch_controls_enabled_for_runtime
+			_touch_layer.are_touch_controls_enabled_for_runtime
 			if _touch_layer != null
-			else _touch_controls_enabled_for_runtime
+			else _are_touch_controls_enabled_for_runtime
 		)
 	set(value):
-		_touch_controls_enabled_for_runtime = value
+		_are_touch_controls_enabled_for_runtime = value
 		if _touch_layer != null:
-			_touch_layer.touch_controls_enabled_for_runtime = value
+			_touch_layer.are_touch_controls_enabled_for_runtime = value
 
 var has_native_mobile_runtime_override := false:
 	get:
@@ -65,17 +65,17 @@ var has_native_mobile_runtime_override := false:
 		if _touch_layer != null:
 			_touch_layer.has_native_mobile_runtime_override = value
 
-var native_mobile_runtime_override := false:
+var is_native_mobile_runtime_override := false:
 	get:
 		return (
-			_touch_layer.native_mobile_runtime_override
+			_touch_layer.is_native_mobile_runtime_override
 			if _touch_layer != null
-			else _native_mobile_runtime_override
+			else _is_native_mobile_runtime_override
 		)
 	set(value):
-		_native_mobile_runtime_override = value
+		_is_native_mobile_runtime_override = value
 		if _touch_layer != null:
-			_touch_layer.native_mobile_runtime_override = value
+			_touch_layer.is_native_mobile_runtime_override = value
 
 var has_mobile_web_runtime_override := false:
 	get:
@@ -89,17 +89,17 @@ var has_mobile_web_runtime_override := false:
 		if _touch_layer != null:
 			_touch_layer.has_mobile_web_runtime_override = value
 
-var mobile_web_runtime_override := false:
+var is_mobile_web_runtime_override := false:
 	get:
 		return (
-			_touch_layer.mobile_web_runtime_override
+			_touch_layer.is_mobile_web_runtime_override
 			if _touch_layer != null
-			else _mobile_web_runtime_override
+			else _is_mobile_web_runtime_override
 		)
 	set(value):
-		_mobile_web_runtime_override = value
+		_is_mobile_web_runtime_override = value
 		if _touch_layer != null:
-			_touch_layer.mobile_web_runtime_override = value
+			_touch_layer.is_mobile_web_runtime_override = value
 
 var has_touchscreen_available_override := false:
 	get:
@@ -113,29 +113,29 @@ var has_touchscreen_available_override := false:
 		if _touch_layer != null:
 			_touch_layer.has_touchscreen_available_override = value
 
-var touchscreen_available_override := false:
+var is_touchscreen_available_override := false:
 	get:
 		return (
-			_touch_layer.touchscreen_available_override
+			_touch_layer.is_touchscreen_available_override
 			if _touch_layer != null
-			else _touchscreen_available_override
+			else _is_touchscreen_available_override
 		)
 	set(value):
-		_touchscreen_available_override = value
+		_is_touchscreen_available_override = value
 		if _touch_layer != null:
-			_touch_layer.touchscreen_available_override = value
+			_touch_layer.is_touchscreen_available_override = value
 
 
 # Private Fields
 var _run_state: RunStateType
-var _pause_menu_open := false
-var _touch_controls_enabled_for_runtime := false
+var _is_pause_menu_open := false
+var _are_touch_controls_enabled_for_runtime := false
 var _has_native_mobile_runtime_override := false
-var _native_mobile_runtime_override := false
+var _is_native_mobile_runtime_override := false
 var _has_mobile_web_runtime_override := false
-var _mobile_web_runtime_override := false
+var _is_mobile_web_runtime_override := false
 var _has_touchscreen_available_override := false
-var _touchscreen_available_override := false
+var _is_touchscreen_available_override := false
 
 
 # Private Fields: OnReady
@@ -189,7 +189,7 @@ func _ready() -> void:
 	configure_gameplay_ui_layers()
 	_sync_touch_layer_state()
 	if _pause_layer != null:
-		_pause_layer.menu_open = _pause_menu_open
+		_pause_layer.is_menu_open = _is_pause_menu_open
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -212,8 +212,8 @@ func bind_run_state(run_state: RunStateType) -> void:
 
 ## Resets transient UI flow for a newly bound run without clearing runtime capability overrides.
 func reset_for_new_run() -> void:
-	onboarding_active = true
-	pause_menu_open = false
+	is_onboarding_active = true
+	is_pause_menu_open = false
 	if _bonus_callout_layer != null:
 		_bonus_callout_layer.clear_callout()
 	if _phase_callout_layer != null:
@@ -287,7 +287,7 @@ func refresh_recovery_prompt() -> void:
 	if _recovery_layer == null:
 		return
 
-	_recovery_layer.refresh_prompt(pause_menu_open)
+	_recovery_layer.refresh_prompt(is_pause_menu_open)
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -299,8 +299,8 @@ func refresh_onboarding_prompt() -> void:
 	_onboarding_panel.visible = (
 		_run_state != null
 		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
-		and onboarding_active
-		and not pause_menu_open
+		and is_onboarding_active
+		and not is_pause_menu_open
 	)
 	_refresh_gameplay_ui_layer_state()
 
@@ -310,7 +310,7 @@ func refresh_pause_menu() -> void:
 	if _pause_layer == null:
 		return
 
-	_pause_layer.refresh_menu(pause_menu_open)
+	_pause_layer.refresh_menu(is_pause_menu_open)
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -328,7 +328,7 @@ func refresh_touch_controls() -> void:
 	if _touch_layer == null:
 		return
 
-	_touch_layer.refresh_touch_controls(pause_menu_open)
+	_touch_layer.refresh_touch_controls(is_pause_menu_open)
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -339,20 +339,20 @@ func set_pause_state(paused: bool) -> bool:
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		paused = false
 
-	var was_paused := pause_menu_open
-	pause_menu_open = paused
-	var changed := was_paused != pause_menu_open
-	if changed:
+	var was_paused := is_pause_menu_open
+	is_pause_menu_open = paused
+	var has_changed_pause_state := was_paused != is_pause_menu_open
+	if has_changed_pause_state:
 		refresh_onboarding_prompt()
 		refresh_pause_menu()
 		refresh_recovery_prompt()
 		refresh_touch_controls()
-	return changed
+	return has_changed_pause_state
 
 
 ## Returns whether the touch layer should currently be visible and interactive.
 func should_show_touch_controls() -> bool:
-	return _touch_layer != null and _touch_layer.should_show_touch_controls(pause_menu_open)
+	return _touch_layer != null and _touch_layer.should_show_touch_controls(is_pause_menu_open)
 
 
 ## Reveals touch controls after the first real touch on mobile web runtimes with delayed capability reporting.
@@ -360,7 +360,7 @@ func reveal_touch_controls_from_first_touch(event: InputEvent) -> void:
 	if _touch_layer == null:
 		return
 
-	_touch_layer.reveal_touch_controls_from_first_touch(event, pause_menu_open)
+	_touch_layer.reveal_touch_controls_from_first_touch(event, is_pause_menu_open)
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -375,35 +375,35 @@ func route_input(event: InputEvent, pause_action: StringName) -> UiInputResult:
 	if event != null and event.is_action_pressed(pause_action):
 		if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
 			result.pause_command = PAUSE_COMMAND_TOGGLE
-		result.consumed = true
+		result.is_consumed = true
 		return result
 
-	if pause_menu_open and event != null and event.is_action_pressed(&"ui_cancel", false, true):
+	if is_pause_menu_open and event != null and event.is_action_pressed(&"ui_cancel", false, true):
 		result.pause_command = PAUSE_COMMAND_CLOSE
-		result.consumed = true
+		result.is_consumed = true
 		return result
 
-	if pause_menu_open:
-		result.consumed = _pause_layer != null and _pause_layer.should_consume_event(event)
+	if is_pause_menu_open:
+		result.is_consumed = _pause_layer != null and _pause_layer.should_consume_event(event)
 		return result
 
-	if onboarding_active:
+	if is_onboarding_active:
 		if should_dismiss_onboarding(event):
-			result.dismissed_onboarding = true
-			result.consumed = true
+			result.did_dismiss_onboarding = true
+			result.is_consumed = true
 		return result
 
 	if not _run_state.has_active_recovery_sequence() or _recovery_layer == null:
 		return result
 
 	result.recovery_action = _recovery_layer.get_input_action(event)
-	result.consumed = result.recovery_action != &""
+	result.is_consumed = result.recovery_action != &""
 	return result
 
 
 ## Marks onboarding as dismissed and refreshes the visible gameplay UI state.
 func dismiss_onboarding() -> void:
-	onboarding_active = false
+	is_onboarding_active = false
 	refresh_onboarding_prompt()
 
 
@@ -473,7 +473,7 @@ func apply_editor_result_preview() -> void:
 
 ## Returns whether a touch pause press should open the pause menu.
 func should_open_pause_from_touch() -> bool:
-	return _touch_layer != null and _touch_layer.should_open_pause_from_touch(pause_menu_open)
+	return _touch_layer != null and _touch_layer.should_open_pause_from_touch(is_pause_menu_open)
 
 
 ## Releases both steering actions to avoid held touch state leaking across scene transitions.
@@ -489,7 +489,7 @@ func get_recovery_step_minimum_size() -> Vector2:
 	return (
 		_recovery_layer.get_step_minimum_size()
 		if _recovery_layer != null
-		else Vector2(RecoveryLayerType.STEP_MAX_WIDTH, RecoveryLayerType.STEP_HEIGHT)
+		else RecoveryLayerType.get_default_step_minimum_size()
 	)
 
 
@@ -498,7 +498,7 @@ func get_recovery_step_font_size() -> int:
 	return (
 		_recovery_layer.get_step_font_size()
 		if _recovery_layer != null
-		else RecoveryLayerType.STEP_MIN_FONT_SIZE
+		else RecoveryLayerType.DEFAULT_STEP_MIN_FONT_SIZE
 	)
 
 
@@ -531,13 +531,13 @@ func _sync_touch_layer_state() -> void:
 	if _touch_layer == null:
 		return
 
-	_touch_layer.touch_controls_enabled_for_runtime = _touch_controls_enabled_for_runtime
+	_touch_layer.are_touch_controls_enabled_for_runtime = _are_touch_controls_enabled_for_runtime
 	_touch_layer.has_native_mobile_runtime_override = _has_native_mobile_runtime_override
-	_touch_layer.native_mobile_runtime_override = _native_mobile_runtime_override
+	_touch_layer.is_native_mobile_runtime_override = _is_native_mobile_runtime_override
 	_touch_layer.has_mobile_web_runtime_override = _has_mobile_web_runtime_override
-	_touch_layer.mobile_web_runtime_override = _mobile_web_runtime_override
+	_touch_layer.is_mobile_web_runtime_override = _is_mobile_web_runtime_override
 	_touch_layer.has_touchscreen_available_override = _has_touchscreen_available_override
-	_touch_layer.touchscreen_available_override = _touchscreen_available_override
+	_touch_layer.is_touchscreen_available_override = _is_touchscreen_available_override
 
 
 ## Keeps each gameplay UI wrapper aligned with the currently visible overlay state.
@@ -599,7 +599,7 @@ class UiInputResult:
 
 	## Captures the UI-specific interpretation of a single input event.
 
-	var consumed := false
-	var dismissed_onboarding := false
+	var is_consumed := false
+	var did_dismiss_onboarding := false
 	var pause_command: StringName = PAUSE_COMMAND_NONE
 	var recovery_action: StringName = &""
