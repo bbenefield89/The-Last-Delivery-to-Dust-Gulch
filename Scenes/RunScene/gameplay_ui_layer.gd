@@ -1,44 +1,21 @@
 extends CanvasLayer
 
-## Owns the run-scene gameplay UI subtree, wrapper state, HUD, onboarding, recovery prompt, and transient callouts.
+## Coordinates the run-scene UI tree while delegating layer-specific behavior to child owners.
 
 
 # Imports
+const BonusCalloutLayerType := preload(ProjectPaths.BONUS_CALLOUT_LAYER_SCRIPT_PATH)
 const PauseLayerType := preload(ProjectPaths.PAUSE_LAYER_SCRIPT_PATH)
+const PhaseCalloutLayerType := preload(ProjectPaths.PHASE_CALLOUT_LAYER_SCRIPT_PATH)
+const RecoveryLayerType := preload(ProjectPaths.RECOVERY_LAYER_SCRIPT_PATH)
 const ResultLayerType := preload(ProjectPaths.RESULT_LAYER_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 const TouchLayerType := preload(ProjectPaths.TOUCH_LAYER_SCRIPT_PATH)
 
 
 # Constants
-const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
-const ONBOARDING_BODY := (
-	"Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, "
-	+ "and hold the wagon together until you reach Dust Gulch."
-)
-const ONBOARDING_HINT := "Press Left, Right, Enter, or click to begin the run."
-const RECOVERY_STEP_ROW_MAX_WIDTH := 240.0
-const RECOVERY_STEP_MIN_WIDTH := 36.0
-const RECOVERY_STEP_HEIGHT := 60.0
-const RECOVERY_STEP_MAX_WIDTH := 72.0
-const RECOVERY_STEP_FONT_SIZE_RATIO := 0.52
-const RECOVERY_STEP_MIN_FONT_SIZE := 24
-const RECOVERY_STEP_MAX_FONT_SIZE := 38
-const RECOVERY_STEP_SPACING := 4
-const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := 3
-const RECOVERY_STEP_PENDING_COLOR := Color(0.25098, 0.203922, 0.145098, 0.92)
-const RECOVERY_STEP_ACTIVE_COLOR := Color(0.780392, 0.623529, 0.317647, 0.98)
-const RECOVERY_STEP_DONE_COLOR := Color(0.419608, 0.54902, 0.290196, 0.95)
-const BONUS_CALLOUT_DURATION := 1.1
-const BONUS_CALLOUT_START_OFFSET := Vector2(0.0, -64.0)
-const BONUS_CALLOUT_END_OFFSET := Vector2(0.0, -82.0)
-const PHASE_CALLOUT_DURATION := 0.95
 const TOUCH_LEFT_ACTION: StringName = &"steer_left"
 const TOUCH_RIGHT_ACTION: StringName = &"steer_right"
-const PAUSE_MENU_ACTION_NONE: StringName = PauseLayerType.PAUSE_MENU_ACTION_NONE
-const PAUSE_MENU_ACTION_RESUME: StringName = PauseLayerType.PAUSE_MENU_ACTION_RESUME
-const PAUSE_MENU_ACTION_RESTART: StringName = PauseLayerType.PAUSE_MENU_ACTION_RESTART
-const PAUSE_MENU_ACTION_RETURN_TO_TITLE: StringName = PauseLayerType.PAUSE_MENU_ACTION_RETURN_TO_TITLE
 const PAUSE_COMMAND_NONE: StringName = &""
 const PAUSE_COMMAND_TOGGLE: StringName = &"toggle"
 const PAUSE_COMMAND_CLOSE: StringName = &"close"
@@ -52,7 +29,6 @@ const GAMEPLAY_UI_LAYER_NAMES: Array[StringName] = [
 	&"PauseLayer",
 	&"ResultLayer",
 ]
-const ARROW_FONT := preload(AssetPaths.ARROW_FONT_PATH)
 
 
 # Public Fields
@@ -152,11 +128,6 @@ var touchscreen_available_override := false:
 
 # Private Fields
 var _run_state: RunStateType
-var _bonus_callout_text := ""
-var _bonus_callout_remaining := 0.0
-var _bonus_callout_anchor_world_position := Vector2.ZERO
-var _phase_callout_text := ""
-var _phase_callout_remaining := 0.0
 var _pause_menu_open := false
 var _touch_controls_enabled_for_runtime := false
 var _has_native_mobile_runtime_override := false
@@ -172,10 +143,10 @@ var _touchscreen_available_override := false
 var _hud_layer: Control = $HUDLayer
 
 @onready
-var _bonus_callout_layer: Control = $BonusCalloutLayer
+var _bonus_callout_layer: BonusCalloutLayerType = $BonusCalloutLayer
 
 @onready
-var _phase_callout_layer: Control = $PhaseCalloutLayer
+var _phase_callout_layer: PhaseCalloutLayerType = $PhaseCalloutLayer
 
 @onready
 var _health_bar: ProgressBar = %HealthBar
@@ -193,18 +164,6 @@ var _distance_band_markers: Control = %DistanceBandMarkers
 var _cargo_label: Label = %CargoLabel
 
 @onready
-var _bonus_callout_panel: Control = %BonusCalloutPanel
-
-@onready
-var _bonus_callout_label: Label = %BonusCalloutLabel
-
-@onready
-var _phase_callout_panel: PanelContainer = %PhaseCalloutPanel
-
-@onready
-var _phase_callout_label: Label = %PhaseCalloutLabel
-
-@onready
 var _touch_layer: TouchLayerType = %TouchLayer
 
 @onready
@@ -214,19 +173,7 @@ var _onboarding_layer: Control = $OnboardingLayer
 var _onboarding_panel: PanelContainer = %OnboardingPanel
 
 @onready
-var _recovery_layer: Control = $RecoveryLayer
-
-@onready
-var _recovery_panel: PanelContainer = %RecoveryPanel
-
-@onready
-var _recovery_title: Label = %RecoveryTitle
-
-@onready
-var _recovery_hint: Label = %RecoveryHint
-
-@onready
-var _recovery_steps: HBoxContainer = %RecoverySteps
+var _recovery_layer: RecoveryLayerType = $RecoveryLayer
 
 @onready
 var _pause_layer: PauseLayerType = %PauseLayer
@@ -253,6 +200,10 @@ func bind_run_state(run_state: RunStateType) -> void:
 	_run_state = run_state
 	if _touch_layer != null:
 		_touch_layer.bind_run_state(run_state)
+	if _phase_callout_layer != null:
+		_phase_callout_layer.bind_run_state(run_state)
+	if _recovery_layer != null:
+		_recovery_layer.bind_run_state(run_state)
 	if _pause_layer != null:
 		_pause_layer.bind_run_state(run_state)
 	if _result_layer != null:
@@ -263,11 +214,10 @@ func bind_run_state(run_state: RunStateType) -> void:
 func reset_for_new_run() -> void:
 	onboarding_active = true
 	pause_menu_open = false
-	_bonus_callout_text = ""
-	_bonus_callout_remaining = 0.0
-	_bonus_callout_anchor_world_position = Vector2.ZERO
-	_phase_callout_text = ""
-	_phase_callout_remaining = 0.0
+	if _bonus_callout_layer != null:
+		_bonus_callout_layer.clear_callout()
+	if _phase_callout_layer != null:
+		_phase_callout_layer.clear_callout()
 
 
 ## Rebuilds the distance bar markers from the authored route-band thresholds.
@@ -334,38 +284,10 @@ func refresh_status() -> void:
 
 ## Shows only the active recovery sequence prompt when gameplay allows it.
 func refresh_recovery_prompt() -> void:
-	if _recovery_panel == null or _recovery_steps == null or _recovery_title == null or _recovery_hint == null:
+	if _recovery_layer == null:
 		return
 
-	if _run_state == null:
-		_recovery_panel.visible = false
-		_refresh_gameplay_ui_layer_state()
-		return
-
-	var should_show_recovery_prompt := (
-		_run_state.result == RunStateType.RESULT_IN_PROGRESS
-		and not pause_menu_open
-		and _run_state.has_active_recovery_sequence()
-	)
-	_recovery_panel.visible = should_show_recovery_prompt
-
-	if not should_show_recovery_prompt:
-		for child in _recovery_steps.get_children():
-			child.queue_free()
-		_refresh_gameplay_ui_layer_state()
-		return
-
-	for child in _recovery_steps.get_children():
-		child.queue_free()
-
-	_recovery_title.text = get_recovery_title(_run_state.active_failure)
-	_recovery_hint.text = get_recovery_hint(_run_state.active_failure)
-	_recovery_steps.custom_minimum_size.x = RECOVERY_STEP_ROW_MAX_WIDTH
-	_recovery_steps.add_theme_constant_override("separation", RECOVERY_STEP_SPACING)
-
-	for step_index in range(_run_state.recovery_sequence.size()):
-		_recovery_steps.add_child(build_recovery_step(step_index))
-
+	_recovery_layer.refresh_prompt(pause_menu_open)
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -388,7 +310,7 @@ func refresh_pause_menu() -> void:
 	if _pause_layer == null:
 		return
 
-	_pause_layer.refresh_pause_menu(pause_menu_open)
+	_pause_layer.refresh_menu(pause_menu_open)
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -397,7 +319,7 @@ func refresh_result_screen(best_run_summary: String) -> void:
 	if _result_layer == null:
 		return
 
-	_result_layer.refresh_result_screen(best_run_summary)
+	_result_layer.refresh_screen(best_run_summary)
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -462,15 +384,7 @@ func route_input(event: InputEvent, pause_action: StringName) -> UiInputResult:
 		return result
 
 	if pause_menu_open:
-		result.navigation_action = (
-			_pause_layer.get_click_action(event) if _pause_layer != null else PAUSE_MENU_ACTION_NONE
-		)
-		if result.navigation_action != PAUSE_MENU_ACTION_NONE:
-			result.consumed = true
-			return result
-		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-			result.consumed = true
-			return result
+		result.consumed = _pause_layer != null and _pause_layer.should_consume_event(event)
 		return result
 
 	if onboarding_active:
@@ -479,10 +393,10 @@ func route_input(event: InputEvent, pause_action: StringName) -> UiInputResult:
 			result.consumed = true
 		return result
 
-	if not _run_state.has_active_recovery_sequence():
+	if not _run_state.has_active_recovery_sequence() or _recovery_layer == null:
 		return result
 
-	result.recovery_action = _get_recovery_action(event)
+	result.recovery_action = _recovery_layer.get_input_action(event)
 	result.consumed = result.recovery_action != &""
 	return result
 
@@ -499,78 +413,46 @@ func show_bonus_callout(
 	anchor_world_position: Vector2,
 	canvas_transform: Transform2D
 ) -> void:
-	_bonus_callout_text = text
-	_bonus_callout_remaining = BONUS_CALLOUT_DURATION
-	_bonus_callout_anchor_world_position = anchor_world_position
-	refresh_bonus_callout(canvas_transform)
+	if _bonus_callout_layer == null:
+		return
+
+	_bonus_callout_layer.show_callout(text, anchor_world_position, canvas_transform)
+	_refresh_gameplay_ui_layer_state()
 
 
 ## Starts or refreshes the short-lived on-screen phase cue.
 func show_phase_callout(text: String) -> void:
-	_phase_callout_text = text
-	_phase_callout_remaining = PHASE_CALLOUT_DURATION
-	refresh_phase_callout()
+	if _phase_callout_layer == null:
+		return
+
+	_phase_callout_layer.show_callout(text)
+	_refresh_gameplay_ui_layer_state()
 
 
 ## Advances the transient bonus and phase callout timers for the current frame.
 func advance_callouts(delta: float, canvas_transform: Transform2D) -> void:
-	if _bonus_callout_remaining > 0.0:
-		_bonus_callout_remaining = max(0.0, _bonus_callout_remaining - max(0.0, delta))
-		if _bonus_callout_remaining == 0.0:
-			_bonus_callout_text = ""
-	refresh_bonus_callout(canvas_transform)
-
-	if _phase_callout_remaining > 0.0:
-		_phase_callout_remaining = max(0.0, _phase_callout_remaining - max(0.0, delta))
-		if _phase_callout_remaining == 0.0:
-			_phase_callout_text = ""
-	refresh_phase_callout()
-
-
-## Shows a short in-run score callout while a bonus announcement is active.
-func refresh_bonus_callout(canvas_transform: Transform2D) -> void:
-	if _bonus_callout_panel == null or _bonus_callout_label == null:
-		return
-
-	var should_show_callout := _bonus_callout_remaining > 0.0 and _bonus_callout_text != ""
-	_bonus_callout_panel.visible = should_show_callout
-	if not should_show_callout:
-		_bonus_callout_label.text = ""
-		_bonus_callout_panel.self_modulate = Color(1, 1, 1, 1)
-		_refresh_gameplay_ui_layer_state()
-		return
-
-	_bonus_callout_label.text = _bonus_callout_text
-	var progress_ratio: float = 1.0 - (_bonus_callout_remaining / BONUS_CALLOUT_DURATION)
-	var canvas_position: Vector2 = canvas_transform * _bonus_callout_anchor_world_position
-	var flyout_offset: Vector2 = BONUS_CALLOUT_START_OFFSET.lerp(BONUS_CALLOUT_END_OFFSET, progress_ratio)
-	var panel_size: Vector2 = _bonus_callout_panel.size
-	_bonus_callout_panel.position = canvas_position + flyout_offset - (panel_size * 0.5)
-	_bonus_callout_panel.self_modulate = Color(1, 1, 1, 1.0 - progress_ratio)
+	if _bonus_callout_layer != null:
+		_bonus_callout_layer.advance(delta, canvas_transform)
+	if _phase_callout_layer != null:
+		_phase_callout_layer.advance(delta)
 	_refresh_gameplay_ui_layer_state()
 
 
-## Shows a short route-phase cue while an authored phase transition is active.
+## Refreshes the current bonus callout without mutating caller-owned timer state.
+func refresh_bonus_callout(canvas_transform: Transform2D) -> void:
+	if _bonus_callout_layer == null:
+		return
+
+	_bonus_callout_layer.refresh_callout(canvas_transform)
+	_refresh_gameplay_ui_layer_state()
+
+
+## Refreshes the current phase callout without mutating caller-owned timer state.
 func refresh_phase_callout() -> void:
-	if _phase_callout_panel == null or _phase_callout_label == null:
+	if _phase_callout_layer == null:
 		return
 
-	var should_show_callout := (
-		_run_state != null
-		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
-		and _phase_callout_remaining > 0.0
-		and _phase_callout_text != ""
-	)
-	_phase_callout_panel.visible = should_show_callout
-	if not should_show_callout:
-		_phase_callout_label.text = ""
-		_phase_callout_panel.self_modulate = Color(1, 1, 1, 1)
-		_refresh_gameplay_ui_layer_state()
-		return
-
-	_phase_callout_label.text = _phase_callout_text
-	var progress_ratio: float = 1.0 - (_phase_callout_remaining / PHASE_CALLOUT_DURATION)
-	_phase_callout_panel.self_modulate = Color(1, 1, 1, 1.0 - (progress_ratio * 0.25))
+	_phase_callout_layer.refresh_callout()
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -582,10 +464,10 @@ func apply_editor_result_preview() -> void:
 	_result_layer.apply_editor_result_preview()
 	if _onboarding_panel != null:
 		_onboarding_panel.visible = false
-	if _recovery_panel != null:
-		_recovery_panel.visible = false
+	if _recovery_layer != null:
+		_recovery_layer.clear_prompt()
 	if _pause_layer != null:
-		_pause_layer.refresh_pause_menu(false)
+		_pause_layer.refresh_menu(false)
 	_refresh_gameplay_ui_layer_state()
 
 
@@ -598,7 +480,31 @@ func should_open_pause_from_touch() -> bool:
 func release_touch_steer_actions() -> void:
 	if _touch_layer == null:
 		return
+
 	_touch_layer.release_touch_steer_actions()
+
+
+## Returns the current recovery chip minimum size from the dedicated recovery layer.
+func get_recovery_step_minimum_size() -> Vector2:
+	return (
+		_recovery_layer.get_step_minimum_size()
+		if _recovery_layer != null
+		else Vector2(RecoveryLayerType.STEP_MAX_WIDTH, RecoveryLayerType.STEP_HEIGHT)
+	)
+
+
+## Returns the current recovery chip font size from the dedicated recovery layer.
+func get_recovery_step_font_size() -> int:
+	return (
+		_recovery_layer.get_step_font_size()
+		if _recovery_layer != null
+		else RecoveryLayerType.STEP_MIN_FONT_SIZE
+	)
+
+
+## Formats one recovery action using the dedicated recovery layer.
+func format_recovery_action(action_name: StringName) -> String:
+	return _recovery_layer.format_action(action_name) if _recovery_layer != null else String(action_name)
 
 
 ## Checks whether the current input event should dismiss the onboarding card.
@@ -616,92 +522,6 @@ func should_dismiss_onboarding(event: InputEvent) -> bool:
 
 	var mouse_event := event as InputEventMouseButton
 	return mouse_event != null and mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed
-
-
-## Returns the current recovery title for the active failure.
-func get_recovery_title(failure_type: StringName) -> String:
-	match failure_type:
-		&"wheel_loose":
-			return "Wheel Loose: Secure the Wagon"
-		&"horse_panic":
-			return "Horse Panic: Calm the Team"
-		_:
-			return "Recovery"
-
-
-## Returns the current recovery hint for the active failure.
-func get_recovery_hint(failure_type: StringName) -> String:
-	match failure_type:
-		&"wheel_loose":
-			return "Steering is compromised. Match the sequence to lock the wheel."
-		&"horse_panic":
-			return "The wagon is swerving. Complete the full left-right pattern."
-		_:
-			return "Follow the prompts left to right."
-
-
-## Returns the chip size that keeps the full recovery row inside a fixed width budget.
-func get_recovery_step_minimum_size() -> Vector2:
-	if _run_state == null:
-		return Vector2(RECOVERY_STEP_MAX_WIDTH, RECOVERY_STEP_HEIGHT)
-
-	var sequence_size: int = max(_run_state.recovery_sequence.size(), RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH)
-	var available_width: float = RECOVERY_STEP_ROW_MAX_WIDTH - ((sequence_size - 1) * RECOVERY_STEP_SPACING)
-	var step_width: float = clampf(
-		floor(available_width / float(sequence_size)),
-		RECOVERY_STEP_MIN_WIDTH,
-		RECOVERY_STEP_MAX_WIDTH
-	)
-	return Vector2(step_width, RECOVERY_STEP_HEIGHT)
-
-
-## Returns the prompt font size that matches the active recovery chip width.
-func get_recovery_step_font_size() -> int:
-	var step_width := get_recovery_step_minimum_size().x
-	return clampi(
-		int(floor(step_width * RECOVERY_STEP_FONT_SIZE_RATIO)),
-		RECOVERY_STEP_MIN_FONT_SIZE,
-		RECOVERY_STEP_MAX_FONT_SIZE
-	)
-
-
-## Builds one recovery-step chip using the current compactness rules for the active sequence.
-func build_recovery_step(index: int) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = get_recovery_step_minimum_size()
-	panel.modulate = get_recovery_step_color(index)
-
-	var label := Label.new()
-	label.text = format_recovery_action(_run_state.recovery_sequence[index])
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	label.add_theme_font_size_override("font_size", get_recovery_step_font_size())
-	if ARROW_FONT != null:
-		label.add_theme_font_override("font", ARROW_FONT)
-	panel.add_child(label)
-	return panel
-
-
-## Returns the authored color for one recovery-step chip based on current progress.
-func get_recovery_step_color(index: int) -> Color:
-	if index < _run_state.recovery_prompt_index:
-		return RECOVERY_STEP_DONE_COLOR
-	if index == _run_state.recovery_prompt_index:
-		return RECOVERY_STEP_ACTIVE_COLOR
-	return RECOVERY_STEP_PENDING_COLOR
-
-
-## Returns the arrow-font glyph for one recovery action.
-func format_recovery_action(action_name: StringName) -> String:
-	match action_name:
-		&"steer_left":
-			return char(0xE020)
-		&"steer_right":
-			return char(0xE022)
-		_:
-			return String(action_name).to_upper()
 
 
 # Private Methods
@@ -725,12 +545,12 @@ func _refresh_gameplay_ui_layer_state() -> void:
 	_set_gameplay_ui_wrapper_state(_hud_layer, true, Control.MOUSE_FILTER_IGNORE)
 	_set_gameplay_ui_wrapper_state(
 		_bonus_callout_layer,
-		_bonus_callout_panel != null and _bonus_callout_panel.visible,
+		_bonus_callout_layer != null and _bonus_callout_layer.is_callout_visible(),
 		Control.MOUSE_FILTER_IGNORE
 	)
 	_set_gameplay_ui_wrapper_state(
 		_phase_callout_layer,
-		_phase_callout_panel != null and _phase_callout_panel.visible,
+		_phase_callout_layer != null and _phase_callout_layer.is_callout_visible(),
 		Control.MOUSE_FILTER_IGNORE
 	)
 	_set_gameplay_ui_wrapper_state(
@@ -745,17 +565,17 @@ func _refresh_gameplay_ui_layer_state() -> void:
 	)
 	_set_gameplay_ui_wrapper_state(
 		_recovery_layer,
-		_recovery_panel != null and _recovery_panel.visible,
+		_recovery_layer != null and _recovery_layer.is_prompt_visible(),
 		Control.MOUSE_FILTER_IGNORE
 	)
 	_set_gameplay_ui_wrapper_state(
 		_pause_layer,
-		_pause_layer != null and _pause_layer.is_pause_menu_visible(),
+		_pause_layer != null and _pause_layer.is_menu_visible(),
 		Control.MOUSE_FILTER_STOP
 	)
 	_set_gameplay_ui_wrapper_state(
 		_result_layer,
-		_result_layer != null and _result_layer.is_result_screen_visible(),
+		_result_layer != null and _result_layer.is_screen_visible(),
 		Control.MOUSE_FILTER_STOP
 	)
 
@@ -773,17 +593,6 @@ func _set_gameplay_ui_wrapper_state(
 	layer.mouse_filter = mouse_filter if should_be_visible else Control.MOUSE_FILTER_IGNORE
 
 
-## Converts the latest input event into the expected recovery action name.
-func _get_recovery_action(event: InputEvent) -> StringName:
-	if event == null:
-		return &""
-	if event.is_action_pressed(TOUCH_LEFT_ACTION, false, true):
-		return TOUCH_LEFT_ACTION
-	if event.is_action_pressed(TOUCH_RIGHT_ACTION, false, true):
-		return TOUCH_RIGHT_ACTION
-	return &""
-
-
 # Inner Classes
 class UiInputResult:
 	extends RefCounted
@@ -793,5 +602,4 @@ class UiInputResult:
 	var consumed := false
 	var dismissed_onboarding := false
 	var pause_command: StringName = PAUSE_COMMAND_NONE
-	var navigation_action: StringName = PAUSE_MENU_ACTION_NONE
 	var recovery_action: StringName = &""

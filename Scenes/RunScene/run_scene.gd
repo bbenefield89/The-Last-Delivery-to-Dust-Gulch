@@ -17,10 +17,12 @@ const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
 const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_PATH)
 const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+const PhaseCalloutLayerType := preload(ProjectPaths.PHASE_CALLOUT_LAYER_SCRIPT_PATH)
 const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
-const TouchLayerType := preload(ProjectPaths.TOUCH_LAYER_SCRIPT_PATH)
 const PauseLayerType := preload(ProjectPaths.PAUSE_LAYER_SCRIPT_PATH)
+const RecoveryLayerType := preload(ProjectPaths.RECOVERY_LAYER_SCRIPT_PATH)
 const ResultLayerType := preload(ProjectPaths.RESULT_LAYER_SCRIPT_PATH)
+const TouchLayerType := preload(ProjectPaths.TOUCH_LAYER_SCRIPT_PATH)
 
 
 const BACKGROUND_MUSIC := preload(AssetPaths.RUN_BACKGROUND_MUSIC_AUDIO_PATH)
@@ -57,7 +59,7 @@ const HORSE_PANIC_AMBIENT_SOUND := preload(AssetPaths.HORSE_PANIC_AMBIENT_SOUND_
 const RECOVERY_STEP_SOUND := preload(AssetPaths.UI_CLICK_SOUND_PATH)
 const RECOVERY_SUCCESS_SOUND := preload(AssetPaths.RECOVERY_SUCCESS_SOUND_PATH)
 const RECOVERY_FAIL_SOUND := preload(AssetPaths.RECOVERY_FAIL_SOUND_PATH)
-const ARROW_FONT = preload(AssetPaths.ARROW_FONT_PATH)
+const ARROW_FONT := preload(AssetPaths.ARROW_FONT_PATH)
 const PAUSE_TOGGLE_SOUND := preload(AssetPaths.PAUSE_TOGGLE_SOUND_PATH)
 const WIN_STINGER := preload(AssetPaths.WIN_STINGER_SOUND_PATH)
 const COLLAPSE_STINGER := preload(AssetPaths.COLLAPSE_STINGER_SOUND_PATH)
@@ -110,7 +112,7 @@ const DISTANCE_BAR_BAND_BOUNDARIES := [
 ]
 const DISTANCE_BAR_MARKER_COLOR := Color(0.945098, 0.882353, 0.709804, 0.9)
 const DISTANCE_BAR_MARKER_HALF_WIDTH := 1.0
-const PHASE_CALLOUT_DURATION := 0.95
+const PHASE_CALLOUT_DURATION := PhaseCalloutLayerType.CALLOUT_DURATION
 const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN := RunDirectorType.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MIN
 const BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX := RunDirectorType.BAD_LUCK_INTERVAL_FIRST_TROUBLE_MAX
 const BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN := RunDirectorType.BAD_LUCK_INTERVAL_CROSSING_BEAT_MIN
@@ -132,28 +134,31 @@ const WHEEL_LOOSE_FAILURE_INSTABILITY_DURATION := RunDirectorType.WHEEL_LOOSE_FA
 const HORSE_PANIC_FAILURE_CARGO_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_CARGO_LOSS
 const HORSE_PANIC_FAILURE_SPEED_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_SPEED_LOSS
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FAILURE_INSTABILITY_DURATION
-const RECOVERY_STEP_ROW_MAX_WIDTH := GameplayUiLayerType.RECOVERY_STEP_ROW_MAX_WIDTH
-const RECOVERY_STEP_MIN_WIDTH := GameplayUiLayerType.RECOVERY_STEP_MIN_WIDTH
-const RECOVERY_STEP_HEIGHT := GameplayUiLayerType.RECOVERY_STEP_HEIGHT
-const RECOVERY_STEP_MAX_WIDTH := GameplayUiLayerType.RECOVERY_STEP_MAX_WIDTH
-const RECOVERY_STEP_FONT_SIZE_RATIO := GameplayUiLayerType.RECOVERY_STEP_FONT_SIZE_RATIO
-const RECOVERY_STEP_MIN_FONT_SIZE := GameplayUiLayerType.RECOVERY_STEP_MIN_FONT_SIZE
-const RECOVERY_STEP_MAX_FONT_SIZE := GameplayUiLayerType.RECOVERY_STEP_MAX_FONT_SIZE
-const RECOVERY_STEP_SPACING := GameplayUiLayerType.RECOVERY_STEP_SPACING
-const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := GameplayUiLayerType.RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH
+const RECOVERY_STEP_ROW_MAX_WIDTH := RecoveryLayerType.STEP_ROW_MAX_WIDTH
+const RECOVERY_STEP_MIN_WIDTH := RecoveryLayerType.STEP_MIN_WIDTH
+const RECOVERY_STEP_HEIGHT := RecoveryLayerType.STEP_HEIGHT
+const RECOVERY_STEP_MAX_WIDTH := RecoveryLayerType.STEP_MAX_WIDTH
+const RECOVERY_STEP_FONT_SIZE_RATIO := RecoveryLayerType.STEP_FONT_SIZE_RATIO
+const RECOVERY_STEP_MIN_FONT_SIZE := RecoveryLayerType.STEP_MIN_FONT_SIZE
+const RECOVERY_STEP_MAX_FONT_SIZE := RecoveryLayerType.STEP_MAX_FONT_SIZE
+const RECOVERY_STEP_SPACING := RecoveryLayerType.STEP_SPACING
+const RECOVERY_STEP_BASELINE_SEQUENCE_LENGTH := RecoveryLayerType.STEP_BASELINE_SEQUENCE_LENGTH
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
 const ROADSIDE_DECOR_SPACING := RunPresentationType.ROADSIDE_DECOR_SPACING
 const ROADSIDE_DECOR_COUNT := RunPresentationType.ROADSIDE_DECOR_COUNT
-const RECOVERY_STEP_PENDING_COLOR := GameplayUiLayerType.RECOVERY_STEP_PENDING_COLOR
-const RECOVERY_STEP_ACTIVE_COLOR := GameplayUiLayerType.RECOVERY_STEP_ACTIVE_COLOR
-const RECOVERY_STEP_DONE_COLOR := GameplayUiLayerType.RECOVERY_STEP_DONE_COLOR
+const RECOVERY_STEP_PENDING_COLOR := RecoveryLayerType.STEP_PENDING_COLOR
+const RECOVERY_STEP_ACTIVE_COLOR := RecoveryLayerType.STEP_ACTIVE_COLOR
+const RECOVERY_STEP_DONE_COLOR := RecoveryLayerType.STEP_DONE_COLOR
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
 const DUST_BASE_AMOUNT_RATIO := RunPresentationType.DUST_BASE_AMOUNT_RATIO
-const ONBOARDING_TITLE := GameplayUiLayerType.ONBOARDING_TITLE
-const ONBOARDING_BODY := GameplayUiLayerType.ONBOARDING_BODY
-const ONBOARDING_HINT := GameplayUiLayerType.ONBOARDING_HINT
+const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
+const ONBOARDING_BODY := (
+	"Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, "
+	+ "and hold the wagon together until you reach Dust Gulch."
+)
+const ONBOARDING_HINT := "Press Left, Right, Enter, or click to begin the run."
 const WAGON_LOOP_START_SECONDS := 5.0
 const WAGON_LOOP_END_SECONDS := 10.0
 
@@ -365,19 +370,25 @@ func _ready() -> void:
 	_run_ui_presenter.refresh_phase_callout()
 	_configure_dust_trail()
 	_configure_audio_players()
+
 	if _touch_layer != null and not _touch_layer.pause_requested.is_connected(_on_touch_pause_button_pressed):
 		_touch_layer.pause_requested.connect(_on_touch_pause_button_pressed)
+
 	if _pause_layer != null and not _pause_layer.resume_requested.is_connected(_on_pause_resume_pressed):
 		_pause_layer.resume_requested.connect(_on_pause_resume_pressed)
+
 	if _pause_layer != null and not _pause_layer.restart_requested.is_connected(_on_pause_restart_pressed):
 		_pause_layer.restart_requested.connect(_on_pause_restart_pressed)
+
 	if (
 		_pause_layer != null
 		and not _pause_layer.return_to_title_requested.is_connected(_on_pause_return_to_title_pressed)
 	):
 		_pause_layer.return_to_title_requested.connect(_on_pause_return_to_title_pressed)
+
 	if _result_layer != null and not _result_layer.restart_requested.is_connected(_on_result_restart_pressed):
 		_result_layer.restart_requested.connect(_on_result_restart_pressed)
+
 	if (
 		_result_layer != null
 		and not _result_layer.return_to_title_requested.is_connected(_on_result_return_to_title_pressed)
@@ -684,19 +695,6 @@ func _input(event: InputEvent) -> void:
 		_set_pause_state(false)
 		return
 
-	match ui_input_result.navigation_action:
-		GameplayUiLayerType.PAUSE_MENU_ACTION_RESUME:
-			_on_pause_resume_pressed()
-			return
-		GameplayUiLayerType.PAUSE_MENU_ACTION_RESTART:
-			_on_pause_restart_pressed()
-			return
-		GameplayUiLayerType.PAUSE_MENU_ACTION_RETURN_TO_TITLE:
-			_on_pause_return_to_title_pressed()
-			return
-		_:
-			pass
-
 	if ui_input_result.dismissed_onboarding:
 		_run_ui_presenter.dismiss_onboarding()
 		if _run_director.route_phase_callout_zone == ROUTE_PHASE_WARM_UP:
@@ -1001,7 +999,7 @@ func _set_pause_state(paused: bool) -> void:
 		return
 	_run_audio_presenter.play_pause_toggle()
 	if _run_ui_presenter.pause_menu_open and not was_paused and _pause_layer != null:
-		_pause_layer.focus_default_pause_button()
+		_pause_layer.focus_default_button()
 
 
 ## Resumes gameplay after playing the pause-menu click cue.

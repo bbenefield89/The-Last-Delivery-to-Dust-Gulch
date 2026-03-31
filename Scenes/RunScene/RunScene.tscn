@@ -7,6 +7,9 @@
 [ext_resource type="Script" path="res://Scenes/RunScene/touch_layer.gd" id="5_wx8pf"]
 [ext_resource type="Script" path="res://Scenes/RunScene/pause_layer.gd" id="6_8yhlp"]
 [ext_resource type="Script" path="res://Scenes/RunScene/result_layer.gd" id="7_4cce2"]
+[ext_resource type="Script" path="res://Scenes/RunScene/bonus_callout_layer.gd" id="8_we3p6"]
+[ext_resource type="Script" path="res://Scenes/RunScene/phase_callout_layer.gd" id="8_ythi7"]
+[ext_resource type="Script" path="res://Scenes/RunScene/recovery_layer.gd" id="8_ufs4n"]
 [ext_resource type="Texture2D" uid="uid://bm35sy7bc1e45" path="res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png" id="9_k3x0m"]
 [ext_resource type="Texture2D" uid="uid://d0fxmc8h746io" path="res://Assets/Tilesets/Horse/Horse-16x48-Sheet.png" id="10_lu4m1"]
 [ext_resource type="Texture2D" uid="uid://dryxakr4r1w65" path="res://Assets/Tilesets/Desert/Desert-3-32x32.png" id="11_hmcd6"]
@@ -414,6 +417,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("8_we3p6")
 
 [node name="BonusCalloutPanel" type="Control" parent="GameplayUiLayer/BonusCalloutLayer" unique_id=1162117734]
 unique_name_in_owner = true
@@ -447,6 +451,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("8_ythi7")
 
 [node name="PhaseCalloutPanel" type="PanelContainer" parent="GameplayUiLayer/PhaseCalloutLayer" unique_id=1557692818]
 unique_name_in_owner = true
@@ -595,6 +600,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("8_ufs4n")
 
 [node name="RecoveryMargin" type="MarginContainer" parent="GameplayUiLayer/RecoveryLayer" unique_id=1410858914]
 anchors_preset = 5

@@ -21,7 +21,6 @@ const TOUCH_BUTTON_HOVER_COLOR := Color(0.780392, 0.623529, 0.317647, 0.98)
 const TOUCH_BUTTON_PRESSED_COLOR := Color(0.419608, 0.54902, 0.290196, 0.95)
 const TOUCH_BUTTON_BORDER_COLOR := Color(0.745098, 0.592157, 0.305882, 0.95)
 const TOUCH_BUTTON_CORNER_RADIUS := 8
-const TOUCH_PAUSE_FONT_SIZE := 52
 
 
 # Public Fields
@@ -57,12 +56,16 @@ func _ready() -> void:
 
 	if _touch_left_button != null and not _touch_left_button.button_down.is_connected(_on_touch_left_button_down):
 		_touch_left_button.button_down.connect(_on_touch_left_button_down)
+
 	if _touch_left_button != null and not _touch_left_button.button_up.is_connected(_on_touch_left_button_up):
 		_touch_left_button.button_up.connect(_on_touch_left_button_up)
+
 	if _touch_right_button != null and not _touch_right_button.button_down.is_connected(_on_touch_right_button_down):
 		_touch_right_button.button_down.connect(_on_touch_right_button_down)
+
 	if _touch_right_button != null and not _touch_right_button.button_up.is_connected(_on_touch_right_button_up):
 		_touch_right_button.button_up.connect(_on_touch_right_button_up)
+
 	if _touch_pause_button != null and not _touch_pause_button.pressed.is_connected(_on_touch_pause_button_pressed):
 		_touch_pause_button.pressed.connect(_on_touch_pause_button_pressed)
 
@@ -230,7 +233,6 @@ func _configure_touch_buttons() -> void:
 	if _touch_pause_button != null:
 		_touch_pause_button.text = char(0xE061)
 		_touch_pause_button.add_theme_font_override("font", ARROW_FONT)
-		_touch_pause_button.add_theme_font_size_override("font_size", TOUCH_PAUSE_FONT_SIZE)
 		_touch_pause_button.add_theme_stylebox_override("normal", _make_touch_button_stylebox())
 		_touch_pause_button.add_theme_stylebox_override(
 			"hover",

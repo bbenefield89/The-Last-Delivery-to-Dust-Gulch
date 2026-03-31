@@ -11,7 +11,9 @@ const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
 const ResultPanelUiType := preload(ProjectPaths.RESULT_PANEL_UI_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
+const PhaseCalloutLayerType := preload(ProjectPaths.PHASE_CALLOUT_LAYER_SCRIPT_PATH)
 const PauseLayerType := preload(ProjectPaths.PAUSE_LAYER_SCRIPT_PATH)
+const RecoveryLayerType := preload(ProjectPaths.RECOVERY_LAYER_SCRIPT_PATH)
 const ResultLayerType := preload(ProjectPaths.RESULT_LAYER_SCRIPT_PATH)
 const TouchLayerType := preload(ProjectPaths.TOUCH_LAYER_SCRIPT_PATH)
 const RunUiPresenterType := GameplayUiLayerType
@@ -112,6 +114,16 @@ func _get_touch_layer(scene: Node) -> TouchLayerType:
 ## Returns the node-backed pause owner attached to the gameplay UI layer.
 func _get_pause_layer(scene: Node) -> PauseLayerType:
 	return scene.get_node("%PauseLayer") as PauseLayerType
+
+
+## Returns the node-backed phase-callout owner attached to the gameplay UI layer.
+func _get_phase_callout_layer(scene: Node) -> PhaseCalloutLayerType:
+	return scene.get_node("GameplayUiLayer/PhaseCalloutLayer") as PhaseCalloutLayerType
+
+
+## Returns the node-backed recovery owner attached to the gameplay UI layer.
+func _get_recovery_layer(scene: Node) -> RecoveryLayerType:
+	return scene.get_node("GameplayUiLayer/RecoveryLayer") as RecoveryLayerType
 
 
 ## Returns the node-backed result owner attached to the gameplay UI layer.
@@ -785,9 +797,9 @@ func test_pause_menu_when_opened_with_escape_then_resume_button_has_default_focu
 	assert_true(resume_button.has_focus())
 
 
-## Verifies the UI presenter owns pause-menu click routing once the modal is open.
+## Verifies the gameplay UI layer swallows pause-menu clicks once the modal is open.
 
-func test_ui_presenter_when_pause_resume_button_is_clicked_then_route_input_returns_resume_action() -> void:
+func test_ui_presenter_when_pause_resume_button_is_clicked_then_route_input_consumes_the_click() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
@@ -805,7 +817,6 @@ func test_ui_presenter_when_pause_resume_button_is_clicked_then_route_input_retu
 	var ui_input_result := _get_run_ui_presenter(scene).route_input(click_event, scene.PAUSE_ACTION)
 
 	assert_true(ui_input_result.consumed)
-	assert_eq(ui_input_result.navigation_action, RunUiPresenterType.PAUSE_MENU_ACTION_RESUME)
 
 
 ## Verifies pause-menu keyboard navigation and confirm activate the expected action.
@@ -866,6 +877,89 @@ func test_pause_menu_when_open_then_escape_closes_it() -> void:
 	assert_false(_get_run_ui_presenter(scene).pause_menu_open)
 	assert_false(pause_overlay.visible)
 	assert_false(pause_panel.visible)
+
+
+## Verifies the pause layer itself decides which pointer events the modal should swallow.
+func test_pause_layer_when_pointer_input_arrives_then_should_consume_event_matches_modal_event_types() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var pause_layer := _get_pause_layer(scene)
+	var left_click := InputEventMouseButton.new()
+	left_click.button_index = MOUSE_BUTTON_LEFT
+	left_click.pressed = true
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	var touch_event := InputEventScreenTouch.new()
+	touch_event.pressed = true
+	var drag_event := InputEventScreenDrag.new()
+
+	assert_true(pause_layer.should_consume_event(left_click))
+	assert_false(pause_layer.should_consume_event(right_click))
+	assert_true(pause_layer.should_consume_event(touch_event))
+	assert_true(pause_layer.should_consume_event(drag_event))
+
+
+## Verifies the recovery layer owns recovery prompt visibility, copy, and chip rendering.
+func test_recovery_layer_when_sequence_is_active_then_refresh_prompt_uses_layer_owned_state() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.start_failure(&"wheel_loose", &"rock")
+	_setup_active_run(scene, state)
+	_start_seeded_recovery_sequence(scene, state, 10)
+
+	var recovery_layer := _get_recovery_layer(scene)
+	var recovery_title: Label = scene.get_node("%RecoveryTitle")
+	var recovery_hint: Label = scene.get_node("%RecoveryHint")
+	var recovery_steps: HBoxContainer = scene.get_node("%RecoverySteps")
+	recovery_layer.refresh_prompt(false)
+
+	assert_true(recovery_layer.is_prompt_visible())
+	assert_eq(recovery_title.text, recovery_layer.get_title(state.active_failure))
+	assert_eq(recovery_hint.text, recovery_layer.get_hint(state.active_failure))
+	assert_eq(recovery_steps.get_child_count(), state.recovery_sequence.size())
+
+
+## Verifies the phase callout layer owns its own timer-driven visibility.
+func test_phase_callout_layer_when_shown_and_advanced_then_visibility_tracks_layer_state() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	_dismiss_onboarding(scene)
+
+	var phase_layer := _get_phase_callout_layer(scene)
+	phase_layer.show_callout("First Trouble")
+	assert_true(phase_layer.is_callout_visible())
+
+	phase_layer.advance(PhaseCalloutLayerType.CALLOUT_DURATION)
+
+	assert_false(phase_layer.is_callout_visible())
+
+
+## Verifies the result layer owns completed-run visibility and default focus assignment.
+func test_result_layer_when_run_is_complete_then_refresh_screen_tracks_visibility_and_focus() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	scene.setup(state)
+	state.result = RunStateType.RESULT_SUCCESS
+
+	var result_layer := _get_result_layer(scene)
+	var restart_button: Button = scene.get_node("%ResultRestartButton")
+	result_layer.refresh_screen(scene._build_best_run_summary())
+
+	assert_true(result_layer.is_screen_visible())
+	assert_true(restart_button.has_focus())
 
 
 ## Verifies process moves right and reduces distance.
