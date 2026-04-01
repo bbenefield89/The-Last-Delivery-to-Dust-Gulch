@@ -12,6 +12,7 @@ signal return_to_title_requested
 # Constants
 const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
 const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
+const RoadsideSceneryType := preload(ProjectPaths.ROADSIDE_SCENERY_SCRIPT_PATH)
 const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_PATH)
 const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
 const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_PATH)
@@ -134,8 +135,6 @@ const HORSE_PANIC_FAILURE_CARGO_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_CARG
 const HORSE_PANIC_FAILURE_SPEED_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_SPEED_LOSS
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FAILURE_INSTABILITY_DURATION
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
-const ROADSIDE_DECOR_SPACING := RunPresentationType.ROADSIDE_DECOR_SPACING
-const ROADSIDE_DECOR_COUNT := RunPresentationType.ROADSIDE_DECOR_COUNT
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
@@ -175,6 +174,9 @@ var _camera: Camera2D = %Camera
 
 @onready
 var _hazard_spawner: HazardSpawnerType = %HazardSpawner
+
+@onready
+var _roadside_scenery: RoadsideSceneryType = %RoadsideScenery
 
 @onready
 var _scroll_root: Node2D = %ScrollRoot
@@ -325,9 +327,7 @@ func _ready() -> void:
 		_wagon_sprite,
 		_horse_left_sprite,
 		_horse_right_sprite,
-		_dust_trail,
-		SHRUB_TEXTURES,
-		SIGN_TEXTURE
+		_dust_trail
 	)
 	_run_audio_presenter.configure_scene_nodes(
 		_run_state,
@@ -349,7 +349,7 @@ func _ready() -> void:
 		_ui_click_player
 	)
 	_configure_environment_art()
-	_ensure_scroll_visuals()
+	_configure_roadside_scenery()
 	_configure_vehicle_sprites()
 	_configure_wagon_collision_areas()
 	_configure_hazard_cleanup_areas()
@@ -459,6 +459,8 @@ func _configure_hazard_cleanup_areas() -> void:
 		cleanup_areas.append(cleanup_area)
 
 	_hazard_spawner.bind_hazard_cleanup_areas(cleanup_areas)
+	if _roadside_scenery != null:
+		_roadside_scenery.bind_cleanup_areas(cleanup_areas)
 
 
 ## Builds the animated carriage frame set from the exported sheet texture.
@@ -508,6 +510,14 @@ func _configure_environment_art() -> void:
 	if _road != null:
 		_road.visible = true
 	_run_presentation.configure_environment_art(DESERT_TEXTURE, ROAD_TEXTURE)
+
+
+## Applies the authored roadside art to the dedicated roadside scenery owner.
+func _configure_roadside_scenery() -> void:
+	if _roadside_scenery == null:
+		return
+
+	_roadside_scenery.configure_scenery_art(SHRUB_TEXTURES, SIGN_TEXTURE)
 
 
 ## Rebuilds the distance bar markers from the authored route-band thresholds.
@@ -574,6 +584,7 @@ func _process(delta: float) -> void:
 	if _run_ui_presenter.is_onboarding_active:
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		_run_presentation.advance_scroll(_run_state.current_speed, delta)
+		_advance_roadside_scenery(_run_state.current_speed * delta)
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
 		_update_scroll_visuals()
@@ -614,6 +625,7 @@ func _process(delta: float) -> void:
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
 	_run_presentation.advance_scroll(_run_state.current_speed, delta)
+	_advance_roadside_scenery(_run_state.current_speed * delta)
 	_sync_route_phase()
 	_hazard_spawner.advance(
 		_run_state.current_speed * delta,
@@ -795,14 +807,17 @@ func _on_tumbleweed_impact_timeout(serial: int) -> void:
 	_run_audio_presenter.on_tumbleweed_impact_timeout(serial)
 
 
-## Ensures the looping roadside segments are populated through the presentation owner.
-func _ensure_scroll_visuals() -> void:
-	_run_presentation.ensure_scroll_visuals()
-
-
 ## Updates the looping world segments and tiled environment scroll windows.
 func _update_scroll_visuals() -> void:
 	_run_presentation.update_scroll_visuals()
+
+
+## Advances the dedicated roadside scenery owner using traveled distance.
+func _advance_roadside_scenery(distance_delta: float) -> void:
+	if _roadside_scenery == null:
+		return
+
+	_roadside_scenery.advance(distance_delta)
 
 
 ## Applies the authored dust particle configuration through the presentation owner.

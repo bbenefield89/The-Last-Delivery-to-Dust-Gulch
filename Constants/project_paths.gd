@@ -18,6 +18,7 @@ const HAZARD_SPAWNER_SCRIPT_PATH := "res://Systems/HazardSpawner/hazard_spawner.
 const LIVESTOCK_HAZARD_DEFINITION_RESOURCE_PATH := "res://Systems/HazardSpawner/Definitions/livestock_hazard_definition.tres"
 const POTHOLE_HAZARD_DEFINITION_RESOURCE_PATH := "res://Systems/HazardSpawner/Definitions/pothole_hazard_definition.tres"
 const RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH := "res://Systems/RecoverySequenceGenerator/recovery_sequence_generator.gd"
+const ROADSIDE_SCENERY_SCRIPT_PATH := "res://Systems/RoadsideScenery/roadside_scenery.gd"
 const ROCK_HAZARD_DEFINITION_RESOURCE_PATH := "res://Systems/HazardSpawner/Definitions/rock_hazard_definition.tres"
 const RESULT_PANEL_UI_SCRIPT_PATH := "res://UI/ResultPanel/result_panel_ui.gd"
 const RESULT_STAT_ROW_SCENE_PATH := "res://UI/ResultPanel/ResultStatRow.tscn"

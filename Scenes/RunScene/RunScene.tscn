@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://cdm6b62edidaa" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
 [ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Systems/HazardSpawner/hazard_spawner.gd" id="2_ok7u7"]
+[ext_resource type="Script" path="res://Systems/RoadsideScenery/roadside_scenery.gd" id="3_road"]
 [ext_resource type="Script" uid="uid://mraylpyhw2iy" path="res://UI/ResultPanel/result_panel_ui.gd" id="3_2a2m5"]
 [ext_resource type="Script" path="res://Scenes/RunScene/gameplay_ui_layer.gd" id="4_ui0er"]
 [ext_resource type="Script" path="res://Scenes/RunScene/touch_layer.gd" id="5_wx8pf"]
@@ -213,6 +214,11 @@ position = Vector2(0, -960)
 unique_name_in_owner = true
 position = Vector2(320, 300)
 script = ExtResource("2_ok7u7")
+
+[node name="RoadsideScenery" type="Node2D" parent="World" unique_id=234043960]
+unique_name_in_owner = true
+position = Vector2(320, 300)
+script = ExtResource("3_road")
 
 [node name="Wagon" type="Node2D" parent="World" unique_id=688295343]
 unique_name_in_owner = true
