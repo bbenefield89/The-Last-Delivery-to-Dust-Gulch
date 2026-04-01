@@ -3,10 +3,18 @@
 [ext_resource type="Script" uid="uid://cdm6b62edidaa" path="res://Scenes/RunScene/run_scene.gd" id="1_4n0rj"]
 [ext_resource type="Script" uid="uid://ueprlqvd6lfl" path="res://Systems/HazardSpawner/hazard_spawner.gd" id="2_ok7u7"]
 [ext_resource type="Script" uid="uid://mraylpyhw2iy" path="res://UI/ResultPanel/result_panel_ui.gd" id="3_2a2m5"]
+[ext_resource type="Script" path="res://Scenes/RunScene/gameplay_ui_layer.gd" id="4_ui0er"]
+[ext_resource type="Script" path="res://Scenes/RunScene/touch_layer.gd" id="5_wx8pf"]
+[ext_resource type="Script" path="res://Scenes/RunScene/pause_layer.gd" id="6_8yhlp"]
+[ext_resource type="Script" path="res://Scenes/RunScene/result_layer.gd" id="7_4cce2"]
+[ext_resource type="Script" path="res://Scenes/RunScene/bonus_callout_layer.gd" id="8_we3p6"]
+[ext_resource type="Script" path="res://Scenes/RunScene/phase_callout_layer.gd" id="8_ythi7"]
+[ext_resource type="Script" path="res://Scenes/RunScene/recovery_layer.gd" id="8_ufs4n"]
 [ext_resource type="Texture2D" uid="uid://bm35sy7bc1e45" path="res://Assets/Tilesets/Carriage/Carriage-32x64-Sheet.png" id="9_k3x0m"]
 [ext_resource type="Texture2D" uid="uid://d0fxmc8h746io" path="res://Assets/Tilesets/Horse/Horse-16x48-Sheet.png" id="10_lu4m1"]
 [ext_resource type="Texture2D" uid="uid://dryxakr4r1w65" path="res://Assets/Tilesets/Desert/Desert-3-32x32.png" id="11_hmcd6"]
 [ext_resource type="Texture2D" uid="uid://bxq3csyxi8ss8" path="res://Assets/Tilesets/Road/Road-4-tiled-32x32.png" id="12_2d3al"]
+[ext_resource type="FontFile" path="res://Assets/Fonts/kenney_input_keyboard_mouse.ttf" id="13_tq1cn"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wagon_collision"]
 size = Vector2(30, 79)
@@ -133,6 +141,42 @@ corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 shadow_color = Color(0, 0, 0, 0.34)
 shadow_size = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_touch_button_normal"]
+bg_color = Color(0.25098, 0.203922, 0.145098, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.745098, 0.592157, 0.305882, 0.95)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_touch_button_hover"]
+bg_color = Color(0.780392, 0.623529, 0.317647, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.745098, 0.592157, 0.305882, 0.95)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_touch_button_pressed"]
+bg_color = Color(0.419608, 0.54902, 0.290196, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.745098, 0.592157, 0.305882, 0.95)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [node name="RunScene" type="Node2D" unique_id=825063901]
 script = ExtResource("1_4n0rj")
@@ -294,6 +338,7 @@ unique_name_in_owner = true
 
 [node name="GameplayUiLayer" type="CanvasLayer" parent="."]
 unique_name_in_owner = true
+script = ExtResource("4_ui0er")
 layer = 0
 
 [node name="HUDLayer" type="Control" parent="GameplayUiLayer"]
@@ -341,6 +386,7 @@ theme_override_constants/margin_top = 5
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 10)
 layout_mode = 2
+max_value = 100.0
 theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
 theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
 value = 100.0
@@ -380,6 +426,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+max_value = 100.0
 theme_override_styles/background = SubResource("StyleBoxFlat_recovery_panel")
 theme_override_styles/fill = SubResource("StyleBoxFlat_distance_fill")
 show_percentage = false
@@ -407,6 +454,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("8_we3p6")
 
 [node name="BonusCalloutPanel" type="Control" parent="GameplayUiLayer/BonusCalloutLayer" unique_id=1162117734]
 unique_name_in_owner = true
@@ -440,6 +488,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("8_ythi7")
 
 [node name="PhaseCalloutPanel" type="PanelContainer" parent="GameplayUiLayer/PhaseCalloutLayer" unique_id=1557692818]
 unique_name_in_owner = true
@@ -481,6 +530,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("5_wx8pf")
 
 [node name="TouchLeft" type="Button" parent="GameplayUiLayer/TouchLayer" unique_id=1367813085]
 unique_name_in_owner = true
@@ -491,8 +541,12 @@ offset_right = 136.0
 offset_bottom = 344.0
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
+theme_override_fonts/font = ExtResource("13_tq1cn")
 theme_override_font_sizes/font_size = 52
-text = "←"
+theme_override_styles/normal = SubResource("StyleBoxFlat_touch_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_touch_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_touch_button_pressed")
+text = ""
 
 [node name="TouchRight" type="Button" parent="GameplayUiLayer/TouchLayer" unique_id=840373950]
 unique_name_in_owner = true
@@ -504,8 +558,12 @@ offset_bottom = 344.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
+theme_override_fonts/font = ExtResource("13_tq1cn")
 theme_override_font_sizes/font_size = 52
-text = "→"
+theme_override_styles/normal = SubResource("StyleBoxFlat_touch_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_touch_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_touch_button_pressed")
+text = ""
 
 [node name="TouchPause" type="Button" parent="GameplayUiLayer/TouchLayer" unique_id=1122407603]
 unique_name_in_owner = true
@@ -516,8 +574,13 @@ offset_right = 624.0
 offset_bottom = 88.0
 grow_horizontal = 2
 theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 0.95)
+theme_override_fonts/font = ExtResource("13_tq1cn")
 theme_override_font_sizes/font_size = 52
-text = "II"
+theme_override_styles/normal = SubResource("StyleBoxFlat_touch_button_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_touch_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_touch_button_pressed")
+text = ""
+rotation = 1.5708
 
 [node name="OnboardingLayer" type="Control" parent="GameplayUiLayer"]
 layout_mode = 1
@@ -587,6 +650,18 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("8_ufs4n")
+_step_font = ExtResource("13_tq1cn")
+_step_min_width = 36.0
+_step_height = 60.0
+_step_max_width = 72.0
+_step_font_size_ratio = 0.52
+_step_min_font_size = 24
+_step_max_font_size = 38
+_step_baseline_sequence_length = 3
+_pending_step_color = Color(0.25098, 0.203922, 0.145098, 0.92)
+_active_step_color = Color(0.780392, 0.623529, 0.317647, 0.98)
+_completed_step_color = Color(0.419608, 0.54902, 0.290196, 0.95)
 
 [node name="RecoveryMargin" type="MarginContainer" parent="GameplayUiLayer/RecoveryLayer" unique_id=1410858914]
 anchors_preset = 5
@@ -634,17 +709,20 @@ autowrap_mode = 2
 
 [node name="RecoverySteps" type="HBoxContainer" parent="GameplayUiLayer/RecoveryLayer/RecoveryMargin/RecoveryPanel/RecoveryPadding/RecoveryVBox" unique_id=708124048]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 4
 alignment = 1
 
 [node name="PauseLayer" type="Control" parent="GameplayUiLayer"]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("6_8yhlp")
 
 [node name="PauseOverlay" type="Control" parent="GameplayUiLayer/PauseLayer" unique_id=357867026]
 unique_name_in_owner = true
@@ -729,12 +807,14 @@ theme_override_colors/font_color = Color(0.980392, 0.929412, 0.803922, 1)
 text = "Title"
 
 [node name="ResultLayer" type="Control" parent="GameplayUiLayer"]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("7_4cce2")
 
 [node name="ResultMargin" type="MarginContainer" parent="GameplayUiLayer/ResultLayer" unique_id=370495141]
 anchors_preset = 8

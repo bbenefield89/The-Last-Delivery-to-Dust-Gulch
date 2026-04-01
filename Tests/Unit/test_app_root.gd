@@ -155,9 +155,10 @@ func test_app_root_when_keyboard_only_loop_reaches_result_then_restart_starts_ne
 	var original_run_state = app_root.run_state
 	var original_run_scene = app_root._run_scene
 	var result_click_player: AudioStreamPlayer = app_root._run_scene.get_node("%UIClickPlayer")
+	var gameplay_ui_layer: CanvasLayer = app_root._run_scene.get_node("%GameplayUiLayer")
 	result_click_player.stream = null
 	app_root.run_state.result = &"success"
-	app_root._run_scene._refresh_result_screen()
+	gameplay_ui_layer.refresh_result_screen(app_root._run_scene._build_best_run_summary())
 	await wait_process_frames(1)
 
 	var restart_button: Button = app_root._run_scene.get_node(
@@ -187,9 +188,10 @@ func test_app_root_when_keyboard_only_loop_reaches_result_then_return_goes_back_
 	await wait_process_frames(1)
 
 	var result_click_player: AudioStreamPlayer = app_root._run_scene.get_node("%UIClickPlayer")
+	var gameplay_ui_layer: CanvasLayer = app_root._run_scene.get_node("%GameplayUiLayer")
 	result_click_player.stream = null
 	app_root.run_state.result = &"success"
-	app_root._run_scene._refresh_result_screen()
+	gameplay_ui_layer.refresh_result_screen(app_root._run_scene._build_best_run_summary())
 	await wait_process_frames(1)
 	await _send_key_input(KEY_RIGHT)
 	await _send_key_input(KEY_ENTER)

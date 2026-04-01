@@ -20,9 +20,7 @@
 		{
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
-			"tasks": [
-				"f33330b5-2e0e-4288-a20b-f14ffed81ce3"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
@@ -33,6 +31,7 @@
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"f33330b5-2e0e-4288-a20b-f14ffed81ce3",
 				"313e5d7e-e509-49a5-b3d0-850b7af8d5a6",
 				"0c47c4ef-e0ff-4edd-9bd8-cffff12e913c",
 				"7184bf85-2a59-4d0a-8cd8-9f4366ca8273",
@@ -945,15 +944,15 @@
 			"steps": [
 				{
 					"details": "Move gameplay UI wrapper ordering and state, mouse-filter policy, bonus and phase callout presentation, and touch-button styling and theming out of run_scene.gd into explicit UI-owner code under Systems/. Keep the current visual order, timing, and touch-button appearance. Fold very thorough automated coverage for wrapper state and callout visibility into this step.\n\nDone when: the gameplay UI subtree still layers and behaves the same in play, but wrapper-state and callout presentation logic no longer live directly in run_scene.gd.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Move UI interaction routing for onboarding dismissal, pause-menu click handling and focus flow, touch-button action injection, and recovery-input interpretation behind explicit UI-owner APIs or signals so RunScene does not inspect raw UI controls to decide most UI behavior. Keep the current controls and modal behavior unchanged. Fold very thorough automated coverage for desktop and touch-capable UI interaction paths into this step.\n\nDone when: the same onboarding, pause, touch, and recovery interactions still work, but their UI-specific routing is owned by Systems code instead of direct scene-script branching.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Remove leftover RunScene UI pass-throughs, duplicated UI constants and helpers, and legacy compatibility shims that are no longer needed after the extraction, then update tests to target the final ownership boundaries cleanly. Preserve the current scene entry points and high-level gameplay coordination responsibilities in RunScene. Fold very thorough verification for the final ownership split into this step.\n\nDone when: run_scene.gd mainly wires scene composition, run-state updates, and high-level signals between systems, and the extracted UI behavior is covered by automated tests without relying on the old scene-owned shims.",
-					"done": false
+					"done": true
 				}
 			]
 		},
