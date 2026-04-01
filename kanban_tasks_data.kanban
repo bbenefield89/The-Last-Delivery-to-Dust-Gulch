@@ -20,7 +20,10 @@
 		{
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
-			"tasks": []
+			"tasks": [
+				"3dbe3258-ef5c-496e-a8e8-bcbfd4961ecd",
+				"8d511f83-6d5a-4112-a465-7191eb29d32f"
+			]
 		},
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
@@ -953,6 +956,46 @@
 				{
 					"details": "Remove leftover RunScene UI pass-throughs, duplicated UI constants and helpers, and legacy compatibility shims that are no longer needed after the extraction, then update tests to target the final ownership boundaries cleanly. Preserve the current scene entry points and high-level gameplay coordination responsibilities in RunScene. Fold very thorough verification for the final ownership split into this step.\n\nDone when: run_scene.gd mainly wires scene composition, run-state updates, and high-level signals between systems, and the extracted UI behavior is covered by automated tests without relying on the old scene-owned shims.",
 					"done": true
+				}
+			]
+		},
+		{
+			"uuid": "3dbe3258-ef5c-496e-a8e8-bcbfd4961ecd",
+			"title": "DG-46",
+			"description": "Task: Replace the repeating roadside segment dressing with a controlled roadside scenery system.\n\nThe current roadside presentation has two problems: it can visibly pop when decorated loop segments recycle, and the authored roadside dressing feels too repetitive across runs. Replace the scrub-and-sign segment reuse with a dedicated RoadsideScenery-style owner that manages roadside item placement as individual spawned scenery instead of relying on two decorated looping segments.\n\nThe system should spawn roadside scenery just above the visible play area using scroll-distance-driven spacing, not wall-clock timing, so density stays stable as run speed changes. Use controlled RNG for scrub and related roadside dressing so repeated runs feel less predictable, while keeping the road center readable and preserving the Dust Gulch roadside sign as a recognizable roadside element under explicit spawn rules or cooldowns rather than pure spam. Scenery should cleanly leave the scene through the existing bottom cleanup flow instead of being visibly recycled in place.\n\nLikely affected files:\n- Systems/RoadsideScenery/* or a similar new roadside owner under Systems/\n- Systems/RunPresentation/run_presentation.gd\n- Scenes/RunScene/run_scene.gd and possibly Scenes/RunScene/RunScene.tscn for wiring\n- Tests/Unit/test_run_scene.gd and any new focused roadside-system tests\n- Docs/GDD.md\n\nDone when: during normal play, roadside scenery enters from above, varies from run to run within controlled density limits, exits cleanly through the bottom cleanup boundary with no visible recycle pop, and automated coverage protects the new spawn and cleanup lifecycle.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add a dedicated roadside scenery owner under Systems/ that controls roadside spawn and cleanup instead of relying on decorated loop-segment reuse. Spawn scenery by scroll distance or traveled distance, not milliseconds, so roadside density stays stable across speed changes. Place scenery just above view on the roadside margins with controlled lane or side selection, spacing guards, and small position jitter.\n\nDone when: a reviewer can trace one clear roadside spawn lifecycle owned by the new system, and normal speed changes do not make roadside density bunch up or thin out unpredictably.",
+					"done": false
+				},
+				{
+					"details": "Replace the repetitive authored roadside segment dressing with controlled randomized roadside scenery while preserving readability. Use weighted or constrained RNG for scrub variants and roadside dressing so runs feel less repetitive, keep the road center clear, and preserve the Dust Gulch roadside sign under explicit spawn rules, cooldowns, or authored hooks so it remains recognizable without dominating the stream.\n\nDone when: the roadside presentation feels less repetitive from run to run, remains readable under pressure, and no longer depends on visibly reused decorated segments.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for the roadside scenery system lifecycle. Advance scrolling far enough to trigger roadside spawns, verify spacing remains distance-driven, and assert spawned roadside scenery is only removed after entering the bottom cleanup boundary rather than disappearing early or resetting in place. Keep the normal verification flow passing.\n\nDone when: the old roadside pop class is covered by tests through the new spawn-and-cleanup path and the standard verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "8d511f83-6d5a-4112-a465-7191eb29d32f",
+			"title": "DG-47",
+			"description": "Task: Add a Dust Gulch arrival outro before the success results screen.\n\nThe current success flow resolves too abruptly. Once the player reaches the end of the route, the run immediately transitions into the success result state instead of giving the player a brief visual payoff for actually arriving in Dust Gulch.\n\nChange the success flow so the active run stops, player steering control is removed, and the wagon then travels north off the screen under authored motion while the town entrance becomes visible. This should feel like a short arrival beat rather than continued gameplay. Keep the loss flow unchanged.\n\nThe finish should also read more clearly as the edge of Dust Gulch instead of just another stretch of desert. Build on the existing sign treatment with a small set of arrival dressing such as stronger signage, fencing, gate-like framing, or simple frontier structures that make the finish visually distinct without turning this into a large environment expansion.\n\nLikely affected files:\n- Systems/RunPresentation/run_presentation.gd\n- Scenes/RunScene/run_scene.gd\n- Scenes/RunScene/RunScene.tscn and any small supporting assets or resources needed for the arrival dressing\n- Tests/Unit/test_run_scene.gd\n- Docs/GDD.md\n\nDone when: by completing a run normally, a reviewer can see gameplay stop, player control disable, the wagon continue north off the screen through clearly readable Dust Gulch arrival dressing, and the success result screen appear only after that short arrival beat finishes.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Add an explicit success-arrival transition that begins when the player reaches Dust Gulch. During that transition, stop normal gameplay pressure, remove player steering control, and drive the wagon north off the screen through authored motion instead of leaving the player in control.\n\nDone when: after a successful run, a reviewer can no longer steer the wagon, gameplay no longer behaves like the normal route, and the wagon exits north under scripted success-arrival motion.",
+					"done": false
+				},
+				{
+					"details": "Add a modest Dust Gulch arrival dressing pass to the finish so the player can read that they are entering town rather than just ending in open desert. Build on the existing sign treatment with a small set of clear finish markers such as stronger signage, fencing, gate framing, or simple frontier structures, while keeping the center play area readable and avoiding a large environment-scope expansion.\n\nDone when: the end of a successful run has clear Dust Gulch arrival markers that visually distinguish the town entrance from the standard desert roadside presentation.",
+					"done": false
+				},
+				{
+					"details": "Add automated coverage for the success-arrival flow. Verify that reaching Dust Gulch starts the arrival transition, removes player control, delays the success result presentation until the arrival beat completes, and leaves the collapse result path unchanged.\n\nDone when: the arrival outro behavior is covered by automated tests and the normal verification flow still passes.",
+					"done": false
 				}
 			]
 		},
