@@ -18,24 +18,24 @@ var is_menu_open := false
 
 
 # Private Fields
-var _run_state: RunStateType
+var __run_state: RunStateType
 
 
 # Private Fields: OnReady
 @onready
-var _pause_overlay: Control = %PauseOverlay
+var __pause_overlay: Control = %PauseOverlay
 
 @onready
-var _pause_panel: PanelContainer = %PausePanel
+var __pause_panel: PanelContainer = %PausePanel
 
 @onready
-var _resume_button: Button = %PauseResumeButton
+var __resume_button: Button = %PauseResumeButton
 
 @onready
-var _restart_button: Button = %PauseRestartButton
+var __restart_button: Button = %PauseRestartButton
 
 @onready
-var _return_button: Button = %PauseReturnButton
+var __return_button: Button = %PauseReturnButton
 
 
 # Lifecycle Methods
@@ -43,7 +43,7 @@ var _return_button: Button = %PauseReturnButton
 ## Configures pause-menu navigation and button wiring when the pause wrapper enters the tree.
 func _ready() -> void:
 	__configure_navigation()
-	__set_process_mode_recursive(_pause_overlay, Node.PROCESS_MODE_ALWAYS)
+	__set_process_mode_recursive(__pause_overlay, Node.PROCESS_MODE_ALWAYS)
 	__connect_buttons()
 
 
@@ -68,22 +68,22 @@ func __on_return_button_pressed() -> void:
 
 ## Binds the active run state so pause visibility tracks the current run.
 func bind_run_state(run_state: RunStateType) -> void:
-	_run_state = run_state
+	__run_state = run_state
 
 
 ## Refreshes pause-menu visibility for the active run.
 func refresh_menu(is_menu_open_value: bool) -> void:
 	is_menu_open = is_menu_open_value
-	if _pause_overlay == null or _pause_panel == null:
+	if __pause_overlay == null or __pause_panel == null:
 		return
 
 	var should_show_menu := (
-		_run_state != null
-		and _run_state.result == RunStateType.RESULT_IN_PROGRESS
+		__run_state != null
+		and __run_state.result == RunStateType.RESULT_IN_PROGRESS
 		and is_menu_open
 	)
-	_pause_overlay.visible = should_show_menu
-	_pause_panel.visible = should_show_menu
+	__pause_overlay.visible = should_show_menu
+	__pause_panel.visible = should_show_menu
 	if should_show_menu and not __has_button_focus():
 		focus_default_button()
 
@@ -103,22 +103,22 @@ func should_consume_event(event: InputEvent) -> bool:
 
 ## Gives the pause menu a deterministic starting focus for keyboard-only play.
 func focus_default_button() -> void:
-	if _resume_button != null:
-		_resume_button.grab_focus()
+	if __resume_button != null:
+		__resume_button.grab_focus()
 
 
 ## Returns whether the pause overlay is currently visible.
 func is_menu_visible() -> bool:
-	return _pause_overlay != null and _pause_overlay.visible
+	return __pause_overlay != null and __pause_overlay.visible
 
 
 # Private Methods
 
 ## Connects each authored pause button to its matching signal-emission handler once.
 func __connect_buttons() -> void:
-	__connect_button(_resume_button, __on_resume_button_pressed)
-	__connect_button(_restart_button, __on_restart_button_pressed)
-	__connect_button(_return_button, __on_return_button_pressed)
+	__connect_button(__resume_button, __on_resume_button_pressed)
+	__connect_button(__restart_button, __on_restart_button_pressed)
+	__connect_button(__return_button, __on_return_button_pressed)
 
 
 ## Connects one pause button to its pressed handler if that connection is not already present.
@@ -132,15 +132,15 @@ func __connect_button(button: Button, handler: Callable) -> void:
 ## Returns whether any pause-menu button already owns keyboard focus.
 func __has_button_focus() -> bool:
 	return (
-		(_resume_button != null and _resume_button.has_focus())
-		or (_restart_button != null and _restart_button.has_focus())
-		or (_return_button != null and _return_button.has_focus())
+		(__resume_button != null and __resume_button.has_focus())
+		or (__restart_button != null and __restart_button.has_focus())
+		or (__return_button != null and __return_button.has_focus())
 	)
 
 
 ## Configures explicit keyboard focus traversal for the pause menu buttons.
 func __configure_navigation() -> void:
-	if _resume_button == null or _restart_button == null or _return_button == null:
+	if __resume_button == null or __restart_button == null or __return_button == null:
 		return
 
 	__enable_button_focus()
@@ -151,45 +151,45 @@ func __configure_navigation() -> void:
 
 ## Enables keyboard focus for the authored pause-menu buttons.
 func __enable_button_focus() -> void:
-	_resume_button.focus_mode = Control.FOCUS_ALL
-	_restart_button.focus_mode = Control.FOCUS_ALL
-	_return_button.focus_mode = Control.FOCUS_ALL
+	__resume_button.focus_mode = Control.FOCUS_ALL
+	__restart_button.focus_mode = Control.FOCUS_ALL
+	__return_button.focus_mode = Control.FOCUS_ALL
 
 
 ## Configures the authored pause resume button focus neighbors.
 func __configure_resume_navigation() -> void:
-	var resume_to_restart := _resume_button.get_path_to(_restart_button)
-	var resume_to_return := _resume_button.get_path_to(_return_button)
-	_resume_button.focus_neighbor_top = resume_to_return
-	_resume_button.focus_neighbor_bottom = resume_to_restart
-	_resume_button.focus_neighbor_left = resume_to_return
-	_resume_button.focus_neighbor_right = resume_to_restart
-	_resume_button.focus_previous = resume_to_return
-	_resume_button.focus_next = resume_to_restart
+	var resume_to_restart := __resume_button.get_path_to(__restart_button)
+	var resume_to_return := __resume_button.get_path_to(__return_button)
+	__resume_button.focus_neighbor_top = resume_to_return
+	__resume_button.focus_neighbor_bottom = resume_to_restart
+	__resume_button.focus_neighbor_left = resume_to_return
+	__resume_button.focus_neighbor_right = resume_to_restart
+	__resume_button.focus_previous = resume_to_return
+	__resume_button.focus_next = resume_to_restart
 
 
 ## Configures the authored pause restart button focus neighbors.
 func __configure_restart_navigation() -> void:
-	var restart_to_resume := _restart_button.get_path_to(_resume_button)
-	var restart_to_return := _restart_button.get_path_to(_return_button)
-	_restart_button.focus_neighbor_top = restart_to_resume
-	_restart_button.focus_neighbor_bottom = restart_to_return
-	_restart_button.focus_neighbor_left = restart_to_resume
-	_restart_button.focus_neighbor_right = restart_to_return
-	_restart_button.focus_previous = restart_to_resume
-	_restart_button.focus_next = restart_to_return
+	var restart_to_resume := __restart_button.get_path_to(__resume_button)
+	var restart_to_return := __restart_button.get_path_to(__return_button)
+	__restart_button.focus_neighbor_top = restart_to_resume
+	__restart_button.focus_neighbor_bottom = restart_to_return
+	__restart_button.focus_neighbor_left = restart_to_resume
+	__restart_button.focus_neighbor_right = restart_to_return
+	__restart_button.focus_previous = restart_to_resume
+	__restart_button.focus_next = restart_to_return
 
 
 ## Configures the authored pause return button focus neighbors.
 func __configure_return_navigation() -> void:
-	var return_to_resume := _return_button.get_path_to(_resume_button)
-	var return_to_restart := _return_button.get_path_to(_restart_button)
-	_return_button.focus_neighbor_top = return_to_restart
-	_return_button.focus_neighbor_bottom = return_to_resume
-	_return_button.focus_neighbor_left = return_to_restart
-	_return_button.focus_neighbor_right = return_to_resume
-	_return_button.focus_previous = return_to_restart
-	_return_button.focus_next = return_to_resume
+	var return_to_resume := __return_button.get_path_to(__resume_button)
+	var return_to_restart := __return_button.get_path_to(__restart_button)
+	__return_button.focus_neighbor_top = return_to_restart
+	__return_button.focus_neighbor_bottom = return_to_resume
+	__return_button.focus_neighbor_left = return_to_restart
+	__return_button.focus_neighbor_right = return_to_resume
+	__return_button.focus_previous = return_to_restart
+	__return_button.focus_next = return_to_resume
 
 
 ## Ensures overlay controls keep running while the rest of the scene updates around them.
