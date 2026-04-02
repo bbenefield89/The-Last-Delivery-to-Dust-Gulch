@@ -114,7 +114,7 @@ func _snapshot_live_roadside_scenery(scene: Node) -> Array[Dictionary]:
 		snapshot.append({
 			"y": scenery.position.y,
 			"type": scenery.get_meta("scenery_type", &""),
-			"side": scenery.get_meta("side", 0),
+			"roadside_side": scenery.get_meta("roadside_side", 0),
 		})
 
 	snapshot.sort_custom(
@@ -1418,7 +1418,7 @@ func test_roadside_scenery_when_process_chunk_sizes_change_then_live_scene_strea
 	assert_true(coarse_snapshot.size() > 0)
 	for index in range(coarse_snapshot.size()):
 		assert_eq(coarse_snapshot[index]["type"], fine_snapshot[index]["type"])
-		assert_eq(coarse_snapshot[index]["side"], fine_snapshot[index]["side"])
+		assert_eq(coarse_snapshot[index]["roadside_side"], fine_snapshot[index]["roadside_side"])
 		assert_almost_eq(float(coarse_snapshot[index]["y"]), float(fine_snapshot[index]["y"]), 0.01)
 
 

@@ -24,8 +24,8 @@ const DEFAULT_COLLISION_SIZE := Vector2(40.0, 40.0)
 
 var _distance_until_next_spawn := 0.0
 var _distance_since_last_sign: float = SIGN_DISTANCE_INTERVAL
-var _last_side := 0
-var _same_side_streak := 0
+var _last_roadside_side := 0
+var _same_roadside_side_streak := 0
 var _cleanup_areas: Array[Area2D] = []
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _shrub_textures: Array[Texture2D] = []
@@ -39,20 +39,25 @@ func _ready() -> void:
 	_rng.randomize()
 
 
-# Public Methods
+# Event Handlers
 
-## Applies the authored roadside art resources used by spawned scenery.
-func configure_scenery_art(shrub_textures: Array[Texture2D], sign_texture: Texture2D) -> void:
-	_shrub_textures = shrub_textures.duplicate()
-	_sign_texture = sign_texture
-	_reset_runtime_state()
+## Frees one spawned roadside scenery area after it enters a bound cleanup boundary.
+func __on_cleanup_area_entered(area: Area2D) -> void:
+	var spawned_scenery_area := _get_spawned_scenery_area_from_cleanup_overlap(area)
+	if spawned_scenery_area == null:
+		return
+
+	spawned_scenery_area.queue_free()
+
+
+# Public Methods
 
 
 ## Binds cleanup boundaries so spawned scenery leaves through the same boundary flow as hazards.
 func bind_cleanup_areas(cleanup_areas: Array[Area2D]) -> void:
 	for cleanup_area in _cleanup_areas:
-		if cleanup_area != null and cleanup_area.area_entered.is_connected(_on_cleanup_area_entered):
-			cleanup_area.area_entered.disconnect(_on_cleanup_area_entered)
+		if cleanup_area != null and cleanup_area.area_entered.is_connected(__on_cleanup_area_entered):
+			cleanup_area.area_entered.disconnect(__on_cleanup_area_entered)
 
 	_cleanup_areas.clear()
 	for cleanup_area in cleanup_areas:
@@ -60,8 +65,15 @@ func bind_cleanup_areas(cleanup_areas: Array[Area2D]) -> void:
 			continue
 
 		_cleanup_areas.append(cleanup_area)
-		if not cleanup_area.area_entered.is_connected(_on_cleanup_area_entered):
-			cleanup_area.area_entered.connect(_on_cleanup_area_entered)
+		if not cleanup_area.area_entered.is_connected(__on_cleanup_area_entered):
+			cleanup_area.area_entered.connect(__on_cleanup_area_entered)
+
+
+## Applies the authored roadside art resources used by spawned scenery.
+func configure_scenery_art(shrub_textures: Array[Texture2D], sign_texture: Texture2D) -> void:
+	_shrub_textures = shrub_textures.duplicate()
+	_sign_texture = sign_texture
+	_reset_runtime_state()
 
 
 ## Advances scenery spawn and motion using traveled distance instead of wall-clock time.
@@ -81,8 +93,8 @@ func _reset_runtime_state() -> void:
 
 	_distance_until_next_spawn = 0.0
 	_distance_since_last_sign = SIGN_DISTANCE_INTERVAL
-	_last_side = 0
-	_same_side_streak = 0
+	_last_roadside_side = 0
+	_same_roadside_side_streak = 0
 
 
 ## Moves every spawned roadside item downward with the same scroll distance as the world.
@@ -98,83 +110,87 @@ func _move_scenery(distance_delta: float) -> void:
 ## Advances movement and spawning in traveled-distance chunks so spacing stays stable across frame sizes.
 func _advance_scenery(distance_delta: float) -> void:
 	if _distance_until_next_spawn <= 0.0:
-		_prime_next_spawn()
+		_schedule_next_spawn_distance()
 
-	var remaining_distance: float = distance_delta
-	while remaining_distance > 0.0:
-		var travel_step: float = minf(remaining_distance, _distance_until_next_spawn)
+	var unprocessed_travel_distance: float = distance_delta
+	while unprocessed_travel_distance > 0.0:
+		var travel_step: float = minf(unprocessed_travel_distance, _distance_until_next_spawn)
 		_move_scenery(travel_step)
-		remaining_distance -= travel_step
+		unprocessed_travel_distance -= travel_step
 		_distance_until_next_spawn -= travel_step
 		_distance_since_last_sign += travel_step
 
 		if _distance_until_next_spawn > 0.0:
 			continue
 
-		_spawn_next_item()
-		_prime_next_spawn()
+		_spawn_next_scenery_area()
+		_schedule_next_spawn_distance()
 
 
-## Rolls the next spacing threshold before another scenery item may appear.
-func _prime_next_spawn() -> void:
+## Schedules how much farther the run must travel before another roadside spawn is allowed.
+func _schedule_next_spawn_distance() -> void:
 	_distance_until_next_spawn = _rng.randf_range(DEFAULT_SPACING_MIN, DEFAULT_SPACING_MAX)
 
 
-## Creates one roadside item with controlled side selection and small authored jitter.
-func _spawn_next_item() -> void:
-	var scenery_type := _roll_scenery_type()
-	var side := _roll_side()
-	var item: Area2D = _build_scenery_item(scenery_type, side)
-	item.position = _get_spawn_position(scenery_type, side)
-	item.set_meta("spawn_y", item.position.y)
-	add_child(item)
+## Creates one roadside scenery area with controlled side selection and small authored jitter.
+func _spawn_next_scenery_area() -> void:
+	var scenery_type := _select_next_scenery_type()
+	var roadside_side := _select_roadside_side()
+	var spawned_scenery_area: Area2D = _build_spawned_scenery_area(scenery_type, roadside_side)
+	spawned_scenery_area.position = _get_spawn_position(scenery_type, roadside_side)
+	spawned_scenery_area.set_meta("spawn_y", spawned_scenery_area.position.y)
+	add_child(spawned_scenery_area)
 	if scenery_type == SCENERY_TYPE_SIGN:
 		_distance_since_last_sign = 0.0
 
 
 ## Returns the next scenery type while keeping the sign on a simple deterministic distance interval.
-func _roll_scenery_type() -> StringName:
+func _select_next_scenery_type() -> StringName:
 	if _sign_texture != null and _distance_since_last_sign >= SIGN_DISTANCE_INTERVAL:
 		return SCENERY_TYPE_SIGN
 
 	return SCENERY_TYPE_SCRUB
 
 
-## Chooses a roadside side while preventing long same-side streaks.
-func _roll_side() -> int:
-	var side := -1 if _rng.randi_range(0, 1) == 0 else 1
-	if _last_side != 0 and side == _last_side and _same_side_streak >= MAX_SAME_SIDE_STREAK:
-		side *= -1
+## Chooses the next left-or-right roadside side while preventing long same-side streaks.
+func _select_roadside_side() -> int:
+	var roadside_side := -1 if _rng.randi_range(0, 1) == 0 else 1
+	if (
+		_last_roadside_side != 0
+		and roadside_side == _last_roadside_side
+		and _same_roadside_side_streak >= MAX_SAME_SIDE_STREAK
+	):
+		roadside_side *= -1
 
-	if side == _last_side:
-		_same_side_streak += 1
+	if roadside_side == _last_roadside_side:
+		_same_roadside_side_streak += 1
 	else:
-		_same_side_streak = 1
+		_same_roadside_side_streak = 1
 
-	_last_side = side
-	return side
+	_last_roadside_side = roadside_side
+	return roadside_side
 
 
-## Builds one cleanup-aware scenery item with the correct roadside sprite attached.
-func _build_scenery_item(scenery_type: StringName, side: int) -> Area2D:
-	var item := Area2D.new()
-	item.monitoring = false
-	item.monitorable = true
-	item.collision_layer = CLEANUP_COLLISION_LAYER
-	item.collision_mask = 0
-	item.set_meta("scenery_type", scenery_type)
-	item.set_meta("side", side)
+## Builds one cleanup-aware roadside scenery area with the correct roadside sprite attached.
+func _build_spawned_scenery_area(scenery_type: StringName, roadside_side: int) -> Area2D:
+	var spawned_scenery_area := Area2D.new()
+	spawned_scenery_area.monitoring = false
+	spawned_scenery_area.monitorable = true
+	spawned_scenery_area.collision_layer = CLEANUP_COLLISION_LAYER
+	spawned_scenery_area.collision_mask = 0
+	spawned_scenery_area.set_meta("scenery_type", scenery_type)
+	spawned_scenery_area.set_meta("roadside_side", roadside_side)
 
 	var sprite := Sprite2D.new()
 	sprite.texture = _get_scenery_texture(scenery_type)
-	if scenery_type == SCENERY_TYPE_SCRUB and side > 0:
+	if scenery_type == SCENERY_TYPE_SCRUB and roadside_side > 0:
 		sprite.scale.x = -1.0
-	item.add_child(sprite)
+	spawned_scenery_area.add_child(sprite)
 
 	var collision_shape := CollisionShape2D.new()
 	collision_shape.shape = _build_collision_shape(sprite.texture)
-	item.add_child(collision_shape)
-	return item
+	spawned_scenery_area.add_child(collision_shape)
+	return spawned_scenery_area
 
 
 ## Resolves the authored art resource used by one scenery type.
@@ -195,28 +211,17 @@ func _build_collision_shape(texture: Texture2D) -> RectangleShape2D:
 
 
 ## Returns the local spawn position just above view with small roadside jitter.
-func _get_spawn_position(scenery_type: StringName, side: int) -> Vector2:
+func _get_spawn_position(scenery_type: StringName, roadside_side: int) -> Vector2:
 	var base_x := SIGN_MARGIN_X if scenery_type == SCENERY_TYPE_SIGN else SCRUB_MARGIN_X
 	var x_jitter := SIGN_X_JITTER if scenery_type == SCENERY_TYPE_SIGN else SCRUB_X_JITTER
 	return Vector2(
-		(float(side) * base_x) + _rng.randf_range(-x_jitter, x_jitter),
+		(float(roadside_side) * base_x) + _rng.randf_range(-x_jitter, x_jitter),
 		DEFAULT_SPAWN_Y + _rng.randf_range(-SPAWN_Y_JITTER, SPAWN_Y_JITTER)
 	)
 
 
-# Event Handlers
-
-## Frees one spawned roadside item after it enters a bound cleanup boundary.
-func _on_cleanup_area_entered(area: Area2D) -> void:
-	var scenery_item := _get_scenery_item_from_area(area)
-	if scenery_item == null:
-		return
-
-	scenery_item.queue_free()
-
-
-## Returns the roadside scenery item that entered a cleanup boundary, when owned by this system.
-func _get_scenery_item_from_area(area: Area2D) -> Area2D:
+## Returns the spawned roadside scenery area that entered a cleanup boundary, when owned by this system.
+func _get_spawned_scenery_area_from_cleanup_overlap(area: Area2D) -> Area2D:
 	if area == null:
 		return null
 	if area.get_parent() != self:

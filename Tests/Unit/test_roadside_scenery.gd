@@ -56,7 +56,7 @@ func _create_roadside_owner() -> RoadsideSceneryType:
 	return roadside_scenery
 
 
-## Captures the current spawned roadside stream as ordered y/type/side tuples for comparison.
+## Captures the current spawned roadside stream as ordered y/type/roadside-side tuples for comparison.
 func _snapshot_scenery(roadside_scenery: RoadsideSceneryType) -> Array[Dictionary]:
 	var snapshot: Array[Dictionary] = []
 	for child in roadside_scenery.get_children():
@@ -67,7 +67,7 @@ func _snapshot_scenery(roadside_scenery: RoadsideSceneryType) -> Array[Dictionar
 		snapshot.append({
 			"y": scenery.position.y,
 			"type": scenery.get_meta("scenery_type", &""),
-			"side": scenery.get_meta("side", 0),
+			"roadside_side": scenery.get_meta("roadside_side", 0),
 		})
 
 	snapshot.sort_custom(
@@ -94,7 +94,7 @@ func test_advance_when_distance_is_equal_then_spawn_count_stays_stable_across_st
 	assert_true(coarse_snapshot.size() > 0)
 	for index in range(coarse_snapshot.size()):
 		assert_eq(coarse_snapshot[index]["type"], fine_snapshot[index]["type"])
-		assert_eq(coarse_snapshot[index]["side"], fine_snapshot[index]["side"])
+		assert_eq(coarse_snapshot[index]["roadside_side"], fine_snapshot[index]["roadside_side"])
 		assert_almost_eq(float(coarse_snapshot[index]["y"]), float(fine_snapshot[index]["y"]), 0.01)
 
 
@@ -113,7 +113,7 @@ func test_advance_when_chunk_sizes_change_then_y_ordering_and_spacing_match() ->
 	assert_true(large_snapshot.size() >= 5)
 	for index in range(large_snapshot.size()):
 		assert_eq(large_snapshot[index]["type"], small_snapshot[index]["type"])
-		assert_eq(large_snapshot[index]["side"], small_snapshot[index]["side"])
+		assert_eq(large_snapshot[index]["roadside_side"], small_snapshot[index]["roadside_side"])
 		assert_almost_eq(float(large_snapshot[index]["y"]), float(small_snapshot[index]["y"]), 0.01)
 
 	for index in range(1, large_snapshot.size()):
@@ -129,24 +129,24 @@ func test_spawned_scenery_when_advanced_then_items_use_margin_positions_and_cont
 	var roadside_scenery := await _create_roadside_owner()
 	roadside_scenery.advance(960.0)
 
-	var previous_side := 0
-	var same_side_streak := 0
+	var previous_roadside_side := 0
+	var same_roadside_side_streak := 0
 	assert_true(roadside_scenery.get_child_count() >= 5)
 	for child in roadside_scenery.get_children():
 		var scenery := child as Area2D
 		assert_not_null(scenery)
 
-		var side := int(scenery.get_meta("side", 0))
-		if side == previous_side:
-			same_side_streak += 1
+		var roadside_side := int(scenery.get_meta("roadside_side", 0))
+		if roadside_side == previous_roadside_side:
+			same_roadside_side_streak += 1
 		else:
-			same_side_streak = 1
-			previous_side = side
+			same_roadside_side_streak = 1
+			previous_roadside_side = roadside_side
 
 		assert_true(absf(scenery.position.x) >= 160.0)
 		assert_true(absf(scenery.position.x) <= 262.0)
 		assert_true(float(scenery.get_meta("spawn_y", 0.0)) < 0.0)
-		assert_true(same_side_streak <= roadside_scenery.MAX_SAME_SIDE_STREAK)
+		assert_true(same_roadside_side_streak <= roadside_scenery.MAX_SAME_SIDE_STREAK)
 
 
 ## Verifies spawned scenery is removed only after entering the cleanup boundary.
