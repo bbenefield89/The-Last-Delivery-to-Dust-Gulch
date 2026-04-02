@@ -56,8 +56,8 @@ func _create_roadside_owner() -> RoadsideSceneryType:
 	return roadside_scenery
 
 
-## Captures the current spawned roadside stream as ordered y/type/roadside-side tuples for comparison.
-func _snapshot_scenery(roadside_scenery: RoadsideSceneryType) -> Array[Dictionary]:
+## Captures the current spawned roadside stream with the metadata needed by focused roadside tests.
+func _build_scenery_snapshot(roadside_scenery: RoadsideSceneryType) -> Array[Dictionary]:
 	var snapshot: Array[Dictionary] = []
 	for child in roadside_scenery.get_children():
 		var scenery := child as Area2D
@@ -65,14 +65,34 @@ func _snapshot_scenery(roadside_scenery: RoadsideSceneryType) -> Array[Dictionar
 			continue
 
 		snapshot.append({
+			"distance_spawned": scenery.get_meta("travel_distance_spawned", 0.0),
+			"spawn_sequence_id": scenery.get_meta("spawn_sequence_id", -1),
 			"y": scenery.position.y,
 			"type": scenery.get_meta("scenery_type", &""),
 			"roadside_side": scenery.get_meta("roadside_side", 0),
+			"texture_index": scenery.get_meta("texture_index", -1),
+			"scrub_variant": scenery.get_meta("scrub_variant", &""),
 		})
 
+	return snapshot
+
+
+## Captures the current spawned roadside stream ordered by on-screen y for spacing comparisons.
+func _snapshot_scenery(roadside_scenery: RoadsideSceneryType) -> Array[Dictionary]:
+	var snapshot := _build_scenery_snapshot(roadside_scenery)
 	snapshot.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
 			return float(a["y"]) < float(b["y"])
+	)
+	return snapshot
+
+
+## Captures the current spawned roadside stream in original spawn order for variety and cadence assertions.
+func _snapshot_scenery_by_spawn_order(roadside_scenery: RoadsideSceneryType) -> Array[Dictionary]:
+	var snapshot := _build_scenery_snapshot(roadside_scenery)
+	snapshot.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return int(a["spawn_sequence_id"]) < int(b["spawn_sequence_id"])
 	)
 	return snapshot
 
@@ -95,6 +115,8 @@ func test_advance_when_distance_is_equal_then_spawn_count_stays_stable_across_st
 	for index in range(coarse_snapshot.size()):
 		assert_eq(coarse_snapshot[index]["type"], fine_snapshot[index]["type"])
 		assert_eq(coarse_snapshot[index]["roadside_side"], fine_snapshot[index]["roadside_side"])
+		assert_eq(coarse_snapshot[index]["texture_index"], fine_snapshot[index]["texture_index"])
+		assert_eq(coarse_snapshot[index]["scrub_variant"], fine_snapshot[index]["scrub_variant"])
 		assert_almost_eq(float(coarse_snapshot[index]["y"]), float(fine_snapshot[index]["y"]), 0.01)
 
 
@@ -147,6 +169,109 @@ func test_spawned_scenery_when_advanced_then_items_use_margin_positions_and_cont
 		assert_true(absf(scenery.position.x) <= 262.0)
 		assert_true(float(scenery.get_meta("spawn_y", 0.0)) < 0.0)
 		assert_true(same_roadside_side_streak <= roadside_scenery.MAX_SAME_SIDE_STREAK)
+
+
+## Verifies scrub spawning stays varied without allowing long texture or silhouette repetition streaks.
+func test_spawned_scenery_when_scrubs_repeat_then_texture_and_variant_streaks_stay_limited() -> void:
+	var roadside_scenery := await _create_roadside_owner()
+	roadside_scenery.advance(3200.0)
+	var spawn_order_snapshot := _snapshot_scenery_by_spawn_order(roadside_scenery)
+
+	var scrub_texture_indices: Array[int] = []
+	var scrub_variants: Array[StringName] = []
+	var texture_streak := 0
+	var variant_streak := 0
+	var previous_texture_index := -1
+	var previous_variant := StringName()
+	for entry in spawn_order_snapshot:
+		if entry["type"] != roadside_scenery.SCENERY_TYPE_SCRUB:
+			continue
+
+		var scrub_texture_index := int(entry["texture_index"])
+		var scrub_variant := entry["scrub_variant"] as StringName
+		scrub_texture_indices.append(scrub_texture_index)
+		scrub_variants.append(scrub_variant)
+
+		if scrub_texture_index == previous_texture_index:
+			texture_streak += 1
+		else:
+			texture_streak = 1
+			previous_texture_index = scrub_texture_index
+
+		if scrub_variant == previous_variant:
+			variant_streak += 1
+		else:
+			variant_streak = 1
+			previous_variant = scrub_variant
+
+		assert_true(scrub_texture_index >= 0)
+		assert_true(scrub_variant != &"")
+		assert_true(texture_streak <= roadside_scenery.MAX_SAME_SCRUB_TEXTURE_STREAK)
+		assert_true(variant_streak <= roadside_scenery.MAX_SAME_SCRUB_VARIANT_STREAK)
+
+	assert_true(scrub_texture_indices.size() >= 8)
+	var first_scrub_texture_index := scrub_texture_indices[0]
+	var saw_second_texture_index := false
+	for texture_index in scrub_texture_indices:
+		if texture_index == first_scrub_texture_index:
+			continue
+
+		saw_second_texture_index = true
+		break
+
+	assert_true(saw_second_texture_index)
+
+	var first_scrub_variant := scrub_variants[0]
+	var saw_second_scrub_variant := false
+	for scrub_variant in scrub_variants:
+		if scrub_variant == first_scrub_variant:
+			continue
+
+		saw_second_scrub_variant = true
+		break
+
+	assert_true(saw_second_scrub_variant)
+
+
+## Verifies Dust Gulch signs obey explicit cooldown and side rules so they stay readable instead of dominating.
+func test_spawned_scenery_when_signs_spawn_then_sign_spacing_and_side_rules_hold() -> void:
+	var roadside_scenery := await _create_roadside_owner()
+	roadside_scenery.advance(3200.0)
+	var spawn_order_snapshot := _snapshot_scenery_by_spawn_order(roadside_scenery)
+
+	var sign_entries: Array[Dictionary] = []
+	var previous_sign_side := 0
+	for entry in spawn_order_snapshot:
+		if entry["type"] != roadside_scenery.SCENERY_TYPE_SIGN:
+			continue
+
+		sign_entries.append(entry)
+		var sign_side := int(entry["roadside_side"])
+		assert_true(absf(float(entry["y"])) <= 3200.0)
+		assert_true(absf(sign_side) == 1)
+		if previous_sign_side != 0:
+			assert_ne(sign_side, previous_sign_side)
+		previous_sign_side = sign_side
+
+	assert_true(sign_entries.size() >= 3)
+	for sign_index in range(1, sign_entries.size()):
+		var previous_entry := sign_entries[sign_index - 1]
+		var current_entry := sign_entries[sign_index]
+		var traveled_spacing := float(current_entry["distance_spawned"]) - float(previous_entry["distance_spawned"])
+		assert_true(traveled_spacing >= roadside_scenery.SIGN_DISTANCE_INTERVAL)
+
+		var scrub_entries_between_signs := 0
+		for entry in spawn_order_snapshot:
+			var entry_sequence_id := int(entry["spawn_sequence_id"])
+			if (
+				entry_sequence_id <= int(previous_entry["spawn_sequence_id"])
+				or entry_sequence_id >= int(current_entry["spawn_sequence_id"])
+			):
+				continue
+			if entry["type"] == roadside_scenery.SCENERY_TYPE_SCRUB:
+				scrub_entries_between_signs += 1
+
+		assert_true(scrub_entries_between_signs >= roadside_scenery.MIN_SCRUB_SPAWNS_BETWEEN_SIGNS)
 
 
 ## Verifies spawned scenery is removed only after entering the cleanup boundary.
