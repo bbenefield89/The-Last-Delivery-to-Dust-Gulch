@@ -171,6 +171,27 @@ func test_spawned_scenery_when_advanced_then_items_use_margin_positions_and_cont
 		assert_true(same_roadside_side_streak <= roadside_scenery.MAX_SAME_SIDE_STREAK)
 
 
+## Verifies the step-2 feel pass keeps the desert more populated with scrub than before.
+func test_spawned_scenery_when_advanced_then_scrub_density_feels_more_populated() -> void:
+	var roadside_scenery := await _create_roadside_owner()
+	roadside_scenery.advance(960.0)
+	var spawn_order_snapshot := _snapshot_scenery_by_spawn_order(roadside_scenery)
+
+	var scrub_count := 0
+	var sign_count := 0
+	for entry in spawn_order_snapshot:
+		if entry["type"] == roadside_scenery.SCENERY_TYPE_SIGN:
+			sign_count += 1
+			continue
+
+		if entry["type"] == roadside_scenery.SCENERY_TYPE_SCRUB:
+			scrub_count += 1
+
+	assert_true(spawn_order_snapshot.size() >= 7)
+	assert_true(scrub_count >= 5)
+	assert_true(scrub_count > sign_count)
+
+
 ## Verifies scrub spawning stays varied without allowing long texture or silhouette repetition streaks.
 func test_spawned_scenery_when_scrubs_repeat_then_texture_and_variant_streaks_stay_limited() -> void:
 	var roadside_scenery := await _create_roadside_owner()
