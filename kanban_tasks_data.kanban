@@ -21,7 +21,8 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"8d511f83-6d5a-4112-a465-7191eb29d32f"
+				"8d511f83-6d5a-4112-a465-7191eb29d32f",
+				"89ee2054-af77-46f7-a339-9385d64fa8a4"
 			]
 		},
 		{
@@ -968,7 +969,7 @@
 			"steps": [
 				{
 					"details": "Add a dedicated roadside scenery owner under Systems/ that controls roadside spawn and cleanup instead of relying on decorated loop-segment reuse. Spawn scenery by scroll distance or traveled distance, not milliseconds, so roadside density stays stable across speed changes. Place scenery just above view on the roadside margins with controlled lane or side selection, spacing guards, and small position jitter.\n\nDone when: a reviewer can trace one clear roadside spawn lifecycle owned by the new system, and normal speed changes do not make roadside density bunch up or thin out unpredictably.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Replace the repetitive authored roadside segment dressing with controlled randomized roadside scenery while preserving readability. Use weighted or constrained RNG for scrub variants and roadside dressing so runs feel less repetitive, keep the road center clear, and preserve the Dust Gulch roadside sign under explicit spawn rules, cooldowns, or authored hooks so it remains recognizable without dominating the stream.\n\nDone when: the roadside presentation feels less repetitive from run to run, remains readable under pressure, and no longer depends on visibly reused decorated segments.",
@@ -996,6 +997,26 @@
 				},
 				{
 					"details": "Add automated coverage for the success-arrival flow. Verify that reaching Dust Gulch starts the arrival transition, removes player control, delays the success result presentation until the arrival beat completes, and leaves the collapse result path unchanged.\n\nDone when: the arrival outro behavior is covered by automated tests and the normal verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "89ee2054-af77-46f7-a339-9385d64fa8a4",
+			"title": "DG-48",
+			"description": "TechDebt: Move RoadsideScenery from runtime node construction to authored scene and data assets.\n\nDG-46 step 1 introduced a dedicated roadside scenery owner and removed roadside decoration from the looping scroll segments, which fixed the ownership and distance-driven spawn problem. The remaining cleanup is that Systems/RoadsideScenery/roadside_scenery.gd still assembles each spawned roadside item ad hoc in code and still depends on RunScene to pass art into the system.\n\nThis ticket should keep the current DG-46 roadside behavior intact while moving roadside scenery authoring closer to the editor. Spawned roadside items should come from an authored shared scenery scene and, if helpful, lightweight variant definitions or resources that keep scrub and sign setup owned by the roadside scenery slice. Keep this intentionally small and structural: do not turn it into a broader scenery-framework rewrite or a visual redesign.\n\nPreserve the existing distance-driven spawn loop, roadside-only placement, cleanup-boundary despawn, stable spacing across frame sizes, and current run-scene integration. The goal is cleaner ownership and easier extension, not changed gameplay behavior.\n\nLikely affected files:\n- Systems/RoadsideScenery/*\n- Scenes/RunScene/run_scene.gd\n- Scenes/RunScene/RunScene.tscn if exported references or authored defaults move onto nodes\n- Constants/project_paths.gd\n- Tests/Unit/test_roadside_scenery.gd\n- Tests/Unit/test_run_scene.gd\n\nDone when: a reviewer can inspect the roadside scenery implementation and see editor-authored scenery content instead of ad hoc runtime node construction, while the current DG-46 roadside spawn and cleanup behavior and automated coverage remain intact.",
+			"category": "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+			"steps": [
+				{
+					"details": "Create a shared roadside scenery item scene and any small supporting script needed so RoadsideScenery instantiates authored scenery content instead of manually building Area2D, Sprite2D, and CollisionShape2D nodes inline in roadside_scenery.gd. Keep the current cleanup-boundary integration and spawn metadata behavior intact.\n\nDone when: spawned roadside items come from an authored scene owned by the roadside scenery slice, and the runtime no longer assembles the full scenery node tree ad hoc inside roadside_scenery.gd.",
+					"done": false
+				},
+				{
+					"details": "Move roadside art and configuration ownership into the roadside scenery slice itself using authored scene properties and/or lightweight variant definitions for scrub and sign content rather than having RunScene pass raw textures into the owner. If new reusable paths are introduced, keep them centralized under Constants/. Keep the scope narrow and avoid building a generalized content framework.\n\nDone when: the roadside scenery slice owns the art and variant setup it needs for scrub and sign spawning, RunScene no longer exists as the primary art-config owner for this system, and the cleanup stays small enough to review as one ticket.",
+					"done": false
+				},
+				{
+					"details": "Update automated coverage for the authored scenery path so the refactor still guarantees stable distance-driven spacing, roadside margin placement, chunk-size-stable spawn ordering, and cleanup-boundary despawn without regressing the current DG-46 behavior in the focused roadside tests or the wired RunScene coverage.\n\nDone when: automated tests cover the authored roadside scenery path and still protect the current spawn, placement, and cleanup guarantees after the structural cleanup.",
 					"done": false
 				}
 			]
