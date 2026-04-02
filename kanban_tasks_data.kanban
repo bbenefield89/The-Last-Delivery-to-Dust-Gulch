@@ -973,7 +973,7 @@
 				},
 				{
 					"details": "Replace the repetitive authored roadside segment dressing with controlled randomized roadside scenery while preserving readability. Use weighted or constrained RNG for scrub variants and roadside dressing so runs feel less repetitive, keep the road center clear, and preserve the Dust Gulch roadside sign under explicit spawn rules, cooldowns, or authored hooks so it remains recognizable without dominating the stream.\n\nDone when: the roadside presentation feels less repetitive from run to run, remains readable under pressure, and no longer depends on visibly reused decorated segments.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add automated coverage for the roadside scenery system lifecycle. Advance scrolling far enough to trigger roadside spawns, verify spacing remains distance-driven, and assert spawned roadside scenery is only removed after entering the bottom cleanup boundary rather than disappearing early or resetting in place. Keep the normal verification flow passing.\n\nDone when: the old roadside pop class is covered by tests through the new spawn-and-cleanup path and the standard verification flow still passes.",
