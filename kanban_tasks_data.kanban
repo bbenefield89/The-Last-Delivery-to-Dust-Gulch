@@ -28,9 +28,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"3dbe3258-ef5c-496e-a8e8-bcbfd4961ecd"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -80,7 +78,8 @@
 				"d34d8801-e9aa-4926-9ee8-5c369500c9b6",
 				"47d2dd19-d3cf-4359-b175-dd2d08f3bfd2",
 				"3d2ac0a2-08e5-4c87-84a4-e1e5a2fdb896",
-				"0280131b-d23f-4723-993e-da5e74bcb276"
+				"0280131b-d23f-4723-993e-da5e74bcb276",
+				"3dbe3258-ef5c-496e-a8e8-bcbfd4961ecd"
 			]
 		}
 	],
@@ -977,7 +976,7 @@
 				},
 				{
 					"details": "Add automated coverage for the roadside scenery system lifecycle. Advance scrolling far enough to trigger roadside spawns, verify spacing remains distance-driven, and assert spawned roadside scenery is only removed after entering the bottom cleanup boundary rather than disappearing early or resetting in place. Keep the normal verification flow passing.\n\nDone when: the old roadside pop class is covered by tests through the new spawn-and-cleanup path and the standard verification flow still passes.",
-					"done": false
+					"done": true
 				}
 			]
 		},
