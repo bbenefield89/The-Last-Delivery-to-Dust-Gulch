@@ -4,6 +4,7 @@ extends GutTest
 const HazardInstanceType := preload(ProjectPaths.HAZARD_INSTANCE_SCRIPT_PATH)
 const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
 const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
+const RoadsideSceneryType := preload(ProjectPaths.ROADSIDE_SCENERY_SCRIPT_PATH)
 const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_PATH)
 const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
 const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_PATH)
@@ -94,6 +95,46 @@ func _get_run_presentation(scene: Node) -> RunPresentationType:
 ## Returns the extracted audio presenter bound to the active test scene.
 func _get_run_audio_presenter(scene: Node) -> RunAudioPresenterType:
 	return scene._run_audio_presenter as RunAudioPresenterType
+
+
+## Returns the node-backed roadside scenery owner attached to the run scene world.
+func _get_roadside_scenery(scene: Node) -> RoadsideSceneryType:
+	return scene.get_node("%RoadsideScenery") as RoadsideSceneryType
+
+
+## Captures the live roadside scenery stream from the wired run scene for chunk-size comparisons.
+func _snapshot_live_roadside_scenery(scene: Node) -> Array[Dictionary]:
+	var snapshot: Array[Dictionary] = []
+	var roadside_scenery := _get_roadside_scenery(scene)
+	for child in roadside_scenery.get_children():
+		var scenery := child as Area2D
+		if scenery == null:
+			continue
+
+		snapshot.append({
+			"y": scenery.position.y,
+			"type": scenery.get_meta("scenery_type", &""),
+			"roadside_side": scenery.get_meta("roadside_side", 0),
+		})
+
+	snapshot.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return float(a["y"]) < float(b["y"])
+	)
+	return snapshot
+
+
+## Returns the live roadside scenery item for one spawn sequence id from the wired run scene.
+func _find_live_roadside_scenery_by_spawn_sequence_id(scene: Node, spawn_sequence_id: int) -> Area2D:
+	var roadside_scenery := _get_roadside_scenery(scene)
+	for child in roadside_scenery.get_children():
+		var scenery := child as Area2D
+		if scenery == null:
+			continue
+		if int(scenery.get_meta("spawn_sequence_id", -1)) == spawn_sequence_id:
+			return scenery
+
+	return null
 
 
 ## Returns the extracted UI presenter bound to the active test scene.
@@ -1333,23 +1374,109 @@ func test_scroll_environment_wraps_for_continuous_travel() -> void:
 	assert_almost_eq(segment_b.position.y, 140.0 - scene.SCROLL_LOOP_HEIGHT, 0.01)
 
 
-## Verifies scroll segment populates enough roadside scrub to cover loop end.
-
-func test_scroll_segment_populates_enough_roadside_scrub_to_cover_loop_end() -> void:
+## Verifies the dedicated roadside scenery owner replaces decorated loop segments in the run scene.
+func test_roadside_scenery_owner_replaces_segment_decoration_and_spawns_on_margins() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+
 	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
-	var left_scrub_positions: Array[float] = []
+	var segment_b: Node2D = scene.get_node("%ScrollSegmentB")
+	var roadside_scenery := _get_roadside_scenery(scene)
+	scene._process(2.0)
 
-	for child in segment_a.get_children():
-		if child is Sprite2D and scene.SHRUB_TEXTURES.has(child.texture) and child.scale.x > 0.0:
-			left_scrub_positions.append(child.position.y)
+	assert_eq(segment_a.get_child_count(), 0)
+	assert_eq(segment_b.get_child_count(), 0)
+	assert_not_null(roadside_scenery)
+	assert_true(roadside_scenery.get_child_count() > 0)
 
-	left_scrub_positions.sort()
-	assert_true(left_scrub_positions.size() >= scene.ROADSIDE_DECOR_COUNT)
-	assert_true(left_scrub_positions.back() >= 0.0)
+	for child in roadside_scenery.get_children():
+		var scenery := child as Area2D
+		assert_not_null(scenery)
+		assert_true(absf(scenery.position.x) >= 160.0)
+		assert_true(float(scenery.get_meta("spawn_y", 0.0)) < 0.0)
+
+
+## Verifies the wired run scene keeps roadside y ordering and spacing stable across process chunk sizes.
+func test_roadside_scenery_when_process_chunk_sizes_change_then_live_scene_stream_matches() -> void:
+	var coarse_scene = RUN_SCENE.instantiate()
+	add_child_autofree(coarse_scene)
+	await wait_process_frames(1)
+
+	var coarse_state := RunStateType.new()
+	_setup_active_run(coarse_scene, coarse_state)
+	var coarse_roadside := _get_roadside_scenery(coarse_scene)
+	coarse_roadside._rng.seed = 11
+	coarse_scene._configure_roadside_scenery()
+	coarse_scene._process(2.0)
+	var coarse_snapshot := _snapshot_live_roadside_scenery(coarse_scene)
+
+	var fine_scene = RUN_SCENE.instantiate()
+	add_child_autofree(fine_scene)
+	await wait_process_frames(1)
+
+	var fine_state := RunStateType.new()
+	_setup_active_run(fine_scene, fine_state)
+	var fine_roadside := _get_roadside_scenery(fine_scene)
+	fine_roadside._rng.seed = 11
+	fine_scene._configure_roadside_scenery()
+	for _step in range(4):
+		fine_scene._process(0.5)
+	var fine_snapshot := _snapshot_live_roadside_scenery(fine_scene)
+
+	assert_eq(coarse_snapshot.size(), fine_snapshot.size())
+	assert_true(coarse_snapshot.size() > 0)
+	for index in range(coarse_snapshot.size()):
+		assert_eq(coarse_snapshot[index]["type"], fine_snapshot[index]["type"])
+		assert_eq(coarse_snapshot[index]["roadside_side"], fine_snapshot[index]["roadside_side"])
+		assert_almost_eq(float(coarse_snapshot[index]["y"]), float(fine_snapshot[index]["y"]), 0.01)
+
+
+## Verifies the wired run scene keeps one spawned roadside item alive until the bottom cleanup flow actually catches it.
+func test_roadside_scenery_when_running_in_scene_then_item_persists_before_cleanup_and_despawns_after_cleanup() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	var roadside_scenery := _get_roadside_scenery(scene)
+	roadside_scenery._rng.seed = 11
+	scene._configure_roadside_scenery()
+	roadside_scenery._distance_until_next_spawn = 1.0
+	scene._process(2.0 / state.current_speed)
+
+	assert_eq(roadside_scenery.get_child_count(), 1)
+	var spawned_scenery := roadside_scenery.get_child(0) as Area2D
+	assert_not_null(spawned_scenery)
+	var spawn_sequence_id := int(spawned_scenery.get_meta("spawn_sequence_id", -1))
+	var spawned_y := spawned_scenery.position.y
+	var cleanup_area := scene.get_node("%HazardCleanupBottomArea") as Area2D
+	var cleanup_shape := scene.get_node("World/HazardCleanupBottomArea/HazardCleanupBottomShape") as CollisionShape2D
+	var cleanup_rectangle := cleanup_shape.shape as RectangleShape2D
+	var cleanup_top_global_y := cleanup_area.global_position.y + cleanup_shape.position.y - (cleanup_rectangle.size.y * 0.5)
+	var cleanup_top_local_y := cleanup_top_global_y - roadside_scenery.global_position.y
+	var travel_before_cleanup := maxf(0.0, cleanup_top_local_y - spawned_scenery.position.y - 40.0)
+
+	roadside_scenery._distance_until_next_spawn = 100000.0
+	scene._process(travel_before_cleanup / state.current_speed)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await wait_process_frames(1)
+
+	var persisted_scenery := _find_live_roadside_scenery_by_spawn_sequence_id(scene, spawn_sequence_id)
+	assert_not_null(persisted_scenery)
+	assert_true(persisted_scenery.position.y > spawned_y)
+
+	scene._process(80.0 / state.current_speed)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await wait_process_frames(1)
+
+	assert_eq(_find_live_roadside_scenery_by_spawn_sequence_id(scene, spawn_sequence_id), null)
 
 
 ## Verifies the scene flow keeps crossing beat pressure pairs enabled and the reset phase disabled.
@@ -3994,21 +4121,16 @@ func test_wagon_loop_audio_wraps_back_to_five_second_mark() -> void:
 	assert_true(wagon_loop_player.get_playback_position() < scene.WAGON_LOOP_END_SECONDS)
 
 
-## Verifies scroll segment includes roadside dust gulch sign.
-
-func test_scroll_segment_includes_roadside_dust_gulch_sign() -> void:
+## Verifies the run scene exposes the dedicated roadside scenery owner as a world-level system node.
+func test_run_scene_includes_dedicated_roadside_scenery_owner() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
-	var segment_a: Node2D = scene.get_node("%ScrollSegmentA")
-	var sign_found := false
-	for child in segment_a.get_children():
-		if child is Sprite2D and child.name == "RoadsideSign" and child.texture == scene.SIGN_TEXTURE:
-			sign_found = true
-			break
-
-	assert_true(sign_found)
+	var roadside_scenery := _get_roadside_scenery(scene)
+	assert_not_null(roadside_scenery)
+	assert_eq(roadside_scenery.position, Vector2(320.0, 300.0))
+	assert_eq(roadside_scenery.get_parent(), scene.get_node("World"))
 
 
 ## Verifies step4 environment art replaces route placeholder geometry.
@@ -4136,7 +4258,7 @@ func test_wagon_collision_box_exists_with_authored_size_and_offset() -> void:
 	assert_eq(near_miss_shape.position, Vector2(0.0, -10.5))
 	assert_eq(near_miss_rectangle.size, Vector2(54.0, 103.0))
 	assert_eq(cleanup_bottom_area.position, Vector2(320.0, 720.0))
-	assert_eq(cleanup_bottom_rectangle.size, Vector2(900.0, 320.0))
+	assert_eq(cleanup_bottom_rectangle.size, Vector2(720.0, 320.0))
 	assert_eq(cleanup_left_area.position, Vector2(-100.0, 300.0))
 	assert_eq(cleanup_left_rectangle.size, Vector2(120.0, 900.0))
 	assert_eq(cleanup_right_area.position, Vector2(740.0, 300.0))

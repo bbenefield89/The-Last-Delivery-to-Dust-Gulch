@@ -21,8 +21,6 @@ const WHEEL_LOOSE_WOBBLE_FREQUENCY := 15.0
 const HORSE_PANIC_WOBBLE_DEGREES := 8.0
 const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
 const SCROLL_LOOP_HEIGHT := 960.0
-const ROADSIDE_DECOR_SPACING := 144.0
-const ROADSIDE_DECOR_COUNT := 8
 const DUST_BASE_AMOUNT_RATIO := 0.35
 
 # Public Fields
@@ -44,8 +42,6 @@ var _wagon_sprite: AnimatedSprite2D
 var _horse_left_sprite: AnimatedSprite2D
 var _horse_right_sprite: AnimatedSprite2D
 var _dust_trail: CPUParticles2D
-var _shrub_textures: Array[Texture2D] = []
-var _sign_texture: Texture2D
 var _impact_flash_remaining := 0.0
 var _impact_wobble_remaining := 0.0
 var _impact_shake_remaining := 0.0
@@ -71,9 +67,7 @@ func configure_scene_nodes(
 	wagon_sprite: AnimatedSprite2D,
 	horse_left_sprite: AnimatedSprite2D,
 	horse_right_sprite: AnimatedSprite2D,
-	dust_trail: CPUParticles2D,
-	shrub_textures: Array[Texture2D],
-	sign_texture: Texture2D
+	dust_trail: CPUParticles2D
 ) -> void:
 	_run_state = run_state
 	_backdrop = backdrop
@@ -87,8 +81,6 @@ func configure_scene_nodes(
 	_horse_left_sprite = horse_left_sprite
 	_horse_right_sprite = horse_right_sprite
 	_dust_trail = dust_trail
-	_shrub_textures = shrub_textures.duplicate()
-	_sign_texture = sign_texture
 	_authored_backdrop_position = _backdrop.position if _backdrop != null else Vector2.ZERO
 	_authored_road_position = _road.position if _road != null else Vector2.ZERO
 	_authored_wagon_position = _wagon.position if _wagon != null else Vector2.ZERO
@@ -121,17 +113,6 @@ func configure_environment_art(desert_texture: Texture2D, road_texture: Texture2
 		_road.position = _authored_road_position
 
 	_update_environment_scroll()
-
-
-## Ensures both scroll segments contain the authored roadside decor needed for continuous travel.
-func ensure_scroll_visuals() -> void:
-	if _scroll_root == null:
-		return
-
-	if _scroll_segment_a != null and _scroll_segment_a.get_child_count() == 0:
-		_populate_scroll_segment(_scroll_segment_a)
-	if _scroll_segment_b != null and _scroll_segment_b.get_child_count() == 0:
-		_populate_scroll_segment(_scroll_segment_b)
 
 
 ## Applies the authored dust-particle setup to the bound trail node.
@@ -257,40 +238,6 @@ func _update_environment_scroll() -> void:
 		var road_rect := _road.region_rect
 		road_rect.position.y = -scroll_offset
 		_road.region_rect = road_rect
-
-
-## Builds one looping roadside segment with scrub clusters and the Dust Gulch sign.
-func _populate_scroll_segment(segment: Node2D) -> void:
-	for i in range(ROADSIDE_DECOR_COUNT):
-		var left_scrub := _make_scrub_cluster(i)
-		left_scrub.position = Vector2(-184.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING))
-		segment.add_child(left_scrub)
-
-		var right_scrub := _make_scrub_cluster(i + 2)
-		right_scrub.position = Vector2(184.0, -SCROLL_LOOP_HEIGHT + (i * ROADSIDE_DECOR_SPACING) + 56.0)
-		right_scrub.scale.x = -1.0
-		segment.add_child(right_scrub)
-
-	var sign := _make_road_sign()
-	sign.position = Vector2(-252.0, -SCROLL_LOOP_HEIGHT + 280.0)
-	segment.add_child(sign)
-
-
-## Creates one roadside scrub sprite using the authored variant cycle.
-func _make_scrub_cluster(variant_index: int) -> Sprite2D:
-	var scrub := Sprite2D.new()
-	if not _shrub_textures.is_empty():
-		scrub.texture = _shrub_textures[variant_index % _shrub_textures.size()]
-	return scrub
-
-
-## Creates the authored Dust Gulch roadside sign sprite.
-func _make_road_sign() -> Sprite2D:
-	var sign := Sprite2D.new()
-	sign.name = "RoadsideSign"
-	sign.texture = _sign_texture
-	return sign
-
 
 ## Applies the shared wagon tint to the carriage and horse sprites.
 func _set_vehicle_modulate(color: Color) -> void:
