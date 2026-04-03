@@ -156,6 +156,19 @@ func bind_hazard_cleanup_areas(hazard_cleanup_areas: Array) -> void:
 			cleanup_area.area_entered.connect(_on_hazard_cleanup_area_entered)
 
 
+## Frees all live hazards and clears queued hazard runtime state for non-gameplay transitions.
+func clear_runtime_hazards() -> void:
+	for child in get_children():
+		remove_child(child)
+		child.queue_free()
+
+	_pending_collision_hazards.clear()
+	_pending_near_miss_hazards.clear()
+	_pending_completed_passes.clear()
+	_next_spawn_plan = null
+	_distance_until_next_spawn = 0.0
+
+
 ## Moves all live hazards downward with the current scroll distance.
 func _move_hazards(distance_delta: float) -> void:
 	for child in get_children():

@@ -22,6 +22,9 @@ const HORSE_PANIC_WOBBLE_DEGREES := 8.0
 const HORSE_PANIC_WOBBLE_FREQUENCY := 10.0
 const SCROLL_LOOP_HEIGHT := 960.0
 const DUST_BASE_AMOUNT_RATIO := 0.35
+const SUCCESS_ARRIVAL_DURATION := 1.0
+const SUCCESS_ARRIVAL_VIEWPORT_HEIGHT := 360.0
+const SUCCESS_ARRIVAL_EXIT_PADDING := 96.0
 
 # Public Fields
 
@@ -50,6 +53,10 @@ var _authored_road_position := Vector2.ZERO
 var _authored_wagon_position := Vector2.ZERO
 var _authored_camera_position := Vector2.ZERO
 var _authored_camera_y_offset := -CAMERA_VERTICAL_OFFSET
+var _success_arrival_elapsed := 0.0
+var _success_arrival_start_wagon_position := Vector2.ZERO
+var _success_arrival_end_wagon_y := 0.0
+var _success_arrival_camera_position := Vector2.ZERO
 
 
 # Public Methods
@@ -92,6 +99,7 @@ func configure_scene_nodes(
 ## Binds the active run state so runtime presentation follows the current run.
 func bind_run_state(run_state: RunStateType) -> void:
 	_run_state = run_state
+	reset_success_arrival()
 
 
 ## Applies the tiled desert and road art to the bound world nodes.
@@ -223,6 +231,49 @@ func refresh_dust_presentation(default_forward_speed: float) -> void:
 		DUST_BASE_AMOUNT_RATIO,
 		_run_state.current_speed / default_forward_speed
 	)
+
+
+## Resets any scripted success-arrival presentation state.
+func reset_success_arrival() -> void:
+	_success_arrival_elapsed = 0.0
+	_success_arrival_start_wagon_position = Vector2.ZERO
+	_success_arrival_end_wagon_y = 0.0
+	_success_arrival_camera_position = Vector2.ZERO
+
+
+## Captures the current wagon and camera framing as the starting point for the success-arrival beat.
+func start_success_arrival() -> void:
+	reset_success_arrival()
+	if _wagon == null or _camera == null:
+		return
+
+	_success_arrival_start_wagon_position = _wagon.position
+	_success_arrival_camera_position = _camera.position
+	_success_arrival_end_wagon_y = (
+		_success_arrival_camera_position.y
+		- (SUCCESS_ARRIVAL_VIEWPORT_HEIGHT * 0.5)
+		- SUCCESS_ARRIVAL_EXIT_PADDING
+	)
+	_wagon.rotation = 0.0
+	_set_vehicle_modulate(WAGON_BASE_COLOR)
+
+
+## Advances the scripted success-arrival beat and returns true once the wagon has fully exited the viewport.
+func advance_success_arrival(delta: float) -> bool:
+	if _wagon == null:
+		return true
+
+	_success_arrival_elapsed = minf(_success_arrival_elapsed + maxf(delta, 0.0), SUCCESS_ARRIVAL_DURATION)
+	var arrival_ratio := _success_arrival_elapsed / SUCCESS_ARRIVAL_DURATION
+	var smoothed_ratio := arrival_ratio * arrival_ratio * (3.0 - (2.0 * arrival_ratio))
+	_wagon.position = Vector2(
+		_success_arrival_start_wagon_position.x,
+		lerpf(_success_arrival_start_wagon_position.y, _success_arrival_end_wagon_y, smoothed_ratio)
+	)
+	if _camera != null:
+		_camera.position = _success_arrival_camera_position
+
+	return is_equal_approx(_success_arrival_elapsed, SUCCESS_ARRIVAL_DURATION)
 
 
 # Private Methods

@@ -158,6 +158,14 @@ func _assert_success_path(app_root: Node) -> bool:
 		push_error("Smoke test failed: forced success did not set success result.")
 		quit(1)
 		return false
+	if result_panel.visible:
+		push_error("Smoke test failed: success result showed before the arrival beat finished.")
+		quit(1)
+		return false
+
+	run_scene._process(run_scene.SUCCESS_ARRIVAL_DURATION)
+	await process_frame
+
 	if not result_panel.visible or result_title.text != "Delivered to Dust Gulch":
 		push_error("Smoke test failed: success overlay was not visible and readable.")
 		quit(1)

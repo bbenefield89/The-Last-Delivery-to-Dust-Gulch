@@ -766,6 +766,7 @@ func test_dismissing_onboarding_with_steer_input_starts_normal_gameplay() -> voi
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
+	state.configure_route_distance(5000.0)
 	scene.setup(state)
 	var dismiss_event := InputEventAction.new()
 	dismiss_event.action = &"steer_left"
@@ -791,6 +792,7 @@ func test_dismissing_onboarding_with_keyboard_confirm_starts_normal_gameplay() -
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
+	state.configure_route_distance(5000.0)
 	scene.setup(state)
 
 	await _send_key_input(KEY_ENTER)
@@ -1108,6 +1110,7 @@ func test_near_miss_when_hazard_passes_close_without_collision_then_bonus_and_ca
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
+	state.configure_route_distance(5000.0)
 	_setup_active_run(scene, state)
 
 	_spawn_test_hazard(scene, &"pothole").position = Vector2(0.0, -120.0)
@@ -1518,12 +1521,54 @@ func test_reaching_dust_gulch_triggers_success_and_stops_forward_motion() -> voi
 	state.distance_remaining = 20.0
 	state.current_speed = 280.0
 	_setup_active_run(scene, state)
+	var hazard_spawner := scene.get_node("%HazardSpawner") as HazardSpawnerType
+	hazard_spawner._spawn_hazard(&"rock", 3)
 
 	scene._process(0.1)
 
 	assert_eq(state.distance_remaining, 0.0)
 	assert_eq(state.result, RunStateType.RESULT_SUCCESS)
 	assert_eq(state.current_speed, 0.0)
+	assert_true(scene._success_arrival_active)
+	assert_eq(hazard_spawner.get_child_count(), 0)
+
+	var result_panel := scene.get_node("%ResultPanel") as PanelContainer
+	assert_false(result_panel.visible)
+
+	var wagon := scene.get_node("%Wagon") as Node2D
+	var wagon_start_y := wagon.position.y
+	var lateral_position_before_arrival := state.lateral_position
+	Input.action_press(scene.STEER_ACTION_POSITIVE)
+	scene._process(0.1)
+	Input.action_release(scene.STEER_ACTION_POSITIVE)
+
+	assert_eq(state.lateral_position, lateral_position_before_arrival)
+	assert_true(wagon.position.y < wagon_start_y)
+
+
+## Verifies the success-arrival beat delays the result panel until the scripted exit finishes.
+func test_success_arrival_transition_when_completed_then_success_result_panel_opens() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = 20.0
+	state.current_speed = 280.0
+	_setup_active_run(scene, state)
+
+	scene._process(0.1)
+	assert_true(scene._success_arrival_active)
+	assert_false((scene.get_node("%ResultPanel") as PanelContainer).visible)
+
+	scene._process(scene.SUCCESS_ARRIVAL_DURATION)
+
+	var result_panel := scene.get_node("%ResultPanel") as PanelContainer
+	var result_title := scene.get_node("%ResultTitle") as Label
+	assert_false(scene._success_arrival_active)
+	assert_true(scene._has_completed_success_arrival)
+	assert_true(result_panel.visible)
+	assert_eq(result_title.text, "Delivered to Dust Gulch")
 
 
 ## Verifies success state freezes progress on later frames.
@@ -1568,6 +1613,7 @@ func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
 
 	assert_eq(state.result, RunStateType.RESULT_COLLAPSED)
 	assert_eq(state.current_speed, 0.0)
+	assert_false(scene._success_arrival_active)
 
 	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
 	var result_title: Label = scene.get_node("%ResultTitle")

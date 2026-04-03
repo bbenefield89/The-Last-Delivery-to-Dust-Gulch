@@ -135,6 +135,7 @@ const HORSE_PANIC_FAILURE_CARGO_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_CARG
 const HORSE_PANIC_FAILURE_SPEED_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_SPEED_LOSS
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FAILURE_INSTABILITY_DURATION
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
+const SUCCESS_ARRIVAL_DURATION := RunPresentationType.SUCCESS_ARRIVAL_DURATION
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
 const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
@@ -159,6 +160,9 @@ var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
 var _navigation_click_in_progress := false
 var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
+var _success_arrival_active := false
+var _has_completed_success_arrival := false
+var _last_observed_result: StringName = RunStateType.RESULT_IN_PROGRESS
 
 
 # Private Fields: OnReady
@@ -292,11 +296,15 @@ func setup(run_state: RunStateType) -> void:
 	_run_state.load_persisted_best_run(_best_run_save_path)
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_run_state.record_best_run_if_needed(_best_run_save_path)
+	_success_arrival_active = false
+	_has_completed_success_arrival = false
+	_last_observed_result = _run_state.result
 	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
 	_run_director.bind_run_state(_run_state, _recovery_sequence_generator)
 	_run_presentation.bind_run_state(_run_state)
+	_run_presentation.reset_success_arrival()
 	_run_ui_presenter.refresh_status()
 	_run_ui_presenter.refresh_onboarding_prompt()
 	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
@@ -568,11 +576,17 @@ func _process(delta: float) -> void:
 		_run_ui_presenter.refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
+	if _success_arrival_active:
+		_last_observed_result = _run_state.result
+		_refresh_success_arrival_frame(delta)
+		return
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		_last_observed_result = _run_state.result
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-		_update_impact_feedback(delta)
-		_update_wagon_visual()
-		_update_camera_framing()
+		if not (_has_completed_success_arrival and _run_state.result == RunStateType.RESULT_SUCCESS):
+			_update_impact_feedback(delta)
+			_update_wagon_visual()
+			_update_camera_framing()
 		_run_ui_presenter.refresh_status()
 		_run_ui_presenter.refresh_onboarding_prompt()
 		_run_ui_presenter.refresh_pause_menu()
@@ -642,6 +656,13 @@ func _process(delta: float) -> void:
 	)
 	_advance_failure_triggers(delta)
 	_sync_completed_run_best_state()
+	if _should_start_success_arrival():
+		_start_success_arrival_transition()
+		_last_observed_result = _run_state.result
+		_refresh_success_arrival_frame(0.0)
+		return
+
+	_last_observed_result = _run_state.result
 	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 	_update_impact_feedback(delta)
 	_update_wagon_visual()
@@ -765,6 +786,45 @@ func _sync_route_phase() -> void:
 		return
 
 	_handle_run_director_update(_run_director.sync_route_phase())
+
+
+## Returns whether the scripted success-arrival beat should start on this gameplay frame.
+func _should_start_success_arrival() -> bool:
+	return (
+		_run_state != null
+		and _run_state.result == RunStateType.RESULT_SUCCESS
+		and _last_observed_result == RunStateType.RESULT_IN_PROGRESS
+		and not _success_arrival_active
+		and not _has_completed_success_arrival
+	)
+
+
+## Starts the scripted success-arrival beat and clears live gameplay hazards from the finish frame.
+func _start_success_arrival_transition() -> void:
+	_success_arrival_active = true
+	_has_completed_success_arrival = false
+	if _hazard_spawner != null:
+		_hazard_spawner.clear_runtime_hazards()
+	_run_presentation.start_success_arrival()
+
+
+## Advances the scripted success-arrival beat while keeping end-of-run UI hidden until it completes.
+func _refresh_success_arrival_frame(delta: float) -> void:
+	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
+	var arrival_completed := _run_presentation.advance_success_arrival(delta)
+	_run_ui_presenter.refresh_status()
+	_run_ui_presenter.refresh_onboarding_prompt()
+	_run_ui_presenter.refresh_pause_menu()
+	_run_ui_presenter.refresh_recovery_prompt()
+	_run_ui_presenter.refresh_touch_controls()
+	_sync_completed_run_best_state()
+	_refresh_audio_presentation()
+	if not arrival_completed:
+		return
+
+	_success_arrival_active = false
+	_has_completed_success_arrival = true
+	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
 
 
 ## Returns the current authored phase for one route-progress ratio.
