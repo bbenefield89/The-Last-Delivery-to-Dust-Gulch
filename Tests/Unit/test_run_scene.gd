@@ -124,6 +124,19 @@ func _snapshot_live_roadside_scenery(scene: Node) -> Array[Dictionary]:
 	return snapshot
 
 
+## Returns the live roadside scenery item for one spawn sequence id from the wired run scene.
+func _find_live_roadside_scenery_by_spawn_sequence_id(scene: Node, spawn_sequence_id: int) -> Area2D:
+	var roadside_scenery := _get_roadside_scenery(scene)
+	for child in roadside_scenery.get_children():
+		var scenery := child as Area2D
+		if scenery == null:
+			continue
+		if int(scenery.get_meta("spawn_sequence_id", -1)) == spawn_sequence_id:
+			return scenery
+
+	return null
+
+
 ## Returns the extracted UI presenter bound to the active test scene.
 func _get_run_ui_presenter(scene: Node) -> RunUiPresenterType:
 	return scene._run_ui_presenter as RunUiPresenterType
@@ -1420,6 +1433,50 @@ func test_roadside_scenery_when_process_chunk_sizes_change_then_live_scene_strea
 		assert_eq(coarse_snapshot[index]["type"], fine_snapshot[index]["type"])
 		assert_eq(coarse_snapshot[index]["roadside_side"], fine_snapshot[index]["roadside_side"])
 		assert_almost_eq(float(coarse_snapshot[index]["y"]), float(fine_snapshot[index]["y"]), 0.01)
+
+
+## Verifies the wired run scene keeps one spawned roadside item alive until the bottom cleanup flow actually catches it.
+func test_roadside_scenery_when_running_in_scene_then_item_persists_before_cleanup_and_despawns_after_cleanup() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	var roadside_scenery := _get_roadside_scenery(scene)
+	roadside_scenery._rng.seed = 11
+	scene._configure_roadside_scenery()
+	roadside_scenery._distance_until_next_spawn = 1.0
+	scene._process(2.0 / state.current_speed)
+
+	assert_eq(roadside_scenery.get_child_count(), 1)
+	var spawned_scenery := roadside_scenery.get_child(0) as Area2D
+	assert_not_null(spawned_scenery)
+	var spawn_sequence_id := int(spawned_scenery.get_meta("spawn_sequence_id", -1))
+	var spawned_y := spawned_scenery.position.y
+	var cleanup_area := scene.get_node("%HazardCleanupBottomArea") as Area2D
+	var cleanup_shape := scene.get_node("World/HazardCleanupBottomArea/HazardCleanupBottomShape") as CollisionShape2D
+	var cleanup_rectangle := cleanup_shape.shape as RectangleShape2D
+	var cleanup_top_global_y := cleanup_area.global_position.y + cleanup_shape.position.y - (cleanup_rectangle.size.y * 0.5)
+	var cleanup_top_local_y := cleanup_top_global_y - roadside_scenery.global_position.y
+	var travel_before_cleanup := maxf(0.0, cleanup_top_local_y - spawned_scenery.position.y - 40.0)
+
+	roadside_scenery._distance_until_next_spawn = 100000.0
+	scene._process(travel_before_cleanup / state.current_speed)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await wait_process_frames(1)
+
+	var persisted_scenery := _find_live_roadside_scenery_by_spawn_sequence_id(scene, spawn_sequence_id)
+	assert_not_null(persisted_scenery)
+	assert_true(persisted_scenery.position.y > spawned_y)
+
+	scene._process(80.0 / state.current_speed)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await wait_process_frames(1)
+
+	assert_eq(_find_live_roadside_scenery_by_spawn_sequence_id(scene, spawn_sequence_id), null)
 
 
 ## Verifies the scene flow keeps crossing beat pressure pairs enabled and the reset phase disabled.

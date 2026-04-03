@@ -97,6 +97,21 @@ func _snapshot_scenery_by_spawn_order(roadside_scenery: RoadsideSceneryType) -> 
 	return snapshot
 
 
+## Returns the live spawned roadside item for one spawn sequence id, or null when it has despawned.
+func _find_spawned_scenery_by_spawn_sequence_id(
+	roadside_scenery: RoadsideSceneryType,
+	spawn_sequence_id: int
+) -> Area2D:
+	for child in roadside_scenery.get_children():
+		var scenery := child as Area2D
+		if scenery == null:
+			continue
+		if int(scenery.get_meta("spawn_sequence_id", -1)) == spawn_sequence_id:
+			return scenery
+
+	return null
+
+
 # Public Methods
 
 ## Verifies the roadside owner spawns by traveled distance instead of wall-clock chunking.
@@ -295,6 +310,30 @@ func test_spawned_scenery_when_signs_spawn_then_sign_spacing_and_side_rules_hold
 		assert_true(scrub_entries_between_signs >= roadside_scenery.MIN_SCRUB_SPAWNS_BETWEEN_SIGNS)
 
 
+## Verifies a spawned roadside item stays live and keeps moving until it reaches the bottom cleanup boundary.
+func test_cleanup_area_when_spawned_scenery_is_above_bottom_boundary_then_item_stays_live_without_resetting() -> void:
+	var roadside_scenery := await _create_roadside_owner()
+	roadside_scenery._distance_until_next_spawn = 1.0
+	roadside_scenery.advance(2.0)
+
+	assert_eq(roadside_scenery.get_child_count(), 1)
+	var spawned_scenery := roadside_scenery.get_child(0) as Area2D
+	assert_not_null(spawned_scenery)
+	var spawn_sequence_id := int(spawned_scenery.get_meta("spawn_sequence_id", -1))
+	var spawned_y := spawned_scenery.position.y
+
+	roadside_scenery._distance_until_next_spawn = 100000.0
+	roadside_scenery.advance(300.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await wait_process_frames(1)
+
+	var persisted_scenery := _find_spawned_scenery_by_spawn_sequence_id(roadside_scenery, spawn_sequence_id)
+	assert_not_null(persisted_scenery)
+	assert_eq(persisted_scenery, spawned_scenery)
+	assert_true(persisted_scenery.position.y > spawned_y)
+
+
 ## Verifies spawned scenery is removed only after entering the cleanup boundary.
 func test_cleanup_area_when_spawned_scenery_reaches_bottom_boundary_then_item_is_freed() -> void:
 	var roadside_scenery := await _create_roadside_owner()
@@ -302,6 +341,9 @@ func test_cleanup_area_when_spawned_scenery_reaches_bottom_boundary_then_item_is
 	roadside_scenery.advance(2.0)
 
 	assert_eq(roadside_scenery.get_child_count(), 1)
+	var spawned_scenery := roadside_scenery.get_child(0) as Area2D
+	assert_not_null(spawned_scenery)
+	var spawn_sequence_id := int(spawned_scenery.get_meta("spawn_sequence_id", -1))
 
 	roadside_scenery._distance_until_next_spawn = 100000.0
 	roadside_scenery.advance(560.0)
@@ -310,3 +352,4 @@ func test_cleanup_area_when_spawned_scenery_reaches_bottom_boundary_then_item_is
 	await wait_process_frames(1)
 
 	assert_eq(roadside_scenery.get_child_count(), 0)
+	assert_eq(_find_spawned_scenery_by_spawn_sequence_id(roadside_scenery, spawn_sequence_id), null)
