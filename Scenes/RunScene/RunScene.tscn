@@ -16,6 +16,7 @@
 [ext_resource type="Texture2D" uid="uid://dryxakr4r1w65" path="res://Assets/Tilesets/Desert/Desert-3-32x32.png" id="11_hmcd6"]
 [ext_resource type="Texture2D" uid="uid://bxq3csyxi8ss8" path="res://Assets/Tilesets/Road/Road-4-tiled-32x32.png" id="12_2d3al"]
 [ext_resource type="FontFile" uid="uid://dc4t6w7cn64bx" path="res://Assets/Fonts/kenney_input_keyboard_mouse.ttf" id="13_tq1cn"]
+[ext_resource type="Texture2D" path="res://Assets/Tilesets/Sign/Sign-32x48.png" id="14_sign"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wagon_collision"]
 size = Vector2(30, 79)
@@ -219,6 +220,13 @@ script = ExtResource("2_ok7u7")
 unique_name_in_owner = true
 position = Vector2(320, 300)
 script = ExtResource("3_road")
+
+[node name="SuccessArrivalSign" type="Sprite2D" parent="World" unique_id=234043961]
+unique_name_in_owner = true
+visible = false
+position = Vector2(548, 104)
+texture = ExtResource("14_sign")
+centered = false
 
 [node name="Wagon" type="Node2D" parent="World" unique_id=688295343]
 unique_name_in_owner = true

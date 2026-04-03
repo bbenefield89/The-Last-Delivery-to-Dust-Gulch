@@ -183,6 +183,9 @@ var _hazard_spawner: HazardSpawnerType = %HazardSpawner
 var _roadside_scenery: RoadsideSceneryType = %RoadsideScenery
 
 @onready
+var _success_arrival_sign: Sprite2D = %SuccessArrivalSign
+
+@onready
 var _scroll_root: Node2D = %ScrollRoot
 
 @onready
@@ -299,6 +302,7 @@ func setup(run_state: RunStateType) -> void:
 	_success_arrival_active = false
 	_has_completed_success_arrival = false
 	_last_observed_result = _run_state.result
+	_set_success_arrival_dressing_visible(false)
 	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
@@ -803,6 +807,7 @@ func _should_start_success_arrival() -> bool:
 func _start_success_arrival_transition() -> void:
 	_success_arrival_active = true
 	_has_completed_success_arrival = false
+	_set_success_arrival_dressing_visible(true)
 	if _hazard_spawner != null:
 		_hazard_spawner.clear_runtime_hazards()
 	_run_presentation.start_success_arrival()
@@ -824,7 +829,14 @@ func _refresh_success_arrival_frame(delta: float) -> void:
 
 	_success_arrival_active = false
 	_has_completed_success_arrival = true
+	_set_success_arrival_dressing_visible(false)
 	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+
+
+## Toggles the authored success-arrival dressing that should only appear during the finish beat.
+func _set_success_arrival_dressing_visible(is_visible: bool) -> void:
+	if _success_arrival_sign != null:
+		_success_arrival_sign.visible = is_visible
 
 
 ## Returns the current authored phase for one route-progress ratio.

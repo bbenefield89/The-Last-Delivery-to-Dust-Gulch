@@ -1560,6 +1560,15 @@ func test_success_arrival_transition_when_completed_then_success_result_panel_op
 	scene._process(0.1)
 	assert_true(scene._success_arrival_active)
 	assert_false((scene.get_node("%ResultPanel") as PanelContainer).visible)
+	var arrival_sign := scene.get_node("%SuccessArrivalSign") as Sprite2D
+	var viewport_rect := scene.get_viewport().get_visible_rect()
+	var arrival_sign_rect := Rect2(
+		arrival_sign.global_position,
+		arrival_sign.texture.get_size() * Vector2(absf(arrival_sign.scale.x), absf(arrival_sign.scale.y))
+	)
+	assert_true(arrival_sign.visible)
+	assert_true(arrival_sign_rect.position.y >= viewport_rect.position.y)
+	assert_true(arrival_sign_rect.end.y <= viewport_rect.end.y)
 
 	scene._process(scene.SUCCESS_ARRIVAL_DURATION)
 
@@ -1567,6 +1576,7 @@ func test_success_arrival_transition_when_completed_then_success_result_panel_op
 	var result_title := scene.get_node("%ResultTitle") as Label
 	assert_false(scene._success_arrival_active)
 	assert_true(scene._has_completed_success_arrival)
+	assert_false(arrival_sign.visible)
 	assert_true(result_panel.visible)
 	assert_eq(result_title.text, "Delivered to Dust Gulch")
 
