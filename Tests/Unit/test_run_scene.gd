@@ -1576,9 +1576,40 @@ func test_success_arrival_transition_when_completed_then_success_result_panel_op
 	var result_title := scene.get_node("%ResultTitle") as Label
 	assert_false(scene._success_arrival_active)
 	assert_true(scene._has_completed_success_arrival)
-	assert_false(arrival_sign.visible)
+	assert_true(arrival_sign.visible)
 	assert_true(result_panel.visible)
 	assert_eq(result_title.text, "Delivered to Dust Gulch")
+
+
+## Verifies the Dust Gulch sign scrolls in during the last stretch and stops at the finish.
+func test_success_arrival_sign_when_finish_approaches_then_it_moves_south_and_stays_visible_on_success() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	var arrival_sign := scene.get_node("%SuccessArrivalSign") as Sprite2D
+	var target_position := arrival_sign.position
+
+	state.distance_remaining = 400.0
+	scene._process(0.0)
+	assert_false(arrival_sign.visible)
+
+	state.distance_remaining = 120.0
+	scene._process(0.0)
+	assert_true(arrival_sign.visible)
+	var pre_finish_y := arrival_sign.position.y
+	assert_true(pre_finish_y < target_position.y)
+
+	state.current_speed = 280.0
+	scene._process(0.1)
+	assert_true(arrival_sign.position.y > pre_finish_y)
+
+	state.distance_remaining = 0.0
+	scene._process(0.0)
+	assert_true(arrival_sign.visible)
+	assert_eq(arrival_sign.position, target_position)
 
 
 ## Verifies success state freezes progress on later frames.

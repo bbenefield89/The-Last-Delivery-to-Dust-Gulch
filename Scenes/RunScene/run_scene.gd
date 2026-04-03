@@ -163,6 +163,7 @@ var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequen
 var _success_arrival_active := false
 var _has_completed_success_arrival := false
 var _last_observed_result: StringName = RunStateType.RESULT_IN_PROGRESS
+var _success_arrival_sign_target_position := Vector2.ZERO
 
 
 # Private Fields: OnReady
@@ -302,7 +303,7 @@ func setup(run_state: RunStateType) -> void:
 	_success_arrival_active = false
 	_has_completed_success_arrival = false
 	_last_observed_result = _run_state.result
-	_set_success_arrival_dressing_visible(false)
+	_reset_success_arrival_sign()
 	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
@@ -396,6 +397,7 @@ func _ready() -> void:
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
+	_reset_success_arrival_sign()
 	_run_ui_presenter.refresh_status()
 	_run_ui_presenter.refresh_onboarding_prompt()
 	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
@@ -586,6 +588,7 @@ func _process(delta: float) -> void:
 		return
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_last_observed_result = _run_state.result
+		_refresh_success_arrival_sign()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		if not (_has_completed_success_arrival and _run_state.result == RunStateType.RESULT_SUCCESS):
 			_update_impact_feedback(delta)
@@ -645,6 +648,7 @@ func _process(delta: float) -> void:
 	_run_presentation.advance_scroll(_run_state.current_speed, delta)
 	_advance_roadside_scenery(_run_state.current_speed * delta)
 	_sync_route_phase()
+	_refresh_success_arrival_sign()
 	_hazard_spawner.advance(
 		_run_state.current_speed * delta,
 		_run_state.get_delivery_progress_ratio(),
@@ -807,7 +811,7 @@ func _should_start_success_arrival() -> bool:
 func _start_success_arrival_transition() -> void:
 	_success_arrival_active = true
 	_has_completed_success_arrival = false
-	_set_success_arrival_dressing_visible(true)
+	_refresh_success_arrival_sign()
 	if _hazard_spawner != null:
 		_hazard_spawner.clear_runtime_hazards()
 	_run_presentation.start_success_arrival()
@@ -829,14 +833,45 @@ func _refresh_success_arrival_frame(delta: float) -> void:
 
 	_success_arrival_active = false
 	_has_completed_success_arrival = true
-	_set_success_arrival_dressing_visible(false)
+	_refresh_success_arrival_sign()
 	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
 
 
-## Toggles the authored success-arrival dressing that should only appear during the finish beat.
-func _set_success_arrival_dressing_visible(is_visible: bool) -> void:
-	if _success_arrival_sign != null:
-		_success_arrival_sign.visible = is_visible
+## Resets the authored arrival sign back to its hidden pre-finish state.
+func _reset_success_arrival_sign() -> void:
+	if _success_arrival_sign == null:
+		return
+
+	if _success_arrival_sign_target_position == Vector2.ZERO:
+		_success_arrival_sign_target_position = _success_arrival_sign.position
+	else:
+		_success_arrival_sign.position = _success_arrival_sign_target_position
+	_success_arrival_sign.visible = false
+
+
+## Projects the Dust Gulch sign into the final stretch so it scrolls in before the finish and then stops.
+func _refresh_success_arrival_sign() -> void:
+	if _success_arrival_sign == null or _run_state == null:
+		return
+
+	if _run_state.result == RunStateType.RESULT_SUCCESS:
+		_success_arrival_sign.position = _success_arrival_sign_target_position
+		_success_arrival_sign.visible = true
+		return
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS or _run_ui_presenter.is_onboarding_active:
+		_success_arrival_sign.position = _success_arrival_sign_target_position
+		_success_arrival_sign.visible = false
+		return
+
+	var sign_size := _success_arrival_sign.texture.get_size() if _success_arrival_sign.texture != null else Vector2.ZERO
+	_success_arrival_sign.position = Vector2(
+		_success_arrival_sign_target_position.x,
+		_success_arrival_sign_target_position.y - _run_state.distance_remaining
+	)
+	_success_arrival_sign.visible = (
+		_success_arrival_sign.position.y + sign_size.y > 0.0
+		and _success_arrival_sign.position.y < get_viewport_rect().size.y
+	)
 
 
 ## Returns the current authored phase for one route-progress ratio.
