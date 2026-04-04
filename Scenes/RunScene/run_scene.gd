@@ -10,7 +10,6 @@ signal return_to_title_requested
 
 
 # Constants
-const DevCheatsType := preload(ProjectPaths.DEV_CHEATS_SCRIPT_PATH)
 const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
 const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
 const RoadsideSceneryType := preload(ProjectPaths.ROADSIDE_SCENERY_SCRIPT_PATH)
@@ -159,7 +158,7 @@ var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
 var _navigation_click_in_progress := false
 var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
-var _dev_cheats: DevCheatsType
+var _dev_cheats: DevCheats
 var _is_success_exit_beat_active := false
 var _has_finished_success_exit_beat := false
 var _previous_frame_result: StringName = RunStateType.RESULT_IN_PROGRESS
@@ -291,12 +290,12 @@ var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
 # Public Methods
 
 ## Binds a fresh run state and the shared build-owned dev cheats service for one run scene.
-func setup(run_state: RunStateType, dev_cheats: DevCheatsType = null) -> void:
+func setup(run_state: RunStateType, dev_cheats: DevCheats = null) -> void:
 	_run_state = run_state
 	if dev_cheats != null:
 		_dev_cheats = dev_cheats
 	elif _dev_cheats == null:
-		_dev_cheats = DevCheatsType.new()
+		_dev_cheats = DevCheats.new()
 	_dev_cheats.register_input_actions()
 	_run_state.load_persisted_best_run(_best_run_save_path)
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
@@ -654,8 +653,8 @@ func _process(delta: float) -> void:
 	_run_presentation.advance_scroll(_run_state.current_speed, delta)
 	_advance_roadside_scenery(scroll_distance)
 	_sync_route_phase()
-	var should_process_runtime_hazards := _dev_cheats == null or _dev_cheats.are_runtime_hazards_enabled
 
+	var should_process_runtime_hazards := _dev_cheats == null or _dev_cheats.are_runtime_hazards_enabled
 	if should_process_runtime_hazards:
 		_hazard_spawner.advance(
 			scroll_distance,

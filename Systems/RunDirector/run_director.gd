@@ -218,12 +218,6 @@ func is_bad_luck_timer_enabled() -> bool:
 		and route_phase != ROUTE_PHASE_FINAL_STRETCH
 	)
 
-
-## Preserves compatibility for callers still using the older timer-bad-luck query name.
-func is_timer_bad_luck_enabled() -> bool:
-	return is_bad_luck_timer_enabled()
-
-
 ## Returns the authored bad-luck interval range for the supplied route progress ratio.
 func get_bad_luck_interval_range(progress_ratio: float) -> Vector2:
 	match get_route_phase_for_progress(progress_ratio):

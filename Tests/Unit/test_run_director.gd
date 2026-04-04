@@ -54,7 +54,7 @@ func test_advance_when_progress_enters_final_stretch_then_bad_luck_is_disabled()
 	director.sync_route_phase()
 
 	assert_eq(director.route_phase, RunDirectorType.ROUTE_PHASE_RESET_BEFORE_FINALE)
-	assert_true(director.is_timer_bad_luck_enabled())
+	assert_true(director.is_bad_luck_timer_enabled())
 	assert_true(director.scheduled_bad_luck_interval > 0.0)
 
 	run_state.distance_remaining = run_state.route_distance * 0.12
@@ -62,7 +62,7 @@ func test_advance_when_progress_enters_final_stretch_then_bad_luck_is_disabled()
 
 	assert_eq(update.phase_callout_text, "FINAL STRETCH")
 	assert_eq(director.route_phase, RunDirectorType.ROUTE_PHASE_FINAL_STRETCH)
-	assert_false(director.is_timer_bad_luck_enabled())
+	assert_false(director.is_bad_luck_timer_enabled())
 	assert_eq(director.scheduled_bad_luck_interval, 0.0)
 	assert_eq(director.bad_luck_elapsed, 0.0)
 	assert_false(director.pending_bad_luck_trigger)
@@ -200,4 +200,4 @@ func test_advance_when_finish_threshold_is_crossed_then_finish_crossed_is_marked
 	assert_true(run_state.has_crossed_finish_line)
 	assert_eq(run_state.result, RunStateType.RESULT_IN_PROGRESS)
 	assert_eq(run_state.current_speed, 280.0)
-	assert_false(director.is_timer_bad_luck_enabled())
+	assert_false(director.is_bad_luck_timer_enabled())

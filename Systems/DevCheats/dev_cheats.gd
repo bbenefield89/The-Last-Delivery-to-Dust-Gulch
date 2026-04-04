@@ -1,3 +1,4 @@
+class_name DevCheats
 extends RefCounted
 
 ## Owns debug-build-only cheat gating and runtime cheat toggle state.
