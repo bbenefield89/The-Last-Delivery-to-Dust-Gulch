@@ -136,7 +136,7 @@ const HORSE_PANIC_FAILURE_CARGO_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_CARG
 const HORSE_PANIC_FAILURE_SPEED_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_SPEED_LOSS
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FAILURE_INSTABILITY_DURATION
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
-const SUCCESS_ARRIVAL_DURATION := RunPresentationType.SUCCESS_ARRIVAL_DURATION
+const SUCCESS_EXIT_BEAT_DURATION := RunPresentationType.SUCCESS_ARRIVAL_DURATION
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const DUST_BASE_AMOUNT_RATIO := RunPresentationType.DUST_BASE_AMOUNT_RATIO
 const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
@@ -159,10 +159,10 @@ var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
 var _navigation_click_in_progress := false
 var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
-var _dev_cheats: DevCheatsType = DevCheatsType.new()
-var _success_arrival_active := false
-var _has_completed_success_arrival := false
-var _last_observed_result: StringName = RunStateType.RESULT_IN_PROGRESS
+var _dev_cheats: DevCheatsType
+var _is_success_exit_beat_active := false
+var _has_finished_success_exit_beat := false
+var _previous_frame_result: StringName = RunStateType.RESULT_IN_PROGRESS
 
 
 # Private Fields: OnReady
@@ -290,16 +290,20 @@ var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
 
 # Public Methods
 
-## Binds a fresh run state and resets transient scene-only UI flow.
-func setup(run_state: RunStateType) -> void:
+## Binds a fresh run state and the shared build-owned dev cheats service for one run scene.
+func setup(run_state: RunStateType, dev_cheats: DevCheatsType = null) -> void:
 	_run_state = run_state
+	if dev_cheats != null:
+		_dev_cheats = dev_cheats
+	elif _dev_cheats == null:
+		_dev_cheats = DevCheatsType.new()
+	_dev_cheats.register_input_actions()
 	_run_state.load_persisted_best_run(_best_run_save_path)
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_run_state.record_best_run_if_needed(_best_run_save_path)
-	_success_arrival_active = false
-	_has_completed_success_arrival = false
-	_last_observed_result = _run_state.result
-	_dev_cheats.reset_for_new_run()
+	_is_success_exit_beat_active = false
+	_has_finished_success_exit_beat = false
+	_previous_frame_result = _run_state.result
 	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
@@ -569,6 +573,7 @@ func _process(delta: float) -> void:
 	if _run_state == null:
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		return
+
 	if _run_ui_presenter.is_pause_menu_open:
 		_run_ui_presenter.refresh_onboarding_prompt()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
@@ -577,17 +582,20 @@ func _process(delta: float) -> void:
 		_run_ui_presenter.refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
-	if _success_arrival_active:
-		_last_observed_result = _run_state.result
+
+	if _is_success_exit_beat_active:
+		_previous_frame_result = _run_state.result
 		_refresh_success_arrival_frame(delta)
 		return
+
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		_last_observed_result = _run_state.result
+		_previous_frame_result = _run_state.result
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-		if not (_has_completed_success_arrival and _run_state.result == RunStateType.RESULT_SUCCESS):
+		if not (_has_finished_success_exit_beat and _run_state.result == RunStateType.RESULT_SUCCESS):
 			_update_impact_feedback(delta)
 			_update_wagon_visual()
 			_update_camera_framing()
+
 		_run_ui_presenter.refresh_status()
 		_run_ui_presenter.refresh_onboarding_prompt()
 		_run_ui_presenter.refresh_pause_menu()
@@ -596,6 +604,7 @@ func _process(delta: float) -> void:
 		_run_ui_presenter.refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
+
 	if _run_ui_presenter.is_onboarding_active:
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		_run_presentation.advance_scroll(_run_state.current_speed, delta)
@@ -633,23 +642,28 @@ func _process(delta: float) -> void:
 		-ROAD_HALF_WIDTH,
 		ROAD_HALF_WIDTH,
 	)
+
 	_update_wagon_visual()
 	_run_state.recover_speed(delta)
 	_run_state.distance_remaining = max(
 		0.0,
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
+
 	var scroll_distance := _run_state.current_speed * delta
 	_run_presentation.advance_scroll(_run_state.current_speed, delta)
 	_advance_roadside_scenery(scroll_distance)
 	_sync_route_phase()
-	if _dev_cheats.are_hazards_enabled:
+	var should_process_runtime_hazards := _dev_cheats == null or _dev_cheats.are_runtime_hazards_enabled
+
+	if should_process_runtime_hazards:
 		_hazard_spawner.advance(
 			scroll_distance,
 			_run_state.get_delivery_progress_ratio(),
 			_run_state.distance_remaining,
 			_run_state.route_distance
 		)
+
 		_handle_run_hazard_update(
 			_run_hazard_resolver.resolve_frame(
 				_hazard_spawner,
@@ -657,16 +671,18 @@ func _process(delta: float) -> void:
 				_run_director
 			)
 		)
+
 	_advance_failure_triggers(delta)
 	_try_finalize_finish_success()
 	_sync_completed_run_best_state()
+
 	if _should_start_success_arrival():
 		_start_success_arrival_transition()
-		_last_observed_result = _run_state.result
+		_previous_frame_result = _run_state.result
 		_refresh_success_arrival_frame(0.0)
 		return
 
-	_last_observed_result = _run_state.result
+	_previous_frame_result = _run_state.result
 	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 	_update_impact_feedback(delta)
 	_update_wagon_visual()
@@ -711,8 +727,8 @@ func _build_best_run_summary() -> String:
 
 ## Routes pause, onboarding, and recovery input for the run scene.
 func _input(event: InputEvent) -> void:
-	if _dev_cheats.consume_input(event):
-		set_hazards_enabled(not _dev_cheats.are_hazards_enabled)
+	if _dev_cheats != null and _dev_cheats.consume_input(event):
+		set_hazards_enabled(not _dev_cheats.are_runtime_hazards_enabled)
 		return
 
 	var ui_input_result := _run_ui_presenter.route_input(event, PAUSE_ACTION)
@@ -801,24 +817,24 @@ func _should_start_success_arrival() -> bool:
 	return (
 		_run_state != null
 		and _run_state.result == RunStateType.RESULT_SUCCESS
-		and _last_observed_result == RunStateType.RESULT_IN_PROGRESS
-		and not _success_arrival_active
-		and not _has_completed_success_arrival
+		and _previous_frame_result == RunStateType.RESULT_IN_PROGRESS
+		and not _is_success_exit_beat_active
+		and not _has_finished_success_exit_beat
 	)
 
 
 ## Enables or disables hazard spawning and active hazard resolution for local testing.
 func set_hazards_enabled(enabled: bool) -> void:
-	if not _dev_cheats.is_enabled():
+	if _dev_cheats == null or not _dev_cheats.are_cheats_available():
 		return
-	if _dev_cheats.are_hazards_enabled == enabled:
+	if _dev_cheats.are_runtime_hazards_enabled == enabled:
 		return
 
-	_dev_cheats.are_hazards_enabled = enabled
-	if not _dev_cheats.are_hazards_enabled and _hazard_spawner != null:
+	_dev_cheats.are_runtime_hazards_enabled = enabled
+	if not _dev_cheats.are_runtime_hazards_enabled and _hazard_spawner != null:
 		_hazard_spawner.clear_runtime_hazards()
 
-	_show_bonus_callout("HAZARDS ON" if _dev_cheats.are_hazards_enabled else "HAZARDS OFF")
+	_show_bonus_callout("HAZARDS ON" if _dev_cheats.are_runtime_hazards_enabled else "HAZARDS OFF")
 
 
 ## Converts a crossed finish line into true success only after the last live hazard has cleared.
@@ -836,8 +852,8 @@ func _try_finalize_finish_success() -> void:
 
 ## Starts the scripted success-arrival beat from the frozen true-success finish frame.
 func _start_success_arrival_transition() -> void:
-	_success_arrival_active = true
-	_has_completed_success_arrival = false
+	_is_success_exit_beat_active = true
+	_has_finished_success_exit_beat = false
 	_run_presentation.start_success_arrival()
 
 
@@ -855,8 +871,8 @@ func _refresh_success_arrival_frame(delta: float) -> void:
 	if not arrival_completed:
 		return
 
-	_success_arrival_active = false
-	_has_completed_success_arrival = true
+	_is_success_exit_beat_active = false
+	_has_finished_success_exit_beat = true
 	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
 
 
@@ -961,7 +977,6 @@ func _ensure_input_actions() -> void:
 	_register_action(STEER_ACTION_NEGATIVE, [KEY_A, KEY_LEFT])
 	_register_action(STEER_ACTION_POSITIVE, [KEY_D, KEY_RIGHT])
 	_register_action(PAUSE_ACTION, [KEY_ESCAPE])
-	_dev_cheats.register_input_actions()
 
 
 ## Helper for register action.

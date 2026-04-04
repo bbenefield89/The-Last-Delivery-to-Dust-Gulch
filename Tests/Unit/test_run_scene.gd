@@ -395,14 +395,14 @@ func test_route_phase_when_progress_enters_final_stretch_then_bad_luck_is_disabl
 	_setup_active_run_at_progress(scene, state, 0.879)
 
 	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_RESET_BEFORE_FINALE)
-	assert_true(run_director.is_timer_bad_luck_enabled())
+	assert_true(run_director.is_bad_luck_timer_enabled())
 	assert_true(run_director.scheduled_bad_luck_interval > 0.0)
 
 	state.distance_remaining = state.route_distance * 0.12
 	scene._process(0.0)
 
 	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
-	assert_false(run_director.is_timer_bad_luck_enabled())
+	assert_false(run_director.is_bad_luck_timer_enabled())
 	assert_eq(run_director.scheduled_bad_luck_interval, 0.0)
 	assert_eq(run_director.bad_luck_elapsed, 0.0)
 	assert_false(run_director.pending_bad_luck_trigger)
@@ -820,6 +820,9 @@ func test_ready_registers_steering_input_actions() -> void:
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
+	var state := RunStateType.new()
+	scene.setup(state)
+
 	assert_true(InputMap.has_action("steer_left"))
 	assert_true(InputMap.has_action("steer_right"))
 	assert_true(InputMap.has_action("pause_run"))
@@ -840,7 +843,7 @@ func test_toggle_hazards_action_when_pressed_then_live_hazards_clear() -> void:
 
 	await _send_key_input(KEY_H)
 
-	assert_false(scene._dev_cheats.are_hazards_enabled)
+	assert_false(scene._dev_cheats.are_runtime_hazards_enabled)
 	assert_eq(_get_hazard_spawner(scene).get_child_count(), 0)
 
 
@@ -859,14 +862,14 @@ func test_set_hazards_enabled_when_toggled_off_and_on_then_spawning_stops_and_re
 	hazard_spawner._distance_until_next_spawn = 1.0
 	scene._process(2.0 / state.current_speed)
 
-	assert_false(scene._dev_cheats.are_hazards_enabled)
+	assert_false(scene._dev_cheats.are_runtime_hazards_enabled)
 	assert_eq(hazard_spawner.get_child_count(), 0)
 
 	scene.set_hazards_enabled(true)
 	hazard_spawner._distance_until_next_spawn = 1.0
 	scene._process(3.0)
 
-	assert_true(scene._dev_cheats.are_hazards_enabled)
+	assert_true(scene._dev_cheats.are_runtime_hazards_enabled)
 	assert_true(hazard_spawner.get_child_count() > 0)
 
 
@@ -879,15 +882,15 @@ func test_hazard_toggle_when_dev_cheats_are_disabled_then_input_and_runtime_call
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
 	_spawn_test_hazard(scene, &"rock")
-	scene._dev_cheats.set_debug_build_override(false)
+	scene._dev_cheats.force_disable_for_tests()
 
-	assert_true(scene._dev_cheats.are_hazards_enabled)
+	assert_true(scene._dev_cheats.are_runtime_hazards_enabled)
 	assert_eq(_get_hazard_spawner(scene).get_child_count(), 1)
 
 	await _send_key_input(KEY_H)
 	scene.set_hazards_enabled(false)
 
-	assert_true(scene._dev_cheats.are_hazards_enabled)
+	assert_true(scene._dev_cheats.are_runtime_hazards_enabled)
 	assert_eq(_get_hazard_spawner(scene).get_child_count(), 1)
 
 
@@ -1602,7 +1605,7 @@ func test_reaching_dust_gulch_when_live_hazard_remains_then_success_waits_for_cl
 	assert_true(state.has_crossed_finish_line)
 	assert_eq(state.result, RunStateType.RESULT_IN_PROGRESS)
 	assert_eq(state.current_speed, 280.0)
-	assert_false(scene._success_arrival_active)
+	assert_false(scene._is_success_exit_beat_active)
 	assert_eq(hazard_spawner.get_child_count(), 1)
 
 	var result_panel := scene.get_node("%ResultPanel") as PanelContainer
@@ -1624,7 +1627,7 @@ func test_reaching_dust_gulch_when_live_hazard_remains_then_success_waits_for_cl
 
 	assert_eq(state.result, RunStateType.RESULT_SUCCESS)
 	assert_eq(state.current_speed, 0.0)
-	assert_true(scene._success_arrival_active)
+	assert_true(scene._is_success_exit_beat_active)
 	assert_eq(hazard_spawner.get_child_count(), 0)
 
 
@@ -1649,7 +1652,7 @@ func test_finish_buffer_when_live_hazard_hits_then_collapse_still_wins() -> void
 
 	assert_true(state.has_crossed_finish_line)
 	assert_eq(state.result, RunStateType.RESULT_COLLAPSED)
-	assert_false(scene._success_arrival_active)
+	assert_false(scene._is_success_exit_beat_active)
 
 	var result_panel := scene.get_node("%ResultPanel") as PanelContainer
 	var result_title := scene.get_node("%ResultTitle") as Label
@@ -1669,15 +1672,15 @@ func test_success_arrival_transition_when_completed_then_success_result_panel_op
 	_setup_active_run(scene, state)
 
 	scene._process(0.1)
-	assert_true(scene._success_arrival_active)
+	assert_true(scene._is_success_exit_beat_active)
 	assert_false((scene.get_node("%ResultPanel") as PanelContainer).visible)
 
-	scene._process(scene.SUCCESS_ARRIVAL_DURATION)
+	scene._process(scene.SUCCESS_EXIT_BEAT_DURATION)
 
 	var result_panel := scene.get_node("%ResultPanel") as PanelContainer
 	var result_title := scene.get_node("%ResultTitle") as Label
-	assert_false(scene._success_arrival_active)
-	assert_true(scene._has_completed_success_arrival)
+	assert_false(scene._is_success_exit_beat_active)
+	assert_true(scene._has_finished_success_exit_beat)
 	assert_true(result_panel.visible)
 	assert_eq(result_title.text, "Delivered to Dust Gulch")
 
@@ -1724,7 +1727,7 @@ func test_zero_health_triggers_collapse_and_stops_forward_motion() -> void:
 
 	assert_eq(state.result, RunStateType.RESULT_COLLAPSED)
 	assert_eq(state.current_speed, 0.0)
-	assert_false(scene._success_arrival_active)
+	assert_false(scene._is_success_exit_beat_active)
 
 	var result_panel: PanelContainer = scene.get_node("%ResultPanel")
 	var result_title: Label = scene.get_node("%ResultTitle")

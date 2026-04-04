@@ -60,6 +60,27 @@ func test_app_root_play_from_title_bootstraps_run_state_and_run_scene() -> void:
 	assert_true(app_root.run_state.distance_remaining >= 0.0)
 
 
+## Verifies AppRoot reuses one shared DevCheats service across run restarts.
+func test_app_root_when_restart_creates_new_run_then_dev_cheats_service_is_reused() -> void:
+	var app_root = APP_ROOT_SCENE.instantiate()
+	app_root.allow_quit = false
+	add_child_autofree(app_root)
+	await wait_process_frames(1)
+	await app_root._title_screen._on_play_pressed()
+	await wait_process_frames(1)
+
+	var shared_dev_cheats = app_root._dev_cheats
+	app_root._dev_cheats.are_runtime_hazards_enabled = false
+	app_root.run_state.result = &"collapsed"
+
+	app_root._start_new_run()
+	await wait_process_frames(1)
+
+	assert_eq(app_root._dev_cheats, shared_dev_cheats)
+	assert_eq(app_root._run_scene._dev_cheats, shared_dev_cheats)
+	assert_false(app_root._run_scene._dev_cheats.are_runtime_hazards_enabled)
+
+
 ## Verifies app root restart rebuilds run state for completed run.
 
 func test_app_root_restart_rebuilds_run_state_for_completed_run() -> void:

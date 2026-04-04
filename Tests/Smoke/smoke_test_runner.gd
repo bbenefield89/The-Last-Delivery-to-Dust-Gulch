@@ -163,7 +163,7 @@ func _assert_success_path(app_root: Node) -> bool:
 		quit(1)
 		return false
 
-	run_scene._process(run_scene.SUCCESS_ARRIVAL_DURATION)
+	run_scene._process(run_scene.SUCCESS_EXIT_BEAT_DURATION)
 	await process_frame
 
 	if not result_panel.visible or result_title.text != "Delivered to Dust Gulch":

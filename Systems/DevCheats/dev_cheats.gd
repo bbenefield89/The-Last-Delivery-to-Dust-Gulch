@@ -7,43 +7,29 @@ extends RefCounted
 
 const TOGGLE_HAZARDS_ACTION := &"toggle_hazards"
 const TOGGLE_HAZARDS_KEY := KEY_H
-const DEFAULT_HAZARDS_ENABLED := true
-const DEBUG_BUILD_OVERRIDE_INHERIT := -1
-const DEBUG_BUILD_OVERRIDE_DISABLED := 0
-const DEBUG_BUILD_OVERRIDE_ENABLED := 1
+const DEFAULT_ARE_RUNTIME_HAZARDS_ENABLED := true
 
 
 # Public Fields
 
-var are_hazards_enabled: bool = DEFAULT_HAZARDS_ENABLED
+var are_runtime_hazards_enabled: bool = DEFAULT_ARE_RUNTIME_HAZARDS_ENABLED
 
 
 # Private Fields
 
-var _debug_build_override: int = DEBUG_BUILD_OVERRIDE_INHERIT
+var _are_cheats_forced_off_for_tests := false
 
 
 # Public Methods
 
-## Restores cheat-owned runtime state to its default values for one new run.
-func reset_for_new_run() -> void:
-	are_hazards_enabled = DEFAULT_HAZARDS_ENABLED
-
-
 ## Returns whether debug-only cheats are available in the current runtime.
-func is_enabled() -> bool:
-	match _debug_build_override:
-		DEBUG_BUILD_OVERRIDE_DISABLED:
-			return false
-		DEBUG_BUILD_OVERRIDE_ENABLED:
-			return true
-		_:
-			return OS.is_debug_build()
+func are_cheats_available() -> bool:
+	return OS.is_debug_build() and not _are_cheats_forced_off_for_tests
 
 
 ## Registers debug-only cheat input actions when the current runtime allows them.
 func register_input_actions() -> void:
-	if not is_enabled():
+	if not are_cheats_available():
 		return
 
 	if not InputMap.has_action(TOGGLE_HAZARDS_ACTION):
@@ -57,23 +43,20 @@ func register_input_actions() -> void:
 
 ## Consumes one input event and returns whether it requested the hazard cheat toggle.
 func consume_input(event: InputEvent) -> bool:
-	if not is_enabled():
+	if not are_cheats_available():
 		return false
+
 	if not event.is_action_pressed(TOGGLE_HAZARDS_ACTION):
 		return false
 
 	return true
 
 
-## Overrides debug-build detection for automated tests that need release-like behavior.
-func set_debug_build_override(is_debug_build: bool) -> void:
-	_debug_build_override = (
-		DEBUG_BUILD_OVERRIDE_ENABLED
-		if is_debug_build
-		else DEBUG_BUILD_OVERRIDE_DISABLED
-	)
+## Forces cheats off for automated tests that need release-like behavior.
+func force_disable_for_tests() -> void:
+	_are_cheats_forced_off_for_tests = true
 
 
-## Clears any test-only debug-build override and restores live runtime detection.
-func clear_debug_build_override() -> void:
-	_debug_build_override = DEBUG_BUILD_OVERRIDE_INHERIT
+## Clears any test-only cheat restrictions and restores live runtime detection.
+func clear_test_overrides() -> void:
+	_are_cheats_forced_off_for_tests = false
