@@ -10,6 +10,7 @@ signal return_to_title_requested
 
 
 # Constants
+const DevCheatsType := preload(ProjectPaths.DEV_CHEATS_SCRIPT_PATH)
 const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
 const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
 const RoadsideSceneryType := preload(ProjectPaths.ROADSIDE_SCENERY_SCRIPT_PATH)
@@ -137,8 +138,6 @@ const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FA
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
 const SUCCESS_ARRIVAL_DURATION := RunPresentationType.SUCCESS_ARRIVAL_DURATION
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
-const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
-const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
 const DUST_BASE_AMOUNT_RATIO := RunPresentationType.DUST_BASE_AMOUNT_RATIO
 const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
 const ONBOARDING_BODY := (
@@ -160,10 +159,10 @@ var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
 var _navigation_click_in_progress := false
 var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
+var _dev_cheats: DevCheatsType = DevCheatsType.new()
 var _success_arrival_active := false
 var _has_completed_success_arrival := false
 var _last_observed_result: StringName = RunStateType.RESULT_IN_PROGRESS
-var _success_arrival_sign_target_position := Vector2.ZERO
 
 
 # Private Fields: OnReady
@@ -182,9 +181,6 @@ var _hazard_spawner: HazardSpawnerType = %HazardSpawner
 
 @onready
 var _roadside_scenery: RoadsideSceneryType = %RoadsideScenery
-
-@onready
-var _success_arrival_sign: Sprite2D = %SuccessArrivalSign
 
 @onready
 var _scroll_root: Node2D = %ScrollRoot
@@ -303,7 +299,7 @@ func setup(run_state: RunStateType) -> void:
 	_success_arrival_active = false
 	_has_completed_success_arrival = false
 	_last_observed_result = _run_state.result
-	_reset_success_arrival_sign()
+	_dev_cheats.reset_for_new_run()
 	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
@@ -397,7 +393,6 @@ func _ready() -> void:
 	_update_wagon_visual()
 	_update_scroll_visuals()
 	_update_camera_framing()
-	_reset_success_arrival_sign()
 	_run_ui_presenter.refresh_status()
 	_run_ui_presenter.refresh_onboarding_prompt()
 	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
@@ -588,7 +583,6 @@ func _process(delta: float) -> void:
 		return
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_last_observed_result = _run_state.result
-		_refresh_success_arrival_sign()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		if not (_has_completed_success_arrival and _run_state.result == RunStateType.RESULT_SUCCESS):
 			_update_impact_feedback(delta)
@@ -645,24 +639,26 @@ func _process(delta: float) -> void:
 		0.0,
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
+	var scroll_distance := _run_state.current_speed * delta
 	_run_presentation.advance_scroll(_run_state.current_speed, delta)
-	_advance_roadside_scenery(_run_state.current_speed * delta)
+	_advance_roadside_scenery(scroll_distance)
 	_sync_route_phase()
-	_refresh_success_arrival_sign()
-	_hazard_spawner.advance(
-		_run_state.current_speed * delta,
-		_run_state.get_delivery_progress_ratio(),
-		_run_state.distance_remaining,
-		_run_state.route_distance
-	)
-	_handle_run_hazard_update(
-		_run_hazard_resolver.resolve_frame(
-			_hazard_spawner,
-			_run_state,
-			_run_director
+	if _dev_cheats.are_hazards_enabled:
+		_hazard_spawner.advance(
+			scroll_distance,
+			_run_state.get_delivery_progress_ratio(),
+			_run_state.distance_remaining,
+			_run_state.route_distance
 		)
-	)
+		_handle_run_hazard_update(
+			_run_hazard_resolver.resolve_frame(
+				_hazard_spawner,
+				_run_state,
+				_run_director
+			)
+		)
 	_advance_failure_triggers(delta)
+	_try_finalize_finish_success()
 	_sync_completed_run_best_state()
 	if _should_start_success_arrival():
 		_start_success_arrival_transition()
@@ -715,6 +711,10 @@ func _build_best_run_summary() -> String:
 
 ## Routes pause, onboarding, and recovery input for the run scene.
 func _input(event: InputEvent) -> void:
+	if _dev_cheats.consume_input(event):
+		set_hazards_enabled(not _dev_cheats.are_hazards_enabled)
+		return
+
 	var ui_input_result := _run_ui_presenter.route_input(event, PAUSE_ACTION)
 	if ui_input_result.pause_command == GameplayUiLayerType.PAUSE_COMMAND_TOGGLE:
 		_set_pause_state(not _run_ui_presenter.is_pause_menu_open)
@@ -807,13 +807,37 @@ func _should_start_success_arrival() -> bool:
 	)
 
 
-## Starts the scripted success-arrival beat and clears live gameplay hazards from the finish frame.
+## Enables or disables hazard spawning and active hazard resolution for local testing.
+func set_hazards_enabled(enabled: bool) -> void:
+	if not _dev_cheats.is_enabled():
+		return
+	if _dev_cheats.are_hazards_enabled == enabled:
+		return
+
+	_dev_cheats.are_hazards_enabled = enabled
+	if not _dev_cheats.are_hazards_enabled and _hazard_spawner != null:
+		_hazard_spawner.clear_runtime_hazards()
+
+	_show_bonus_callout("HAZARDS ON" if _dev_cheats.are_hazards_enabled else "HAZARDS OFF")
+
+
+## Converts a crossed finish line into true success only after the last live hazard has cleared.
+func _try_finalize_finish_success() -> void:
+	if _run_state == null or _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		return
+	if not _run_state.has_crossed_finish_line:
+		return
+	if _hazard_spawner != null and _hazard_spawner.has_runtime_hazards():
+		return
+
+	_run_state.result = RunStateType.RESULT_SUCCESS
+	_run_state.current_speed = 0.0
+
+
+## Starts the scripted success-arrival beat from the frozen true-success finish frame.
 func _start_success_arrival_transition() -> void:
 	_success_arrival_active = true
 	_has_completed_success_arrival = false
-	_refresh_success_arrival_sign()
-	if _hazard_spawner != null:
-		_hazard_spawner.clear_runtime_hazards()
 	_run_presentation.start_success_arrival()
 
 
@@ -833,45 +857,7 @@ func _refresh_success_arrival_frame(delta: float) -> void:
 
 	_success_arrival_active = false
 	_has_completed_success_arrival = true
-	_refresh_success_arrival_sign()
 	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
-
-
-## Resets the authored arrival sign back to its hidden pre-finish state.
-func _reset_success_arrival_sign() -> void:
-	if _success_arrival_sign == null:
-		return
-
-	if _success_arrival_sign_target_position == Vector2.ZERO:
-		_success_arrival_sign_target_position = _success_arrival_sign.position
-	else:
-		_success_arrival_sign.position = _success_arrival_sign_target_position
-	_success_arrival_sign.visible = false
-
-
-## Projects the Dust Gulch sign into the final stretch so it scrolls in before the finish and then stops.
-func _refresh_success_arrival_sign() -> void:
-	if _success_arrival_sign == null or _run_state == null:
-		return
-
-	if _run_state.result == RunStateType.RESULT_SUCCESS:
-		_success_arrival_sign.position = _success_arrival_sign_target_position
-		_success_arrival_sign.visible = true
-		return
-	if _run_state.result != RunStateType.RESULT_IN_PROGRESS or _run_ui_presenter.is_onboarding_active:
-		_success_arrival_sign.position = _success_arrival_sign_target_position
-		_success_arrival_sign.visible = false
-		return
-
-	var sign_size := _success_arrival_sign.texture.get_size() if _success_arrival_sign.texture != null else Vector2.ZERO
-	_success_arrival_sign.position = Vector2(
-		_success_arrival_sign_target_position.x,
-		_success_arrival_sign_target_position.y - _run_state.distance_remaining
-	)
-	_success_arrival_sign.visible = (
-		_success_arrival_sign.position.y + sign_size.y > 0.0
-		and _success_arrival_sign.position.y < get_viewport_rect().size.y
-	)
 
 
 ## Returns the current authored phase for one route-progress ratio.
@@ -975,6 +961,7 @@ func _ensure_input_actions() -> void:
 	_register_action(STEER_ACTION_NEGATIVE, [KEY_A, KEY_LEFT])
 	_register_action(STEER_ACTION_POSITIVE, [KEY_D, KEY_RIGHT])
 	_register_action(PAUSE_ACTION, [KEY_ESCAPE])
+	_dev_cheats.register_input_actions()
 
 
 ## Helper for register action.

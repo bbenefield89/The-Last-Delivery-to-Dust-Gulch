@@ -209,6 +209,9 @@ func apply_recovery_failure_penalty() -> void:
 
 ## Returns whether the route is in a phase that should schedule timer-driven bad luck.
 func is_timer_bad_luck_enabled() -> bool:
+	if _run_state != null and _run_state.has_crossed_finish_line:
+		return false
+
 	return (
 		route_phase != &""
 		and route_phase != ROUTE_PHASE_WARM_UP
@@ -359,8 +362,7 @@ func _resolve_run_result() -> void:
 		return
 
 	_run_state.distance_remaining = 0.0
-	_run_state.result = RunStateType.RESULT_SUCCESS
-	_run_state.current_speed = 0.0
+	_run_state.has_crossed_finish_line = true
 
 
 class RunUpdate:

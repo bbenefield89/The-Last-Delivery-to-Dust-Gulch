@@ -269,7 +269,7 @@ func test_spawned_scenery_when_scrubs_repeat_then_texture_and_variant_streaks_st
 	assert_true(saw_second_scrub_variant)
 
 
-## Verifies Dust Gulch signs obey explicit cooldown and side rules so they stay readable instead of dominating.
+## Verifies roadside signs obey explicit cooldown and side rules so they stay readable instead of dominating.
 func test_spawned_scenery_when_signs_spawn_then_sign_spacing_and_side_rules_hold() -> void:
 	var roadside_scenery := await _create_roadside_owner()
 	roadside_scenery.advance(3200.0)

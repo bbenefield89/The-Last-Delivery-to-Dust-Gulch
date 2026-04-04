@@ -185,3 +185,19 @@ func test_advance_when_health_and_distance_both_hit_zero_then_collapse_wins() ->
 
 	assert_eq(run_state.result, RunStateType.RESULT_COLLAPSED)
 	assert_eq(run_state.current_speed, 0.0)
+
+
+## Verifies reaching the finish threshold arms the delayed success buffer instead of resolving success immediately.
+func test_advance_when_finish_threshold_is_crossed_then_finish_crossed_is_marked_without_success() -> void:
+	var bound_values := _bind_director_at_progress(1.0)
+	var director = bound_values[0]
+	var run_state := bound_values[1] as RunStateType
+	run_state.distance_remaining = 0.0
+	run_state.current_speed = 280.0
+
+	director.advance(0.0)
+
+	assert_true(run_state.has_crossed_finish_line)
+	assert_eq(run_state.result, RunStateType.RESULT_IN_PROGRESS)
+	assert_eq(run_state.current_speed, 280.0)
+	assert_false(director.is_timer_bad_luck_enabled())

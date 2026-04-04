@@ -193,7 +193,7 @@ func _select_next_scenery_type() -> StringName:
 	return SCENERY_TYPE_SCRUB
 
 
-## Returns whether the next spawn slot is allowed to place the Dust Gulch sign.
+## Returns whether the next spawn slot is allowed to place a roadside sign.
 func _can_spawn_sign() -> bool:
 	if _sign_texture == null:
 		return false

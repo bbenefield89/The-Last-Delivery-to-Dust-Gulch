@@ -1,6 +1,7 @@
 extends GutTest
 
 # Constants
+const DevCheatsType := preload(ProjectPaths.DEV_CHEATS_SCRIPT_PATH)
 const HazardInstanceType := preload(ProjectPaths.HAZARD_INSTANCE_SCRIPT_PATH)
 const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
 const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
@@ -100,6 +101,11 @@ func _get_run_audio_presenter(scene: Node) -> RunAudioPresenterType:
 ## Returns the node-backed roadside scenery owner attached to the run scene world.
 func _get_roadside_scenery(scene: Node) -> RoadsideSceneryType:
 	return scene.get_node("%RoadsideScenery") as RoadsideSceneryType
+
+
+## Returns the node-backed hazard spawner attached to the run scene world.
+func _get_hazard_spawner(scene: Node) -> HazardSpawnerType:
+	return scene.get_node("%HazardSpawner") as HazardSpawnerType
 
 
 ## Captures the live roadside scenery stream from the wired run scene for chunk-size comparisons.
@@ -817,6 +823,72 @@ func test_ready_registers_steering_input_actions() -> void:
 	assert_true(InputMap.has_action("steer_left"))
 	assert_true(InputMap.has_action("steer_right"))
 	assert_true(InputMap.has_action("pause_run"))
+	assert_true(InputMap.has_action(DevCheatsType.TOGGLE_HAZARDS_ACTION))
+
+
+## Verifies pressing the hazards toggle hotkey clears live hazards for local testing.
+func test_toggle_hazards_action_when_pressed_then_live_hazards_clear() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	_spawn_test_hazard(scene, &"rock")
+
+	assert_eq(_get_hazard_spawner(scene).get_child_count(), 1)
+
+	await _send_key_input(KEY_H)
+
+	assert_false(scene._dev_cheats.are_hazards_enabled)
+	assert_eq(_get_hazard_spawner(scene).get_child_count(), 0)
+
+
+## Verifies disabling hazards suppresses new spawns until the testing toggle is turned back on.
+func test_set_hazards_enabled_when_toggled_off_and_on_then_spawning_stops_and_resumes() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.configure_route_distance(5000.0)
+	_setup_active_run(scene, state)
+	var hazard_spawner := _get_hazard_spawner(scene)
+
+	scene.set_hazards_enabled(false)
+	hazard_spawner._distance_until_next_spawn = 1.0
+	scene._process(2.0 / state.current_speed)
+
+	assert_false(scene._dev_cheats.are_hazards_enabled)
+	assert_eq(hazard_spawner.get_child_count(), 0)
+
+	scene.set_hazards_enabled(true)
+	hazard_spawner._distance_until_next_spawn = 1.0
+	scene._process(3.0)
+
+	assert_true(scene._dev_cheats.are_hazards_enabled)
+	assert_true(hazard_spawner.get_child_count() > 0)
+
+
+## Verifies cheat input and direct cheat calls stay inert when the runtime is not a debug build.
+func test_hazard_toggle_when_dev_cheats_are_disabled_then_input_and_runtime_calls_are_ignored() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	_setup_active_run(scene, state)
+	_spawn_test_hazard(scene, &"rock")
+	scene._dev_cheats.set_debug_build_override(false)
+
+	assert_true(scene._dev_cheats.are_hazards_enabled)
+	assert_eq(_get_hazard_spawner(scene).get_child_count(), 1)
+
+	await _send_key_input(KEY_H)
+	scene.set_hazards_enabled(false)
+
+	assert_true(scene._dev_cheats.are_hazards_enabled)
+	assert_eq(_get_hazard_spawner(scene).get_child_count(), 1)
 
 
 ## Verifies Escape opens the pause menu and gives the resume button default focus.
@@ -1449,6 +1521,7 @@ func test_roadside_scenery_when_running_in_scene_then_item_persists_before_clean
 	var roadside_scenery := _get_roadside_scenery(scene)
 	roadside_scenery._rng.seed = 11
 	scene._configure_roadside_scenery()
+	roadside_scenery._distance_since_last_sign = 0.0
 	roadside_scenery._distance_until_next_spawn = 1.0
 	scene._process(2.0 / state.current_speed)
 
@@ -1510,9 +1583,8 @@ func test_crossing_beat_and_reset_before_finale_switch_hazard_pressure_rules() -
 	assert_false(reset_spawner._get_active_band().allows_pressure_pair)
 
 
-## Verifies reaching dust gulch triggers success and stops forward motion.
-
-func test_reaching_dust_gulch_triggers_success_and_stops_forward_motion() -> void:
+## Verifies crossing the finish with a live hazard delays success until the hazard field clears.
+func test_reaching_dust_gulch_when_live_hazard_remains_then_success_waits_for_clear_runway() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
@@ -1522,28 +1594,67 @@ func test_reaching_dust_gulch_triggers_success_and_stops_forward_motion() -> voi
 	state.current_speed = 280.0
 	_setup_active_run(scene, state)
 	var hazard_spawner := scene.get_node("%HazardSpawner") as HazardSpawnerType
-	hazard_spawner._spawn_hazard(&"rock", 3)
+	hazard_spawner._spawn_hazard(&"rock", 0)
 
 	scene._process(0.1)
 
 	assert_eq(state.distance_remaining, 0.0)
+	assert_true(state.has_crossed_finish_line)
+	assert_eq(state.result, RunStateType.RESULT_IN_PROGRESS)
+	assert_eq(state.current_speed, 280.0)
+	assert_false(scene._success_arrival_active)
+	assert_eq(hazard_spawner.get_child_count(), 1)
+
+	var result_panel := scene.get_node("%ResultPanel") as PanelContainer
+	assert_false(result_panel.visible)
+
+	var lateral_position_before_buffer := state.lateral_position
+	Input.action_press(scene.STEER_ACTION_POSITIVE)
+	scene._process(0.1)
+	Input.action_release(scene.STEER_ACTION_POSITIVE)
+
+	assert_true(state.lateral_position > lateral_position_before_buffer)
+	assert_eq(state.result, RunStateType.RESULT_IN_PROGRESS)
+
+	scene._process(2.0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await wait_process_frames(1)
+	scene._process(0.0)
+
 	assert_eq(state.result, RunStateType.RESULT_SUCCESS)
 	assert_eq(state.current_speed, 0.0)
 	assert_true(scene._success_arrival_active)
 	assert_eq(hazard_spawner.get_child_count(), 0)
 
-	var result_panel := scene.get_node("%ResultPanel") as PanelContainer
-	assert_false(result_panel.visible)
 
-	var wagon := scene.get_node("%Wagon") as Node2D
-	var wagon_start_y := wagon.position.y
-	var lateral_position_before_arrival := state.lateral_position
-	Input.action_press(scene.STEER_ACTION_POSITIVE)
+## Verifies the player can still collapse after crossing the finish if a live hazard hits before the field clears.
+func test_finish_buffer_when_live_hazard_hits_then_collapse_still_wins() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = 20.0
+	state.current_speed = 280.0
+	state.wagon_health = 5
+	_setup_active_run(scene, state)
+
+	_spawn_test_hazard(scene, &"rock")
 	scene._process(0.1)
-	Input.action_release(scene.STEER_ACTION_POSITIVE)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	await wait_process_frames(1)
+	scene._process(0.0)
 
-	assert_eq(state.lateral_position, lateral_position_before_arrival)
-	assert_true(wagon.position.y < wagon_start_y)
+	assert_true(state.has_crossed_finish_line)
+	assert_eq(state.result, RunStateType.RESULT_COLLAPSED)
+	assert_false(scene._success_arrival_active)
+
+	var result_panel := scene.get_node("%ResultPanel") as PanelContainer
+	var result_title := scene.get_node("%ResultTitle") as Label
+	assert_true(result_panel.visible)
+	assert_eq(result_title.text, "Wagon Collapsed")
 
 
 ## Verifies the success-arrival beat delays the result panel until the scripted exit finishes.
@@ -1560,15 +1671,6 @@ func test_success_arrival_transition_when_completed_then_success_result_panel_op
 	scene._process(0.1)
 	assert_true(scene._success_arrival_active)
 	assert_false((scene.get_node("%ResultPanel") as PanelContainer).visible)
-	var arrival_sign := scene.get_node("%SuccessArrivalSign") as Sprite2D
-	var viewport_rect := scene.get_viewport().get_visible_rect()
-	var arrival_sign_rect := Rect2(
-		arrival_sign.global_position,
-		arrival_sign.texture.get_size() * Vector2(absf(arrival_sign.scale.x), absf(arrival_sign.scale.y))
-	)
-	assert_true(arrival_sign.visible)
-	assert_true(arrival_sign_rect.position.y >= viewport_rect.position.y)
-	assert_true(arrival_sign_rect.end.y <= viewport_rect.end.y)
 
 	scene._process(scene.SUCCESS_ARRIVAL_DURATION)
 
@@ -1576,40 +1678,8 @@ func test_success_arrival_transition_when_completed_then_success_result_panel_op
 	var result_title := scene.get_node("%ResultTitle") as Label
 	assert_false(scene._success_arrival_active)
 	assert_true(scene._has_completed_success_arrival)
-	assert_true(arrival_sign.visible)
 	assert_true(result_panel.visible)
 	assert_eq(result_title.text, "Delivered to Dust Gulch")
-
-
-## Verifies the Dust Gulch sign scrolls in during the last stretch and stops at the finish.
-func test_success_arrival_sign_when_finish_approaches_then_it_moves_south_and_stays_visible_on_success() -> void:
-	var scene = RUN_SCENE.instantiate()
-	add_child_autofree(scene)
-	await wait_process_frames(1)
-
-	var state := RunStateType.new()
-	_setup_active_run(scene, state)
-	var arrival_sign := scene.get_node("%SuccessArrivalSign") as Sprite2D
-	var target_position := arrival_sign.position
-
-	state.distance_remaining = 400.0
-	scene._process(0.0)
-	assert_false(arrival_sign.visible)
-
-	state.distance_remaining = 120.0
-	scene._process(0.0)
-	assert_true(arrival_sign.visible)
-	var pre_finish_y := arrival_sign.position.y
-	assert_true(pre_finish_y < target_position.y)
-
-	state.current_speed = 280.0
-	scene._process(0.1)
-	assert_true(arrival_sign.position.y > pre_finish_y)
-
-	state.distance_remaining = 0.0
-	scene._process(0.0)
-	assert_true(arrival_sign.visible)
-	assert_eq(arrival_sign.position, target_position)
 
 
 ## Verifies success state freezes progress on later frames.

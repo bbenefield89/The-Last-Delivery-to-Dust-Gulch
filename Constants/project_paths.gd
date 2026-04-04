@@ -10,6 +10,7 @@ const APP_ROOT_SCENE_PATH := "res://Scenes/AppRoot/AppRoot.tscn"
 const RUN_SCENE_PATH := "res://Scenes/RunScene/RunScene.tscn"
 const TITLE_SCREEN_SCENE_PATH := "res://Scenes/TitleScreen/TitleScreen.tscn"
 
+const DEV_CHEATS_SCRIPT_PATH := "res://Systems/DevCheats/dev_cheats.gd"
 const FAILURE_STATE_SCRIPT_PATH := "res://Systems/RunState/failure_state.gd"
 const HAZARD_DEFINITION_SCRIPT_PATH := "res://Systems/HazardSpawner/hazard_definition.gd"
 const HAZARD_INSTANCE_SCRIPT_PATH := "res://Systems/HazardSpawner/hazard_instance.gd"
