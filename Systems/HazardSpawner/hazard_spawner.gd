@@ -98,17 +98,23 @@ func advance(
 ) -> void:
 	_route_progress_ratio = clamp(route_progress_ratio, 0.0, 1.0)
 	_sync_route_phase()
+
 	var has_crossed_finish_line := is_finite(route_remaining_distance) and route_remaining_distance <= 0.0
 	if has_crossed_finish_line:
 		_clear_regular_spawn_schedule()
+
 	elif _should_hold_final_stretch_release(route_remaining_distance, route_distance):
 		_clear_regular_spawn_schedule()
+
 	elif _next_spawn_plan == null:
 		_prime_next_spawn()
+		
 	if not has_crossed_finish_line and _next_spawn_plan != null:
 		var active_spacing := _next_spawn_plan.spacing
 		_distance_until_next_spawn = min(_distance_until_next_spawn, active_spacing)
+
 	_move_hazards(distance_delta)
+	
 	if has_crossed_finish_line:
 		return
 

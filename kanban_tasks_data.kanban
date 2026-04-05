@@ -21,7 +21,14 @@
 			"uuid": "26ce163a-2aca-45c2-9ad4-9c0cba3727bb",
 			"title": "Todo",
 			"tasks": [
-				"89ee2054-af77-46f7-a339-9385d64fa8a4"
+				"89ee2054-af77-46f7-a339-9385d64fa8a4",
+				"25cdcf3c-c089-4a6d-bf7f-e3366868edce",
+				"79dcaab3-01e9-4089-baae-3a3eed280941",
+				"59792f74-44a8-40d7-8260-61899cc1d11f",
+				"46a90030-8590-4e49-89bf-9b72fa9b5d96",
+				"f5e26e18-1d8f-45f9-ae93-c638d1f60148",
+				"5f5dd911-b4eb-4104-9759-262669c06b1a",
+				"f82cd7f8-6a23-4deb-97c2-68a3655ca9d7"
 			]
 		},
 		{
@@ -989,11 +996,11 @@
 			"steps": [
 				{
 					"details": "Add an explicit success-arrival transition that begins when the player reaches Dust Gulch. During that transition, stop normal gameplay pressure, remove player steering control, and drive the wagon north off the screen through authored motion instead of leaving the player in control.\n\nDone when: after a successful run, a reviewer can no longer steer the wagon, gameplay no longer behaves like the normal route, and the wagon exits north under scripted success-arrival motion.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add a modest Dust Gulch arrival dressing pass to the finish so the player can read that they are entering town rather than just ending in open desert. Build on the existing sign treatment with a small set of clear finish markers such as stronger signage, fencing, gate framing, or simple frontier structures, while keeping the center play area readable and avoiding a large environment-scope expansion.\n\nDone when: the end of a successful run has clear Dust Gulch arrival markers that visually distinguish the town entrance from the standard desert roadside presentation.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add automated coverage for the success-arrival flow. Verify that reaching Dust Gulch starts the arrival transition, removes player control, delays the success result presentation until the arrival beat completes, and leaves the collapse result path unchanged.\n\nDone when: the arrival outro behavior is covered by automated tests and the normal verification flow still passes.",
@@ -1017,6 +1024,146 @@
 				},
 				{
 					"details": "Update automated coverage for the authored scenery path so the refactor still guarantees stable distance-driven spacing, roadside margin placement, chunk-size-stable spawn ordering, and cleanup-boundary despawn without regressing the current DG-46 behavior in the focused roadside tests or the wired RunScene coverage.\n\nDone when: automated tests cover the authored roadside scenery path and still protect the current spawn, placement, and cleanup guarantees after the structural cleanup.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "25cdcf3c-c089-4a6d-bf7f-e3366868edce",
+			"title": "DG-49",
+			"description": "TechDebt: Introduce the top-level RunStateMachine for RunScene.\n\nScenes/RunScene/run_scene.gd currently owns the top-level run flow through direct branching on result flags and scene booleans. The script decides when the run is in progress, when it has reached success, when it has collapsed, and when the success exit beat is still hiding the result screen. That makes the high-level run flow harder to follow and leaves the top-tier state boundaries implicit inside one large scene script.\n\nThis ticket should introduce the first FSM slice only: a RunStateMachine with the three top-level states `in_progress`, `success`, and `collapsed`. Keep this intentionally narrow. Do not add child or substate machines in this ticket. The goal is to move the current top-level run-flow branching into explicit state objects while preserving the current onboarding, pause, gameplay, success-exit-beat, and result behavior exactly as it works today.\n\nPlace this FSM under the RunScene slice rather than under Systems using the agreed scene-local layout:\n- Scenes/RunScene/FSM/RunStateMachine/run_state_machine.gd\n- Scenes/RunScene/FSM/RunStateMachine/States/*\n\nThe `success` top-level state should continue to own the current success exit beat and post-success result handling internally for now rather than introducing a separate success substate machine. Likewise, `in_progress` should continue to own the current onboarding, active gameplay, and pause branching internally for now until later tickets split those into their own FSMs.\n\nLikely affected files:\n- Scenes/RunScene/FSM/RunStateMachine/*\n- Scenes/RunScene/run_scene.gd\n- Constants/project_paths.gd\n- Tests/Unit/test_run_scene.gd\n- Tests/Unit/test_run_state_machine.gd if a focused machine test file is added\n\nDone when: a reviewer can inspect RunScene and see the top-level run outcome flow owned by an explicit RunStateMachine with `in_progress`, `success`, and `collapsed` states under the RunScene folder, while the current gameplay, pause, success-exit-beat, and result behavior remain unchanged and covered by automated tests.",
+			"category": "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+			"steps": [
+				{
+					"details": "Create the scene-local RunStateMachine structure under Scenes/RunScene/FSM/RunStateMachine/ using the agreed layout of one machine script plus a States/ folder. Add explicit `in_progress`, `success`, and `collapsed` state objects with a narrow typed interface that RunScene can delegate to for top-level frame and input flow without introducing child FSMs yet.\n\nDone when: the RunScene slice contains a concrete RunStateMachine and three top-level state scripts in the agreed folder structure, and the machine can represent the current top-level run outcome states without relying on a flat branch block inside run_scene.gd.",
+					"done": false
+				},
+				{
+					"details": "Move the current top-level run outcome branching out of run_scene.gd and into the new state objects while preserving existing behavior. `in_progress` should continue to own the current in-progress branch, `success` should continue to own the success exit beat and post-success result presentation logic internally for now, and `collapsed` should continue to own the collapsed-result branch. Do not split onboarding, pause, active gameplay, or deeper failure/recovery flow into separate FSMs in this ticket.\n\nDone when: run_scene.gd delegates top-level outcome decisions to RunStateMachine instead of directly branching on result and success-exit flags, and a reviewer can play through normal driving, pause, collapse, and success flow with no behavior regression.",
+					"done": false
+				},
+				{
+					"details": "Add or update automated coverage for the new top-level FSM ownership. Cover at minimum the default `in_progress` path, transition into `success`, the current success exit beat before the result screen appears, and transition into `collapsed`, while keeping the existing RunScene integration coverage green.\n\nDone when: automated tests prove the top-level machine routes the run through `in_progress`, `success`, and `collapsed` correctly, preserves the current success exit beat timing, and the standard verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "79dcaab3-01e9-4089-baae-3a3eed280941",
+			"title": "DG-50",
+			"description": "TechDebt: Introduce the InProgressStateMachine for RunScene.\n\nAfter DG-49, the top-level RunStateMachine should already own the `in_progress`, `success`, and `collapsed` branches. The next cleanup is to split the `in_progress` branch into its own scene-local FSM so the current onboarding, active gameplay, and paused flow are no longer hidden inside one broad in-progress state implementation.\n\nThis ticket should create only the InProgressStateMachine and its three states:\n- `onboarding`\n- `active_gameplay`\n- `paused`\n\nKeep this intentionally narrow. Do not introduce SuccessStateMachine, ActiveGameplayStateMachine, RoutePhaseStateMachine, GameplayFlowStateMachine, or FailureStateMachine here. The goal is to move the current in-progress scene-flow branching into explicit state objects while preserving the current onboarding prompt, onboarding dismissal behavior, pause toggle behavior, pause focus flow, and active gameplay handoff exactly as they work today.\n\nPlace this FSM under the agreed scene-local layout:\n- Scenes/RunScene/FSM/InProgressStateMachine/in_progress_state_machine.gd\n- Scenes/RunScene/FSM/InProgressStateMachine/States/*\n\nThe `active_gameplay` state should continue to own the current deeper gameplay flow internally for now until a later ticket splits it into its own child FSM. The `paused` state should continue to own the current modal pause behavior internally for now without introducing deeper pause substates.\n\nLikely affected files:\n- Scenes/RunScene/FSM/InProgressStateMachine/*\n- Scenes/RunScene/FSM/RunStateMachine/States/*\n- Scenes/RunScene/run_scene.gd\n- Constants/project_paths.gd\n- Tests/Unit/test_run_scene.gd\n- Tests/Unit/test_in_progress_state_machine.gd if added\n\nDone when: a reviewer can inspect RunScene and see the `in_progress` branch owned by an explicit InProgressStateMachine with `onboarding`, `active_gameplay`, and `paused` states under the RunScene folder, while the current onboarding, pause, and active gameplay behavior remain unchanged and covered by automated tests.",
+			"category": "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+			"steps": [
+				{
+					"details": "Create the scene-local InProgressStateMachine structure under Scenes/RunScene/FSM/InProgressStateMachine/ using the agreed one-machine-plus-States layout. Add explicit `onboarding`, `active_gameplay`, and `paused` state objects with a narrow typed interface that the `in_progress` branch can delegate to without introducing deeper child FSMs yet.\n\nDone when: the RunScene slice contains a concrete InProgressStateMachine with the three agreed state scripts, and the `in_progress` branch no longer has to own those three scene-flow modes as one flat block.",
+					"done": false
+				},
+				{
+					"details": "Move the current in-progress branching out of the RunStateMachine `in_progress` state and into the new InProgressStateMachine while preserving current behavior. `onboarding` should continue to own onboarding freeze and dismissal behavior, `paused` should continue to own pause-menu modal behavior and focus handling, and `active_gameplay` should continue to own the current deeper gameplay branch internally for now.\n\nDone when: the `in_progress` branch delegates to InProgressStateMachine instead of directly branching between onboarding, pause, and active gameplay, and a reviewer can play through those three modes with no behavior regression.",
+					"done": false
+				},
+				{
+					"details": "Add or update automated coverage for the new in-progress FSM ownership. Cover at minimum run-start onboarding, onboarding dismissal into active gameplay, pause open and close behavior, and the fact that the current active gameplay branch is still reached through the new machine.\n\nDone when: automated tests prove InProgressStateMachine routes the run through `onboarding`, `active_gameplay`, and `paused` correctly, and the standard verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "59792f74-44a8-40d7-8260-61899cc1d11f",
+			"title": "DG-51",
+			"description": "TechDebt: Introduce the SuccessStateMachine for RunScene.\n\nAfter DG-49, the top-level `success` branch should still internally own the current success exit beat and final success-result behavior. This ticket should split that branch into its own explicit scene-local FSM so the success flow is no longer hidden behind success-specific flags inside one broad top-level state implementation.\n\nThis ticket should create only the SuccessStateMachine and its two states:\n- `success_exit_beat`\n- `success_result`\n\nKeep this intentionally narrow. Do not introduce InProgressStateMachine, ActiveGameplayStateMachine, RoutePhaseStateMachine, GameplayFlowStateMachine, or FailureStateMachine here. The goal is to move the current success-branch logic into explicit state objects while preserving the current hazard-clear success gating, exit-beat timing, wagon exit behavior, delayed result presentation, and final success-result panel behavior exactly as they work today.\n\nPlace this FSM under the agreed scene-local layout:\n- Scenes/RunScene/FSM/SuccessStateMachine/success_state_machine.gd\n- Scenes/RunScene/FSM/SuccessStateMachine/States/*\n\nLikely affected files:\n- Scenes/RunScene/FSM/SuccessStateMachine/*\n- Scenes/RunScene/FSM/RunStateMachine/States/*\n- Scenes/RunScene/run_scene.gd\n- Constants/project_paths.gd\n- Tests/Unit/test_run_scene.gd\n- Tests/Unit/test_success_state_machine.gd if added\n\nDone when: a reviewer can inspect RunScene and see the `success` branch owned by an explicit SuccessStateMachine with `success_exit_beat` and `success_result` states under the RunScene folder, while the current success timing and result behavior remain unchanged and covered by automated tests.",
+			"category": "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+			"steps": [
+				{
+					"details": "Create the scene-local SuccessStateMachine structure under Scenes/RunScene/FSM/SuccessStateMachine/ using the agreed one-machine-plus-States layout. Add explicit `success_exit_beat` and `success_result` state objects with a narrow typed interface that the `success` branch can delegate to without introducing deeper child FSMs.\n\nDone when: the RunScene slice contains a concrete SuccessStateMachine with the two agreed state scripts, and the `success` branch no longer owns exit-beat and success-result flow as one flat block.",
+					"done": false
+				},
+				{
+					"details": "Move the current success-branch logic out of the RunStateMachine `success` state and into the new SuccessStateMachine while preserving current behavior. `success_exit_beat` should continue to own the current exit-beat progression and hidden-result interval, and `success_result` should continue to own the final visible success-result behavior.\n\nDone when: the `success` branch delegates to SuccessStateMachine instead of directly branching between exit-beat and result handling, and a reviewer can finish a run and see no behavior regression.",
+					"done": false
+				},
+				{
+					"details": "Add or update automated coverage for the new success FSM ownership. Cover at minimum transition into success, success exit beat staying active before the result opens, and transition into the visible success result state after the beat completes.\n\nDone when: automated tests prove SuccessStateMachine routes the run through `success_exit_beat` and `success_result` correctly, and the standard verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "46a90030-8590-4e49-89bf-9b72fa9b5d96",
+			"title": "DG-52",
+			"description": "TechDebt: Introduce the ActiveGameplayStateMachine for RunScene.\n\nAfter DG-50, the `active_gameplay` state inside InProgressStateMachine should still internally own the deeper gameplay branch. This ticket should create the explicit parent FSM for that branch so later tickets can split its concerns cleanly without forcing all deeper gameplay logic through one oversized ticket.\n\nThis ticket should create only the ActiveGameplayStateMachine. It should establish the parent coordination boundary for the current active gameplay branch without yet splitting route phase, gameplay flow, or failure-specific logic into their own child machines.\n\nKeep this intentionally narrow. Do not introduce RoutePhaseStateMachine, GameplayFlowStateMachine, or FailureStateMachine here. The goal is to make `active_gameplay` delegate to one explicit parent owner while preserving current movement, hazard, recovery, pacing, finish-runoff, and success/collapse resolution behavior exactly as they work today.\n\nPlace this FSM under the agreed scene-local layout:\n- Scenes/RunScene/FSM/ActiveGameplayStateMachine/active_gameplay_state_machine.gd\n- Scenes/RunScene/FSM/ActiveGameplayStateMachine/States/*\n\nThe machine may use a minimal placeholder single-state or coordinator-state structure if needed, but it should exist as a real FSM boundary that later tickets can extend rather than a non-state helper.\n\nLikely affected files:\n- Scenes/RunScene/FSM/ActiveGameplayStateMachine/*\n- Scenes/RunScene/FSM/InProgressStateMachine/States/*\n- Scenes/RunScene/run_scene.gd\n- Constants/project_paths.gd\n- Tests/Unit/test_run_scene.gd\n- Tests/Unit/test_active_gameplay_state_machine.gd if added\n\nDone when: a reviewer can inspect RunScene and see the `active_gameplay` branch owned by an explicit ActiveGameplayStateMachine under the RunScene folder, while the current deeper gameplay behavior remains unchanged and ready for later FSM extraction.",
+			"category": "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+			"steps": [
+				{
+					"details": "Create the scene-local ActiveGameplayStateMachine structure under Scenes/RunScene/FSM/ActiveGameplayStateMachine/ using the agreed layout and a narrow typed interface suitable for later child-FSM delegation.\n\nDone when: the RunScene slice contains a concrete ActiveGameplayStateMachine under the agreed folder structure, and the `active_gameplay` branch has a real FSM owner.",
+					"done": false
+				},
+				{
+					"details": "Move the current top-level active gameplay branch ownership out of InProgressStateMachine and behind the new ActiveGameplayStateMachine without yet splitting route phase, gameplay flow, or failure-specific logic into their own machines.\n\nDone when: `active_gameplay` delegates to ActiveGameplayStateMachine, and current active gameplay behavior remains unchanged.",
+					"done": false
+				},
+				{
+					"details": "Add or update automated coverage for the new active gameplay FSM boundary, proving the active gameplay path still reaches the current movement, hazard, pacing, recovery, and finish-resolution flow through the new owner.\n\nDone when: automated tests cover the new active gameplay FSM handoff and the standard verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "f5e26e18-1d8f-45f9-ae93-c638d1f60148",
+			"title": "DG-53",
+			"description": "TechDebt: Introduce the RoutePhaseStateMachine for RunScene.\n\nAfter DG-52, ActiveGameplayStateMachine should exist as the parent owner for the active gameplay branch. The next cleanup is to move the authored route-phase progression into its own explicit FSM so the warm-up-to-finale pacing states are no longer implicit helper output spread across the scene and director coordination path.\n\nThis ticket should create only the RoutePhaseStateMachine and its six states:\n- `warm_up`\n- `first_trouble`\n- `crossing_beat`\n- `clutter_beat`\n- `reset_before_finale`\n- `final_stretch`\n\nKeep this intentionally narrow. Do not introduce GameplayFlowStateMachine or FailureStateMachine here. The goal is to give route-phase transitions an explicit owner while preserving existing phase boundaries, bad-luck scheduling windows, phase callout behavior, and route pacing exactly as they work today.\n\nPlace this FSM under the agreed scene-local layout:\n- Scenes/RunScene/FSM/RoutePhaseStateMachine/route_phase_state_machine.gd\n- Scenes/RunScene/FSM/RoutePhaseStateMachine/States/*\n\nLikely affected files:\n- Scenes/RunScene/FSM/RoutePhaseStateMachine/*\n- Scenes/RunScene/FSM/ActiveGameplayStateMachine/*\n- Scenes/RunScene/run_scene.gd\n- Systems/RunDirector/run_director.gd only if the ownership boundary needs cleanup without changing rules\n- Constants/project_paths.gd\n- Tests/Unit/test_run_scene.gd\n- Tests/Unit/test_route_phase_state_machine.gd if added\n\nDone when: a reviewer can inspect RunScene and see the route-phase progression owned by an explicit RoutePhaseStateMachine with the six authored phases under the RunScene folder, while current pacing, callout timing, and bad-luck windows remain unchanged and covered by automated tests.",
+			"category": "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+			"steps": [
+				{
+					"details": "Create the scene-local RoutePhaseStateMachine structure under Scenes/RunScene/FSM/RoutePhaseStateMachine/ with explicit state scripts for the six authored route phases.\n\nDone when: the RunScene slice contains a concrete RoutePhaseStateMachine with the six agreed phase states under the agreed folder structure.",
+					"done": false
+				},
+				{
+					"details": "Move route-phase transition ownership out of implicit scene/director coordination and behind the new machine while preserving the current phase thresholds, phase callout zones, and bad-luck interval behavior.\n\nDone when: route-phase progression is FSM-owned, and a reviewer can trace phase changes through the new machine without behavior regression.",
+					"done": false
+				},
+				{
+					"details": "Add or update automated coverage for the route-phase machine, covering phase progression, callout transitions, and final-stretch behavior without changing current pacing.\n\nDone when: automated tests prove RoutePhaseStateMachine routes through the six authored phases correctly, and the standard verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "5f5dd911-b4eb-4104-9759-262669c06b1a",
+			"title": "DG-54",
+			"description": "TechDebt: Introduce the GameplayFlowStateMachine for RunScene.\n\nAfter DG-52, the non-route active gameplay branch should still be owned broadly by ActiveGameplayStateMachine. This ticket should split that branch into an explicit gameplay-flow FSM so the current drive, failure-active, recovery, and finish-runoff flow are no longer hidden inside one broad active gameplay owner.\n\nThis ticket should create only the GameplayFlowStateMachine and its five states:\n- `normal_drive`\n- `active_failure`\n- `recovery_active`\n- `recovery_cooldown`\n- `finish_runoff`\n\nKeep this intentionally narrow. Do not introduce FailureStateMachine here. The goal is to move the current gameplay-flow branching into explicit state objects while preserving movement, hazard resolution, recovery prompt handling, finish buffer behavior, and success/collapse gating exactly as they work today.\n\nPlace this FSM under the agreed scene-local layout:\n- Scenes/RunScene/FSM/GameplayFlowStateMachine/gameplay_flow_state_machine.gd\n- Scenes/RunScene/FSM/GameplayFlowStateMachine/States/*\n\nThe `active_failure` state should continue to own failure-type-specific branching internally for now until a later ticket splits that into its own child FSM.\n\nLikely affected files:\n- Scenes/RunScene/FSM/GameplayFlowStateMachine/*\n- Scenes/RunScene/FSM/ActiveGameplayStateMachine/*\n- Scenes/RunScene/run_scene.gd\n- Constants/project_paths.gd\n- Tests/Unit/test_run_scene.gd\n- Tests/Unit/test_gameplay_flow_state_machine.gd if added\n\nDone when: a reviewer can inspect RunScene and see the non-route active gameplay flow owned by an explicit GameplayFlowStateMachine with the five agreed states under the RunScene folder, while the current gameplay behavior remains unchanged and covered by automated tests.",
+			"category": "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+			"steps": [
+				{
+					"details": "Create the scene-local GameplayFlowStateMachine structure under Scenes/RunScene/FSM/GameplayFlowStateMachine/ with explicit state scripts for `normal_drive`, `active_failure`, `recovery_active`, `recovery_cooldown`, and `finish_runoff`.\n\nDone when: the RunScene slice contains a concrete GameplayFlowStateMachine with the five agreed states under the agreed folder structure.",
+					"done": false
+				},
+				{
+					"details": "Move the current gameplay-flow branching out of broad active gameplay ownership and into the new machine while preserving current movement, recovery, finish buffer, and result-resolution behavior. The `active_failure` state should still own failure-type-specific branching internally for now.\n\nDone when: gameplay flow is FSM-owned through the five agreed states, and a reviewer can play through normal driving, failure, recovery, runoff, and end resolution with no behavior regression.",
+					"done": false
+				},
+				{
+					"details": "Add or update automated coverage for the new gameplay-flow machine, covering state routing through normal drive, active failure, recovery, cooldown, and finish runoff.\n\nDone when: automated tests prove GameplayFlowStateMachine routes through the five agreed states correctly, and the standard verification flow still passes.",
+					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "f82cd7f8-6a23-4deb-97c2-68a3655ca9d7",
+			"title": "DG-55",
+			"description": "TechDebt: Introduce the FailureStateMachine for RunScene.\n\nAfter DG-54, the `active_failure` gameplay-flow state should still internally own failure-type-specific branching. This ticket should split that branch into an explicit failure FSM so the live failure types are no longer handled through direct string branching embedded in the gameplay-flow logic.\n\nThis ticket should create only the FailureStateMachine and its two live states:\n- `wheel_loose`\n- `horse_panic`\n\nKeep this intentionally narrow. Do not add `cargo_spill` or `axle_jam` here, because they are not live gameplay behavior yet. The goal is to move failure-type-specific steering modifiers, drift behavior, recovery ownership, and failure-specific presentation and rule branching into explicit state objects while preserving current live failure behavior exactly as it works today.\n\nPlace this FSM under the agreed scene-local layout:\n- Scenes/RunScene/FSM/FailureStateMachine/failure_state_machine.gd\n- Scenes/RunScene/FSM/FailureStateMachine/States/*\n\nLikely affected files:\n- Scenes/RunScene/FSM/FailureStateMachine/*\n- Scenes/RunScene/FSM/GameplayFlowStateMachine/States/*\n- Scenes/RunScene/run_scene.gd\n- Systems/RunDirector/run_director.gd only if ownership cleanup is needed without changing rules\n- Constants/project_paths.gd\n- Tests/Unit/test_run_scene.gd\n- Tests/Unit/test_failure_state_machine.gd if added\n\nDone when: a reviewer can inspect RunScene and see the live failure-type flow owned by an explicit FailureStateMachine with `wheel_loose` and `horse_panic` states under the RunScene folder, while current live failure behavior remains unchanged and covered by automated tests.",
+			"category": "8cd924c6-910b-4d25-8d29-e3ac8f4813ae",
+			"steps": [
+				{
+					"details": "Create the scene-local FailureStateMachine structure under Scenes/RunScene/FSM/FailureStateMachine/ with explicit state scripts for `wheel_loose` and `horse_panic` only.\n\nDone when: the RunScene slice contains a concrete FailureStateMachine with the two live failure states under the agreed folder structure.",
+					"done": false
+				},
+				{
+					"details": "Move the current failure-type-specific branching out of broad `active_failure` handling and into the new machine while preserving current steering penalties, drift behavior, recovery behavior, and failure-specific presentation and rule flow.\n\nDone when: the two live failure types are FSM-owned instead of direct string-branch-owned, and a reviewer can play through both failure types with no behavior regression.",
+					"done": false
+				},
+				{
+					"details": "Add or update automated coverage for the new failure machine, covering `wheel_loose` and `horse_panic` routing and proving current live failure behavior remains unchanged.\n\nDone when: automated tests prove FailureStateMachine routes through the two live failure states correctly, and the standard verification flow still passes.",
 					"done": false
 				}
 			]
