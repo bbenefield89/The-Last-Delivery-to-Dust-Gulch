@@ -139,6 +139,7 @@ const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
 const SUCCESS_EXIT_BEAT_DURATION := RunPresentationType.SUCCESS_ARRIVAL_DURATION
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const DUST_BASE_AMOUNT_RATIO := RunPresentationType.DUST_BASE_AMOUNT_RATIO
+const FINISH_RUNOFF_DISTANCE := 250.0
 const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
 const ONBOARDING_BODY := (
 	"Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, "
@@ -163,6 +164,8 @@ var _dev_cheats: DevCheatsType
 var _is_success_exit_beat_active := false
 var _has_finished_success_exit_beat := false
 var _previous_frame_result: StringName = RunStateType.RESULT_IN_PROGRESS
+var _previous_frame_has_crossed_finish_line := false
+var _finish_buffer_scroll_distance := 0.0
 
 
 # Private Fields: OnReady
@@ -304,6 +307,8 @@ func setup(run_state: RunStateType, dev_cheats: DevCheatsType = null) -> void:
 	_is_success_exit_beat_active = false
 	_has_finished_success_exit_beat = false
 	_previous_frame_result = _run_state.result
+	_previous_frame_has_crossed_finish_line = _run_state.has_crossed_finish_line
+	_finish_buffer_scroll_distance = 0.0
 	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
@@ -531,6 +536,7 @@ func _configure_roadside_scenery() -> void:
 		return
 
 	_roadside_scenery.configure_scenery_art(SHRUB_TEXTURES, SIGN_TEXTURE)
+	_refresh_regular_roadside_sign_spawning()
 
 
 ## Rebuilds the distance bar markers from the authored route-band thresholds.
@@ -575,6 +581,7 @@ func _process(delta: float) -> void:
 		return
 
 	if _run_ui_presenter.is_pause_menu_open:
+		_sync_previous_frame_state()
 		_run_ui_presenter.refresh_onboarding_prompt()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		_run_ui_presenter.refresh_pause_menu()
@@ -584,12 +591,12 @@ func _process(delta: float) -> void:
 		return
 
 	if _is_success_exit_beat_active:
-		_previous_frame_result = _run_state.result
+		_sync_previous_frame_state()
 		_refresh_success_arrival_frame(delta)
 		return
 
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		_previous_frame_result = _run_state.result
+		_sync_previous_frame_state()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		if not (_has_finished_success_exit_beat and _run_state.result == RunStateType.RESULT_SUCCESS):
 			_update_impact_feedback(delta)
@@ -606,8 +613,10 @@ func _process(delta: float) -> void:
 		return
 
 	if _run_ui_presenter.is_onboarding_active:
+		_sync_previous_frame_state()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		_run_presentation.advance_scroll(_run_state.current_speed, delta)
+		_refresh_regular_roadside_sign_spawning()
 		_advance_roadside_scenery(_run_state.current_speed * delta)
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
@@ -645,6 +654,7 @@ func _process(delta: float) -> void:
 
 	_update_wagon_visual()
 	_run_state.recover_speed(delta)
+	var distance_remaining_before_travel := _run_state.distance_remaining
 	_run_state.distance_remaining = max(
 		0.0,
 		_run_state.distance_remaining - _run_state.current_speed * delta,
@@ -652,6 +662,7 @@ func _process(delta: float) -> void:
 
 	var scroll_distance := _run_state.current_speed * delta
 	_run_presentation.advance_scroll(_run_state.current_speed, delta)
+	_refresh_regular_roadside_sign_spawning()
 	_advance_roadside_scenery(scroll_distance)
 	_sync_route_phase()
 
@@ -673,16 +684,18 @@ func _process(delta: float) -> void:
 		)
 
 	_advance_failure_triggers(delta)
+	_advance_finish_buffer_runoff(scroll_distance, distance_remaining_before_travel)
+	_try_spawn_finish_buffer_sign()
 	_try_finalize_finish_success()
 	_sync_completed_run_best_state()
 
 	if _should_start_success_arrival():
 		_start_success_arrival_transition()
-		_previous_frame_result = _run_state.result
+		_sync_previous_frame_state()
 		_refresh_success_arrival_frame(0.0)
 		return
 
-	_previous_frame_result = _run_state.result
+	_sync_previous_frame_state()
 	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 	_update_impact_feedback(delta)
 	_update_wagon_visual()
@@ -812,6 +825,52 @@ func _sync_route_phase() -> void:
 	_handle_run_director_update(_run_director.sync_route_phase())
 
 
+## Keeps regular roadside signs out of the finale so the forced finish sign owns the end beat.
+func _refresh_regular_roadside_sign_spawning() -> void:
+	if _roadside_scenery == null:
+		return
+
+	_roadside_scenery.set_regular_sign_spawning_enabled(_should_allow_regular_roadside_signs())
+
+
+## Returns whether the regular roadside sign cadence should still be active for the current run state.
+func _should_allow_regular_roadside_signs() -> bool:
+	if _run_state == null:
+		return true
+
+	var route_phase := _get_route_phase(_run_state.get_delivery_progress_ratio())
+	return route_phase != ROUTE_PHASE_RESET_BEFORE_FINALE and route_phase != ROUTE_PHASE_FINAL_STRETCH
+
+
+## Spawns the dedicated finish sign exactly once when the run first enters the finish buffer.
+func _try_spawn_finish_buffer_sign() -> void:
+	if _run_state == null or _roadside_scenery == null:
+		return
+	if not _run_state.has_crossed_finish_line or _previous_frame_has_crossed_finish_line:
+		return
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		return
+
+	_roadside_scenery.spawn_forced_finish_sign()
+
+
+## Tracks the amount of world scroll that has happened after crossing the finish threshold.
+func _advance_finish_buffer_runoff(scroll_distance: float, distance_remaining_before_travel: float) -> void:
+	if _run_state == null or _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		return
+	if not _run_state.has_crossed_finish_line:
+		return
+
+	var runoff_distance := scroll_distance
+	if not _previous_frame_has_crossed_finish_line:
+		runoff_distance = maxf(0.0, scroll_distance - maxf(distance_remaining_before_travel, 0.0))
+
+	if runoff_distance <= 0.0:
+		return
+
+	_finish_buffer_scroll_distance += runoff_distance
+
+
 ## Returns whether the scripted success-arrival beat should start on this gameplay frame.
 func _should_start_success_arrival() -> bool:
 	return (
@@ -842,6 +901,8 @@ func _try_finalize_finish_success() -> void:
 	if _run_state == null or _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		return
 	if not _run_state.has_crossed_finish_line:
+		return
+	if _finish_buffer_scroll_distance < FINISH_RUNOFF_DISTANCE:
 		return
 	if _hazard_spawner != null and _hazard_spawner.has_runtime_hazards():
 		return
@@ -874,6 +935,17 @@ func _refresh_success_arrival_frame(delta: float) -> void:
 	_is_success_exit_beat_active = false
 	_has_finished_success_exit_beat = true
 	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+
+
+## Stores transition-sensitive run state so frame-entry checks can fire exactly once.
+func _sync_previous_frame_state() -> void:
+	if _run_state == null:
+		_previous_frame_result = RunStateType.RESULT_IN_PROGRESS
+		_previous_frame_has_crossed_finish_line = false
+		return
+
+	_previous_frame_result = _run_state.result
+	_previous_frame_has_crossed_finish_line = _run_state.has_crossed_finish_line
 
 
 ## Returns the current authored phase for one route-progress ratio.
