@@ -79,7 +79,7 @@ The default experience should feel built for repeat play in short mobile session
 3. Reach Dust Gulch for success.
 4. Show a concise results screen with score, grade, and notable stats.
 
-On success, the run should include a short arrival beat before the results screen. Gameplay pressure should stop, player steering control should be removed, and the wagon should travel north off the screen into visible Dust Gulch arrival dressing before the result summary appears.
+On success, the run should include a short arrival beat before the results screen. Crossing the finish threshold should stop new gameplay pressure, but any live hazards already on screen may continue clearing in a brief final runoff. True success should not resolve until both the runoff distance has played out and the hazard field is clear. Once that happens, player steering control should be removed and the wagon should travel north off the screen before the result summary appears.
 
 Endless survival is not the primary mode. If an endless variant exists later, it should be treated as a separate challenge mode or a post-finish bonus stretch, not the default structure of the game.
 
@@ -240,7 +240,6 @@ Use readable pixel art with a classic western desert palette:
 - red canyon accents
 - faded wood signage
 - dry brush and scrub
-- town-entry markers such as Dust Gulch signage, fencing, and simple frontier structures near the finish
 - strong wagon shadows
 
 The goal is not realism. The goal is clarity and atmosphere.

@@ -112,6 +112,21 @@ func _find_spawned_scenery_by_spawn_sequence_id(
 	return null
 
 
+## Returns the current live spawned signs under one roadside scenery owner.
+func _get_live_signs(roadside_scenery: RoadsideSceneryType) -> Array[Area2D]:
+	var signs: Array[Area2D] = []
+	for child in roadside_scenery.get_children():
+		var scenery := child as Area2D
+		if scenery == null:
+			continue
+		if scenery.get_meta("scenery_type", &"") != roadside_scenery.SCENERY_TYPE_SIGN:
+			continue
+
+		signs.append(scenery)
+
+	return signs
+
+
 # Public Methods
 
 ## Verifies the roadside owner spawns by traveled distance instead of wall-clock chunking.
@@ -269,7 +284,7 @@ func test_spawned_scenery_when_scrubs_repeat_then_texture_and_variant_streaks_st
 	assert_true(saw_second_scrub_variant)
 
 
-## Verifies Dust Gulch signs obey explicit cooldown and side rules so they stay readable instead of dominating.
+## Verifies roadside signs obey explicit cooldown and side rules so they stay readable instead of dominating.
 func test_spawned_scenery_when_signs_spawn_then_sign_spacing_and_side_rules_hold() -> void:
 	var roadside_scenery := await _create_roadside_owner()
 	roadside_scenery.advance(3200.0)
@@ -308,6 +323,51 @@ func test_spawned_scenery_when_signs_spawn_then_sign_spacing_and_side_rules_hold
 				scrub_entries_between_signs += 1
 
 		assert_true(scrub_entries_between_signs >= roadside_scenery.MIN_SCRUB_SPAWNS_BETWEEN_SIGNS)
+
+
+## Verifies regular sign cadence can be disabled without clearing live roadside signs that already spawned.
+func test_regular_sign_spawning_when_disabled_then_existing_signs_stay_and_new_spawns_switch_to_scrub() -> void:
+	var roadside_scenery := await _create_roadside_owner()
+	roadside_scenery._distance_until_next_spawn = 1.0
+	roadside_scenery.advance(2.0)
+
+	var live_signs := _get_live_signs(roadside_scenery)
+	assert_eq(live_signs.size(), 1)
+
+	roadside_scenery.set_regular_sign_spawning_enabled(false)
+	roadside_scenery._distance_since_last_sign = roadside_scenery.SIGN_DISTANCE_INTERVAL
+	roadside_scenery._scrub_spawns_since_last_sign = roadside_scenery.MIN_SCRUB_SPAWNS_BETWEEN_SIGNS
+	roadside_scenery._distance_until_next_spawn = 1.0
+	roadside_scenery.advance(2.0)
+
+	live_signs = _get_live_signs(roadside_scenery)
+	assert_eq(live_signs.size(), 1)
+	assert_eq(roadside_scenery.get_child_count(), 2)
+	assert_eq(
+		roadside_scenery.get_child(1).get_meta("scenery_type", &""),
+		roadside_scenery.SCENERY_TYPE_SCRUB
+	)
+
+
+## Verifies the forced finish-sign path creates one deterministic right-side sign and never duplicates it.
+func test_forced_finish_sign_when_spawned_then_one_right_side_sign_appears_without_duplicates() -> void:
+	var roadside_scenery := await _create_roadside_owner()
+
+	roadside_scenery.spawn_forced_finish_sign()
+	roadside_scenery.spawn_forced_finish_sign()
+
+	var live_signs := _get_live_signs(roadside_scenery)
+	assert_eq(live_signs.size(), 1)
+
+	var finish_sign := live_signs[0]
+	assert_eq(int(finish_sign.get_meta("roadside_side", 0)), roadside_scenery.ROADSIDE_SIDE_RIGHT)
+	assert_eq(
+		finish_sign.position,
+		Vector2(
+			float(roadside_scenery.ROADSIDE_SIDE_RIGHT) * roadside_scenery.SIGN_MARGIN_X,
+			roadside_scenery.DEFAULT_SPAWN_Y
+		)
+	)
 
 
 ## Verifies a spawned roadside item stays live and keeps moving until it reaches the bottom cleanup boundary.

@@ -148,6 +148,7 @@ func _wait_for_ui_click(control_owner: Node) -> void:
 func _assert_success_path(app_root: Node) -> bool:
 	var run_scene = app_root._run_scene
 	app_root.run_state.distance_remaining = 0.0
+	run_scene._process((run_scene.FINISH_RUNOFF_DISTANCE + 8.0) / app_root.run_state.current_speed)
 	run_scene._process(0.0)
 	await process_frame
 
@@ -158,6 +159,14 @@ func _assert_success_path(app_root: Node) -> bool:
 		push_error("Smoke test failed: forced success did not set success result.")
 		quit(1)
 		return false
+	if result_panel.visible:
+		push_error("Smoke test failed: success result showed before the arrival beat finished.")
+		quit(1)
+		return false
+
+	run_scene._process(run_scene.SUCCESS_EXIT_BEAT_DURATION)
+	await process_frame
+
 	if not result_panel.visible or result_title.text != "Delivered to Dust Gulch":
 		push_error("Smoke test failed: success overlay was not visible and readable.")
 		quit(1)

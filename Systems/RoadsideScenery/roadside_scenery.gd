@@ -6,6 +6,7 @@ extends Node2D
 # Constants
 const SCENERY_TYPE_SCRUB := &"scrub"
 const SCENERY_TYPE_SIGN := &"sign"
+const ROADSIDE_SIDE_RIGHT := 1
 const SCRUB_VARIANT_COMPACT := &"compact"
 const SCRUB_VARIANT_FULL := &"full"
 const SCRUB_VARIANT_TALL := &"tall"
@@ -40,6 +41,8 @@ var _last_scrub_texture_index := -1
 var _same_scrub_texture_streak := 0
 var _last_scrub_variant := StringName()
 var _same_scrub_variant_streak := 0
+var _are_regular_signs_enabled := true
+var _has_spawned_forced_finish_sign := false
 var _cleanup_areas: Array[Area2D] = []
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _shrub_textures: Array[Texture2D] = []
@@ -97,6 +100,20 @@ func advance(distance_delta: float) -> void:
 	_advance_scenery(distance_delta)
 
 
+## Enables or disables only the regular cadence-based roadside sign spawns.
+func set_regular_sign_spawning_enabled(enabled: bool) -> void:
+	_are_regular_signs_enabled = enabled
+
+
+## Spawns the dedicated finish sign once at a deterministic roadside position.
+func spawn_forced_finish_sign() -> void:
+	if _sign_texture == null or _has_spawned_forced_finish_sign:
+		return
+
+	_spawn_sign_at_position(ROADSIDE_SIDE_RIGHT, _get_forced_finish_sign_spawn_position())
+	_has_spawned_forced_finish_sign = true
+
+
 # Private Methods
 
 ## Clears live scenery and resets spawn bookkeeping for a new runtime pass.
@@ -116,6 +133,8 @@ func _reset_runtime_state() -> void:
 	_same_scrub_texture_streak = 0
 	_last_scrub_variant = StringName()
 	_same_scrub_variant_streak = 0
+	_are_regular_signs_enabled = true
+	_has_spawned_forced_finish_sign = false
 
 
 ## Moves every spawned roadside item downward with the same scroll distance as the world.
@@ -170,7 +189,58 @@ func _spawn_next_scenery_area() -> void:
 		scrub_texture_index,
 		scrub_variant
 	)
-	spawned_scenery_area.position = _get_spawn_position(scenery_type, roadside_side)
+	_finalize_spawned_scenery_area(
+		spawned_scenery_area,
+		scenery_type,
+		roadside_side,
+		_get_spawn_position(scenery_type, roadside_side)
+	)
+
+
+## Returns the next scenery type while keeping the sign on explicit cadence and scrub-cooldown rules.
+func _select_next_scenery_type() -> StringName:
+	if _can_spawn_sign():
+		return SCENERY_TYPE_SIGN
+
+	return SCENERY_TYPE_SCRUB
+
+
+## Returns whether the next spawn slot is allowed to place a roadside sign.
+func _can_spawn_sign() -> bool:
+	if _sign_texture == null:
+		return false
+	if not _are_regular_signs_enabled:
+		return false
+	if _distance_since_last_sign < SIGN_DISTANCE_INTERVAL:
+		return false
+
+	return _scrub_spawns_since_last_sign >= MIN_SCRUB_SPAWNS_BETWEEN_SIGNS
+
+
+## Spawns one sign using the normal sign visuals and bookkeeping at a supplied world-local position.
+func _spawn_sign_at_position(roadside_side: int, spawn_position: Vector2) -> void:
+	var spawned_scenery_area := _build_spawned_scenery_area(
+		SCENERY_TYPE_SIGN,
+		roadside_side,
+		-1,
+		StringName()
+	)
+	_finalize_spawned_scenery_area(
+		spawned_scenery_area,
+		SCENERY_TYPE_SIGN,
+		roadside_side,
+		spawn_position
+	)
+
+
+## Finalizes one spawned scenery node so all runtime metadata stays consistent across spawn paths.
+func _finalize_spawned_scenery_area(
+	spawned_scenery_area: Area2D,
+	scenery_type: StringName,
+	roadside_side: int,
+	spawn_position: Vector2
+) -> void:
+	spawned_scenery_area.position = spawn_position
 	spawned_scenery_area.set_meta("spawn_y", spawned_scenery_area.position.y)
 	spawned_scenery_area.set_meta("spawn_sequence_id", _spawn_sequence_id)
 	spawned_scenery_area.set_meta("travel_distance_spawned", _distance_traveled_total)
@@ -183,24 +253,6 @@ func _spawn_next_scenery_area() -> void:
 		_last_sign_side = roadside_side
 	else:
 		_scrub_spawns_since_last_sign += 1
-
-
-## Returns the next scenery type while keeping the sign on explicit cadence and scrub-cooldown rules.
-func _select_next_scenery_type() -> StringName:
-	if _can_spawn_sign():
-		return SCENERY_TYPE_SIGN
-
-	return SCENERY_TYPE_SCRUB
-
-
-## Returns whether the next spawn slot is allowed to place the Dust Gulch sign.
-func _can_spawn_sign() -> bool:
-	if _sign_texture == null:
-		return false
-	if _distance_since_last_sign < SIGN_DISTANCE_INTERVAL:
-		return false
-
-	return _scrub_spawns_since_last_sign >= MIN_SCRUB_SPAWNS_BETWEEN_SIGNS
 
 
 ## Chooses the next left-or-right roadside side while preventing long same-side streaks.
@@ -381,6 +433,11 @@ func _get_spawn_position(scenery_type: StringName, roadside_side: int) -> Vector
 		(float(roadside_side) * base_x) + _rng.randf_range(-x_jitter, x_jitter),
 		DEFAULT_SPAWN_Y + _rng.randf_range(-SPAWN_Y_JITTER, SPAWN_Y_JITTER)
 	)
+
+
+## Returns the deterministic right-side spawn point for the dedicated finish sign.
+func _get_forced_finish_sign_spawn_position() -> Vector2:
+	return Vector2(float(ROADSIDE_SIDE_RIGHT) * SIGN_MARGIN_X, DEFAULT_SPAWN_Y)
 
 
 ## Returns the spawned roadside scenery area that entered a cleanup boundary, when owned by this system.

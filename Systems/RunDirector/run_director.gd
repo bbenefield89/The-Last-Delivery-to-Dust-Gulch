@@ -116,7 +116,7 @@ func advance(delta: float) -> RunUpdate:
 		_resolve_run_result()
 		return update
 
-	if not is_timer_bad_luck_enabled():
+	if not is_bad_luck_timer_enabled():
 		bad_luck_elapsed = 0.0
 		pending_bad_luck_trigger = false
 		_resolve_run_result()
@@ -208,13 +208,15 @@ func apply_recovery_failure_penalty() -> void:
 
 
 ## Returns whether the route is in a phase that should schedule timer-driven bad luck.
-func is_timer_bad_luck_enabled() -> bool:
+func is_bad_luck_timer_enabled() -> bool:
+	if _run_state != null and _run_state.has_crossed_finish_line:
+		return false
+
 	return (
 		route_phase != &""
 		and route_phase != ROUTE_PHASE_WARM_UP
 		and route_phase != ROUTE_PHASE_FINAL_STRETCH
 	)
-
 
 ## Returns the authored bad-luck interval range for the supplied route progress ratio.
 func get_bad_luck_interval_range(progress_ratio: float) -> Vector2:
@@ -236,7 +238,7 @@ func get_bad_luck_interval_range(progress_ratio: float) -> Vector2:
 
 ## Rolls a fresh bad-luck interval from the current bound run progress.
 func roll_bad_luck_interval() -> float:
-	if not is_timer_bad_luck_enabled():
+	if not is_bad_luck_timer_enabled():
 		return 0.0
 
 	var progress_ratio := 0.0 if _run_state == null else _run_state.get_delivery_progress_ratio()
@@ -246,7 +248,7 @@ func roll_bad_luck_interval() -> float:
 
 ## Schedules the next timer bad-luck interval for the current authored route phase.
 func schedule_next_bad_luck_interval() -> void:
-	if not is_timer_bad_luck_enabled():
+	if not is_bad_luck_timer_enabled():
 		scheduled_bad_luck_interval = 0.0
 		return
 
@@ -309,7 +311,7 @@ static func get_route_phase_display_name(active_route_phase: StringName) -> Stri
 func _handle_route_phase_change() -> void:
 	bad_luck_elapsed = 0.0
 	pending_bad_luck_trigger = false
-	if not is_timer_bad_luck_enabled():
+	if not is_bad_luck_timer_enabled():
 		scheduled_bad_luck_interval = 0.0
 		return
 
@@ -359,8 +361,7 @@ func _resolve_run_result() -> void:
 		return
 
 	_run_state.distance_remaining = 0.0
-	_run_state.result = RunStateType.RESULT_SUCCESS
-	_run_state.current_speed = 0.0
+	_run_state.has_crossed_finish_line = true
 
 
 class RunUpdate:

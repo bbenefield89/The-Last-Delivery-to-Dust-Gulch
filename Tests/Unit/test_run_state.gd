@@ -33,6 +33,7 @@ func test_defaults_match_expected_mvp_boot_values() -> void:
 	assert_eq(state.active_failure, RunStateType.DEFAULT_ACTIVE_FAILURE)
 	assert_null(state.current_failure)
 	assert_eq(state.last_hit_hazard, &"")
+	assert_false(state.has_crossed_finish_line)
 	assert_eq(state.result, RunStateType.DEFAULT_RESULT)
 	assert_eq(state.hazards_dodged, RunStateType.DEFAULT_HAZARDS_DODGED)
 	assert_eq(state.near_misses, RunStateType.DEFAULT_NEAR_MISSES)
@@ -50,6 +51,7 @@ func test_reset_for_new_run_restores_all_core_run_values() -> void:
 	state.cargo_value = 42
 	state.current_speed = 90.0
 	state.active_failure = &"wheel_loose"
+	state.has_crossed_finish_line = true
 	state.result = RunStateType.RESULT_COLLAPSED
 	state.lateral_position = -150.0
 	state.last_hit_hazard = &"rock"
@@ -67,6 +69,7 @@ func test_reset_for_new_run_restores_all_core_run_values() -> void:
 	assert_eq(state.current_speed, RunStateType.DEFAULT_FORWARD_SPEED)
 	assert_eq(state.active_failure, RunStateType.DEFAULT_ACTIVE_FAILURE)
 	assert_null(state.current_failure)
+	assert_false(state.has_crossed_finish_line)
 	assert_eq(state.result, RunStateType.DEFAULT_RESULT)
 	assert_eq(state.lateral_position, RunStateType.DEFAULT_LATERAL_POSITION)
 	assert_eq(state.last_hit_hazard, RunStateType.DEFAULT_LAST_HIT_HAZARD)
@@ -466,4 +469,3 @@ func _delete_test_best_run_file() -> void:
 	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
 	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
 		DirAccess.remove_absolute(absolute_path)
-

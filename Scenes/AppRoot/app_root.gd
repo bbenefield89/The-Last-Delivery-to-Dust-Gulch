@@ -4,6 +4,7 @@ extends Node
 
 
 # Constants
+const DevCheatsType := preload(ProjectPaths.DEV_CHEATS_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 const TITLE_SCENE := preload(ProjectPaths.TITLE_SCREEN_SCENE_PATH)
 const RUN_SCENE := preload(ProjectPaths.RUN_SCENE_PATH)
@@ -27,6 +28,7 @@ var run_state: RunStateType
 
 # Private Fields
 
+var _dev_cheats: DevCheatsType = DevCheatsType.new()
 var _title_screen: Control
 var _run_scene: Node
 var _quit_requested := false
@@ -38,6 +40,7 @@ var _quit_requested := false
 func _ready() -> void:
 	_ensure_restart_action()
 	_ensure_return_to_title_action()
+	_dev_cheats.register_input_actions()
 	_show_title_screen()
 
 
@@ -73,7 +76,7 @@ func _start_new_run() -> void:
 	if _run_scene.has_signal("return_to_title_requested"):
 		_run_scene.return_to_title_requested.connect(_show_title_screen)
 	if _run_scene.has_method("setup"):
-		_run_scene.setup(run_state)
+		_run_scene.setup(run_state, _dev_cheats)
 
 
 ## Returns to the title screen and clears any active run scene or run-state instance.

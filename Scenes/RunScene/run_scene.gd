@@ -10,6 +10,7 @@ signal return_to_title_requested
 
 
 # Constants
+const DevCheatsType := preload(ProjectPaths.DEV_CHEATS_SCRIPT_PATH)
 const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
 const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
 const RoadsideSceneryType := preload(ProjectPaths.ROADSIDE_SCENERY_SCRIPT_PATH)
@@ -135,10 +136,10 @@ const HORSE_PANIC_FAILURE_CARGO_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_CARG
 const HORSE_PANIC_FAILURE_SPEED_LOSS := RunDirectorType.HORSE_PANIC_FAILURE_SPEED_LOSS
 const HORSE_PANIC_FAILURE_INSTABILITY_DURATION := RunDirectorType.HORSE_PANIC_FAILURE_INSTABILITY_DURATION
 const SCROLL_LOOP_HEIGHT := RunPresentationType.SCROLL_LOOP_HEIGHT
+const SUCCESS_EXIT_BEAT_DURATION := RunPresentationType.SUCCESS_ARRIVAL_DURATION
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
-const SIGN_WOOD_COLOR := Color(0.415686, 0.266667, 0.121569, 1.0)
-const SIGN_TEXT_COLOR := Color(0.956863, 0.913725, 0.760784, 1.0)
 const DUST_BASE_AMOUNT_RATIO := RunPresentationType.DUST_BASE_AMOUNT_RATIO
+const FINISH_RUNOFF_DISTANCE := 250.0
 const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
 const ONBOARDING_BODY := (
 	"Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, "
@@ -159,6 +160,12 @@ var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
 var _navigation_click_in_progress := false
 var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
+var _dev_cheats: DevCheatsType
+var _is_success_exit_beat_active := false
+var _has_finished_success_exit_beat := false
+var _previous_frame_result: StringName = RunStateType.RESULT_IN_PROGRESS
+var _previous_frame_has_crossed_finish_line := false
+var _finish_buffer_scroll_distance := 0.0
 
 
 # Private Fields: OnReady
@@ -286,17 +293,28 @@ var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
 
 # Public Methods
 
-## Binds a fresh run state and resets transient scene-only UI flow.
-func setup(run_state: RunStateType) -> void:
+## Binds a fresh run state and the shared build-owned dev cheats service for one run scene.
+func setup(run_state: RunStateType, dev_cheats: DevCheatsType = null) -> void:
 	_run_state = run_state
+	if dev_cheats != null:
+		_dev_cheats = dev_cheats
+	elif _dev_cheats == null:
+		_dev_cheats = DevCheatsType.new()
+	_dev_cheats.register_input_actions()
 	_run_state.load_persisted_best_run(_best_run_save_path)
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_run_state.record_best_run_if_needed(_best_run_save_path)
+	_is_success_exit_beat_active = false
+	_has_finished_success_exit_beat = false
+	_previous_frame_result = _run_state.result
+	_previous_frame_has_crossed_finish_line = _run_state.has_crossed_finish_line
+	_finish_buffer_scroll_distance = 0.0
 	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
 	_run_director.bind_run_state(_run_state, _recovery_sequence_generator)
 	_run_presentation.bind_run_state(_run_state)
+	_run_presentation.reset_success_arrival()
 	_run_ui_presenter.refresh_status()
 	_run_ui_presenter.refresh_onboarding_prompt()
 	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
@@ -518,6 +536,7 @@ func _configure_roadside_scenery() -> void:
 		return
 
 	_roadside_scenery.configure_scenery_art(SHRUB_TEXTURES, SIGN_TEXTURE)
+	_refresh_regular_roadside_sign_spawning()
 
 
 ## Rebuilds the distance bar markers from the authored route-band thresholds.
@@ -560,7 +579,9 @@ func _process(delta: float) -> void:
 	if _run_state == null:
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		return
+
 	if _run_ui_presenter.is_pause_menu_open:
+		_sync_previous_frame_state()
 		_run_ui_presenter.refresh_onboarding_prompt()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		_run_ui_presenter.refresh_pause_menu()
@@ -568,11 +589,20 @@ func _process(delta: float) -> void:
 		_run_ui_presenter.refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
+
+	if _is_success_exit_beat_active:
+		_sync_previous_frame_state()
+		_refresh_success_arrival_frame(delta)
+		return
+
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		_sync_previous_frame_state()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-		_update_impact_feedback(delta)
-		_update_wagon_visual()
-		_update_camera_framing()
+		if not (_has_finished_success_exit_beat and _run_state.result == RunStateType.RESULT_SUCCESS):
+			_update_impact_feedback(delta)
+			_update_wagon_visual()
+			_update_camera_framing()
+
 		_run_ui_presenter.refresh_status()
 		_run_ui_presenter.refresh_onboarding_prompt()
 		_run_ui_presenter.refresh_pause_menu()
@@ -581,9 +611,12 @@ func _process(delta: float) -> void:
 		_run_ui_presenter.refresh_touch_controls()
 		_refresh_audio_presentation()
 		return
+
 	if _run_ui_presenter.is_onboarding_active:
+		_sync_previous_frame_state()
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		_run_presentation.advance_scroll(_run_state.current_speed, delta)
+		_refresh_regular_roadside_sign_spawning()
 		_advance_roadside_scenery(_run_state.current_speed * delta)
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
@@ -618,30 +651,51 @@ func _process(delta: float) -> void:
 		-ROAD_HALF_WIDTH,
 		ROAD_HALF_WIDTH,
 	)
+
 	_update_wagon_visual()
 	_run_state.recover_speed(delta)
+	var distance_remaining_before_travel := _run_state.distance_remaining
 	_run_state.distance_remaining = max(
 		0.0,
 		_run_state.distance_remaining - _run_state.current_speed * delta,
 	)
+
+	var scroll_distance := _run_state.current_speed * delta
 	_run_presentation.advance_scroll(_run_state.current_speed, delta)
-	_advance_roadside_scenery(_run_state.current_speed * delta)
+	_refresh_regular_roadside_sign_spawning()
+	_advance_roadside_scenery(scroll_distance)
 	_sync_route_phase()
-	_hazard_spawner.advance(
-		_run_state.current_speed * delta,
-		_run_state.get_delivery_progress_ratio(),
-		_run_state.distance_remaining,
-		_run_state.route_distance
-	)
-	_handle_run_hazard_update(
-		_run_hazard_resolver.resolve_frame(
-			_hazard_spawner,
-			_run_state,
-			_run_director
+
+	var should_process_runtime_hazards := _dev_cheats == null or _dev_cheats.are_runtime_hazards_enabled
+	if should_process_runtime_hazards:
+		_hazard_spawner.advance(
+			scroll_distance,
+			_run_state.get_delivery_progress_ratio(),
+			_run_state.distance_remaining,
+			_run_state.route_distance
 		)
-	)
+
+		_handle_run_hazard_update(
+			_run_hazard_resolver.resolve_frame(
+				_hazard_spawner,
+				_run_state,
+				_run_director
+			)
+		)
+
 	_advance_failure_triggers(delta)
+	_advance_finish_buffer_runoff(scroll_distance, distance_remaining_before_travel)
+	_try_spawn_finish_buffer_sign()
+	_try_finalize_finish_success()
 	_sync_completed_run_best_state()
+
+	if _should_start_success_arrival():
+		_start_success_arrival_transition()
+		_sync_previous_frame_state()
+		_refresh_success_arrival_frame(0.0)
+		return
+
+	_sync_previous_frame_state()
 	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 	_update_impact_feedback(delta)
 	_update_wagon_visual()
@@ -686,6 +740,10 @@ func _build_best_run_summary() -> String:
 
 ## Routes pause, onboarding, and recovery input for the run scene.
 func _input(event: InputEvent) -> void:
+	if _dev_cheats != null and _dev_cheats.consume_input(event):
+		set_hazards_enabled(not _dev_cheats.are_runtime_hazards_enabled)
+		return
+
 	var ui_input_result := _run_ui_presenter.route_input(event, PAUSE_ACTION)
 	if ui_input_result.pause_command == GameplayUiLayerType.PAUSE_COMMAND_TOGGLE:
 		_set_pause_state(not _run_ui_presenter.is_pause_menu_open)
@@ -765,6 +823,129 @@ func _sync_route_phase() -> void:
 		return
 
 	_handle_run_director_update(_run_director.sync_route_phase())
+
+
+## Keeps regular roadside signs out of the finale so the forced finish sign owns the end beat.
+func _refresh_regular_roadside_sign_spawning() -> void:
+	if _roadside_scenery == null:
+		return
+
+	_roadside_scenery.set_regular_sign_spawning_enabled(_should_allow_regular_roadside_signs())
+
+
+## Returns whether the regular roadside sign cadence should still be active for the current run state.
+func _should_allow_regular_roadside_signs() -> bool:
+	if _run_state == null:
+		return true
+
+	var route_phase := _get_route_phase(_run_state.get_delivery_progress_ratio())
+	return route_phase != ROUTE_PHASE_RESET_BEFORE_FINALE and route_phase != ROUTE_PHASE_FINAL_STRETCH
+
+
+## Spawns the dedicated finish sign exactly once when the run first enters the finish buffer.
+func _try_spawn_finish_buffer_sign() -> void:
+	if _run_state == null or _roadside_scenery == null:
+		return
+	if not _run_state.has_crossed_finish_line or _previous_frame_has_crossed_finish_line:
+		return
+	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		return
+
+	_roadside_scenery.spawn_forced_finish_sign()
+
+
+## Tracks the amount of world scroll that has happened after crossing the finish threshold.
+func _advance_finish_buffer_runoff(scroll_distance: float, distance_remaining_before_travel: float) -> void:
+	if _run_state == null or _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		return
+	if not _run_state.has_crossed_finish_line:
+		return
+
+	var runoff_distance := scroll_distance
+	if not _previous_frame_has_crossed_finish_line:
+		runoff_distance = maxf(0.0, scroll_distance - maxf(distance_remaining_before_travel, 0.0))
+
+	if runoff_distance <= 0.0:
+		return
+
+	_finish_buffer_scroll_distance += runoff_distance
+
+
+## Returns whether the scripted success-arrival beat should start on this gameplay frame.
+func _should_start_success_arrival() -> bool:
+	return (
+		_run_state != null
+		and _run_state.result == RunStateType.RESULT_SUCCESS
+		and _previous_frame_result == RunStateType.RESULT_IN_PROGRESS
+		and not _is_success_exit_beat_active
+		and not _has_finished_success_exit_beat
+	)
+
+
+## Enables or disables hazard spawning and active hazard resolution for local testing.
+func set_hazards_enabled(enabled: bool) -> void:
+	if _dev_cheats == null or not _dev_cheats.are_cheats_available():
+		return
+	if _dev_cheats.are_runtime_hazards_enabled == enabled:
+		return
+
+	_dev_cheats.are_runtime_hazards_enabled = enabled
+	if not _dev_cheats.are_runtime_hazards_enabled and _hazard_spawner != null:
+		_hazard_spawner.clear_runtime_hazards()
+
+	_show_bonus_callout("HAZARDS ON" if _dev_cheats.are_runtime_hazards_enabled else "HAZARDS OFF")
+
+
+## Converts a crossed finish line into true success only after the last live hazard has cleared.
+func _try_finalize_finish_success() -> void:
+	if _run_state == null or _run_state.result != RunStateType.RESULT_IN_PROGRESS:
+		return
+	if not _run_state.has_crossed_finish_line:
+		return
+	if _finish_buffer_scroll_distance < FINISH_RUNOFF_DISTANCE:
+		return
+	if _hazard_spawner != null and _hazard_spawner.has_runtime_hazards():
+		return
+
+	_run_state.result = RunStateType.RESULT_SUCCESS
+	_run_state.current_speed = 0.0
+
+
+## Starts the scripted success-arrival beat from the frozen true-success finish frame.
+func _start_success_arrival_transition() -> void:
+	_is_success_exit_beat_active = true
+	_has_finished_success_exit_beat = false
+	_run_presentation.start_success_arrival()
+
+
+## Advances the scripted success-arrival beat while keeping end-of-run UI hidden until it completes.
+func _refresh_success_arrival_frame(delta: float) -> void:
+	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
+	var arrival_completed := _run_presentation.advance_success_arrival(delta)
+	_run_ui_presenter.refresh_status()
+	_run_ui_presenter.refresh_onboarding_prompt()
+	_run_ui_presenter.refresh_pause_menu()
+	_run_ui_presenter.refresh_recovery_prompt()
+	_run_ui_presenter.refresh_touch_controls()
+	_sync_completed_run_best_state()
+	_refresh_audio_presentation()
+	if not arrival_completed:
+		return
+
+	_is_success_exit_beat_active = false
+	_has_finished_success_exit_beat = true
+	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+
+
+## Stores transition-sensitive run state so frame-entry checks can fire exactly once.
+func _sync_previous_frame_state() -> void:
+	if _run_state == null:
+		_previous_frame_result = RunStateType.RESULT_IN_PROGRESS
+		_previous_frame_has_crossed_finish_line = false
+		return
+
+	_previous_frame_result = _run_state.result
+	_previous_frame_has_crossed_finish_line = _run_state.has_crossed_finish_line
 
 
 ## Returns the current authored phase for one route-progress ratio.

@@ -98,14 +98,26 @@ func advance(
 ) -> void:
 	_route_progress_ratio = clamp(route_progress_ratio, 0.0, 1.0)
 	_sync_route_phase()
-	if _should_hold_final_stretch_release(route_remaining_distance, route_distance):
+
+	var has_crossed_finish_line := is_finite(route_remaining_distance) and route_remaining_distance <= 0.0
+	if has_crossed_finish_line:
 		_clear_regular_spawn_schedule()
+
+	elif _should_hold_final_stretch_release(route_remaining_distance, route_distance):
+		_clear_regular_spawn_schedule()
+
 	elif _next_spawn_plan == null:
 		_prime_next_spawn()
-	if _next_spawn_plan != null:
+		
+	if not has_crossed_finish_line and _next_spawn_plan != null:
 		var active_spacing := _next_spawn_plan.spacing
 		_distance_until_next_spawn = min(_distance_until_next_spawn, active_spacing)
+
 	_move_hazards(distance_delta)
+	
+	if has_crossed_finish_line:
+		return
+
 	_spawn_hazards(distance_delta)
 
 
@@ -154,6 +166,29 @@ func bind_hazard_cleanup_areas(hazard_cleanup_areas: Array) -> void:
 		_hazard_cleanup_areas.append(cleanup_area)
 		if not cleanup_area.area_entered.is_connected(_on_hazard_cleanup_area_entered):
 			cleanup_area.area_entered.connect(_on_hazard_cleanup_area_entered)
+
+
+## Frees all live hazards and clears queued hazard runtime state for non-gameplay transitions.
+func clear_runtime_hazards() -> void:
+	for child in get_children():
+		remove_child(child)
+		child.queue_free()
+
+	_pending_collision_hazards.clear()
+	_pending_near_miss_hazards.clear()
+	_pending_completed_passes.clear()
+	_next_spawn_plan = null
+	_distance_until_next_spawn = 0.0
+
+
+## Returns whether hazards or unresolved hazard events are still active in the runtime field.
+func has_runtime_hazards() -> bool:
+	return (
+		get_child_count() > 0
+		or not _pending_collision_hazards.is_empty()
+		or not _pending_near_miss_hazards.is_empty()
+		or not _pending_completed_passes.is_empty()
+	)
 
 
 ## Moves all live hazards downward with the current scroll distance.

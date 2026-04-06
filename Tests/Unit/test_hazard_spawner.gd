@@ -451,6 +451,25 @@ func test_final_stretch_when_route_remaining_distance_reaches_release_window_the
 	assert_eq(spawner._get_route_phase(0.98), spawner.ROUTE_PHASE_FINAL_STRETCH)
 
 
+## Verifies the finish threshold suppresses new spawns but keeps live hazards active until cleanup completes.
+func test_finish_threshold_when_crossed_then_live_hazards_remain_until_cleanup_and_new_spawns_stop() -> void:
+	var spawner := _create_seeded_spawner()
+	await wait_process_frames(1)
+
+	spawner._spawn_hazard(&"rock", 0)
+	assert_true(spawner.has_runtime_hazards())
+
+	spawner.advance(20.0, 1.0, 0.0, 5000.0)
+
+	assert_eq(spawner.get_child_count(), 1)
+	assert_null(spawner._next_spawn_plan)
+	assert_true(spawner.has_runtime_hazards())
+
+	spawner.clear_runtime_hazards()
+
+	assert_false(spawner.has_runtime_hazards())
+
+
 ## Verifies seeded rolls randomize lane selection across seven lanes.
 
 func test_seeded_rolls_randomize_lane_selection_across_seven_lanes() -> void:
