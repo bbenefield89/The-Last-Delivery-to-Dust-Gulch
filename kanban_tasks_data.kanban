@@ -34,9 +34,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"edc30480-ce7f-4da5-94ed-7913c74fc04c"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -88,7 +86,8 @@
 				"3d2ac0a2-08e5-4c87-84a4-e1e5a2fdb896",
 				"0280131b-d23f-4723-993e-da5e74bcb276",
 				"3dbe3258-ef5c-496e-a8e8-bcbfd4961ecd",
-				"8d511f83-6d5a-4112-a465-7191eb29d32f"
+				"8d511f83-6d5a-4112-a465-7191eb29d32f",
+				"edc30480-ce7f-4da5-94ed-7913c74fc04c"
 			]
 		}
 	],
