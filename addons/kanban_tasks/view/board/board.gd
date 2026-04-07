@@ -23,14 +23,12 @@ var board_data: __BoardData
 @onready var button_show_descriptions: Button = %ShowDescriptions
 @onready var button_show_steps: Button = %ShowSteps
 @onready var button_documentation: Button = %Documentation
-@onready var button_refresh: Button = %Refresh
 @onready var button_settings: Button = %Settings
 @onready var column_holder: HBoxContainer = %ColumnHolder
 @onready var settings: __SettingsScript = %SettingsView
 
 
-## Connects board header controls and syncs editor-only button state.
-func _ready() -> void:
+func _ready():
 	update()
 	board_data.layout.changed.connect(update)
 
@@ -50,21 +48,15 @@ func _ready() -> void:
 	var ctx: __EditContext = __Singletons.instance_of(__EditContext, self)
 
 	ctx.settings.changed.connect(update)
-	ctx.settings.changed.connect(__update_reload_button_state)
 
 	ctx.filter_changed.connect(__on_filter_changed_external)
 
 	button_documentation.pressed.connect(func(): show_documentation.emit())
 	button_documentation.visible = Engine.is_editor_hint()
 
-	button_refresh.pressed.connect(__on_refresh_pressed)
-	button_refresh.visible = Engine.is_editor_hint()
-	__update_reload_button_state()
-
 	button_settings.pressed.connect(settings.popup_centered_ratio_no_fullscreen)
 
 
-## Handles board-level keyboard shortcuts for search and undo/redo.
 func _shortcut_input(event: InputEvent) -> void:
 	if not __Shortcuts.should_handle_shortcut(self):
 		return
@@ -82,36 +74,26 @@ func _shortcut_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-## Applies editor-theme icons to the board header controls.
-func _notification(what: int) -> void:
-	match(what):
-		NOTIFICATION_THEME_CHANGED:
-			if is_instance_valid(search_bar):
-				search_bar.right_icon = get_theme_icon(&"Search", &"EditorIcons")
-			if is_instance_valid(button_settings):
-				button_settings.icon = get_theme_icon(&"Tools", &"EditorIcons")
-			if is_instance_valid(button_documentation):
-				button_documentation.icon = get_theme_icon(&"Help", &"EditorIcons")
-			if is_instance_valid(button_refresh):
-				if has_theme_icon(&"Reload", &"EditorIcons"):
-					button_refresh.icon = get_theme_icon(&"Reload", &"EditorIcons")
-					button_refresh.text = ""
-				else:
-					button_refresh.icon = null
-					button_refresh.text = "Reload"
-			if is_instance_valid(button_advanced_search):
-				button_advanced_search.icon = get_theme_icon(&"Zoom", &"EditorIcons")
-			if is_instance_valid(button_show_categories):
-				button_show_categories.icon = get_theme_icon(&"Rectangle", &"EditorIcons")
-			if is_instance_valid(button_show_descriptions):
-				button_show_descriptions.icon = get_theme_icon(&"Script", &"EditorIcons")
-			if is_instance_valid(button_show_steps):
-				button_show_steps.icon = get_theme_icon(&"FileList", &"EditorIcons")
-			if is_instance_valid(settings):
-				settings.on_theme_changed()
+func _notification(what):
+	if what == NOTIFICATION_THEME_CHANGED and not is_part_of_edited_scene():
+		if is_instance_valid(search_bar):
+			search_bar.right_icon = get_theme_icon(&"Search", &"EditorIcons")
+		if is_instance_valid(button_settings):
+			button_settings.icon = get_theme_icon(&"Tools", &"EditorIcons")
+		if is_instance_valid(button_documentation):
+			button_documentation.icon = get_theme_icon(&"Help", &"EditorIcons")
+		if is_instance_valid(button_advanced_search):
+			button_advanced_search.icon = get_theme_icon(&"Zoom", &"EditorIcons")
+		if is_instance_valid(button_show_categories):
+			button_show_categories.icon = get_theme_icon(&"Rectangle", &"EditorIcons")
+		if is_instance_valid(button_show_descriptions):
+			button_show_descriptions.icon = get_theme_icon(&"Script", &"EditorIcons")
+		if is_instance_valid(button_show_steps):
+			button_show_steps.icon = get_theme_icon(&"FileList", &"EditorIcons")
+		if is_instance_valid(settings):
+			settings.on_theme_changed()
 
 
-## Rebuilds the visible board columns from the current layout data.
 func update() -> void:
 	for column in column_holder.get_children():
 		column.queue_free()
@@ -140,23 +122,8 @@ func update() -> void:
 	button_show_steps.set_pressed_no_signal(ctx.settings.show_steps_preview)
 
 
-## Keeps the refresh button enabled only when the editor board file exists.
-func __update_reload_button_state() -> void:
-	if not is_instance_valid(button_refresh):
-		return
-
-	if not Engine.is_editor_hint():
-		button_refresh.disabled = true
-		return
-
-	var ctx: __EditContext = __Singletons.instance_of(__EditContext, self)
-	var editor_data_file_path := ctx.settings.editor_data_file_path
-	button_refresh.disabled = editor_data_file_path.is_empty() or not FileAccess.file_exists(editor_data_file_path)
-
-
 # Do not use parameters the method is bound to diffrent signals.
-## Updates the shared filter state after local search UI changes.
-func __on_filter_changed(param1: Variant = null) -> void:
+func __on_filter_changed(param1: Variant = null):
 	var ctx: __EditContext = __Singletons.instance_of(__EditContext, self)
 
 	if ctx.filter_changed.is_connected(__on_filter_changed_external):
@@ -167,35 +134,24 @@ func __on_filter_changed(param1: Variant = null) -> void:
 	ctx.filter_changed.connect(__on_filter_changed_external)
 
 
-## Moves keyboard focus back to the advanced-search toggle after submitting search text.
-func __on_search_bar_entered(filter: String) -> void:
+func __on_search_bar_entered(filter: String):
 	button_advanced_search.grab_focus()
 
 
-## Clears the text field when an external filter update is applied.
-func __on_filter_changed_external() -> void:
+func __on_filter_changed_external():
 	search_bar.text = ""
 
 
-## Persists the category-visibility setting.
 func __on_show_categories_toggled(button_pressed: bool):
 	var ctx: __EditContext = __Singletons.instance_of(__EditContext, self)
 	ctx.settings.show_category_on_board = button_pressed
 
 
-## Persists the description-preview setting.
 func __on_show_descriptions_toggled(button_pressed: bool):
 	var ctx: __EditContext = __Singletons.instance_of(__EditContext, self)
 	ctx.settings.show_description_preview = button_pressed
 
 
-## Persists the steps-preview setting.
 func __on_show_steps_toggled(button_pressed: bool):
 	var ctx: __EditContext = __Singletons.instance_of(__EditContext, self)
 	ctx.settings.show_steps_preview = button_pressed
-
-
-## Requests a disk reload through the shared editor context.
-func __on_refresh_pressed() -> void:
-	var ctx: __EditContext = __Singletons.instance_of(__EditContext, self)
-	ctx.reload_board.emit()

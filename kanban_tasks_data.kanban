@@ -34,8 +34,7 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
@@ -87,7 +86,8 @@
 				"3d2ac0a2-08e5-4c87-84a4-e1e5a2fdb896",
 				"0280131b-d23f-4723-993e-da5e74bcb276",
 				"3dbe3258-ef5c-496e-a8e8-bcbfd4961ecd",
-				"8d511f83-6d5a-4112-a465-7191eb29d32f"
+				"8d511f83-6d5a-4112-a465-7191eb29d32f",
+				"edc30480-ce7f-4da5-94ed-7913c74fc04c"
 			]
 		}
 	],
@@ -1165,6 +1165,18 @@
 				{
 					"details": "Add or update automated coverage for the new failure machine, covering `wheel_loose` and `horse_panic` routing and proving current live failure behavior remains unchanged.\n\nDone when: automated tests prove FailureStateMachine routes through the two live failure states correctly, and the standard verification flow still passes.",
 					"done": false
+				}
+			]
+		},
+		{
+			"uuid": "edc30480-ce7f-4da5-94ed-7913c74fc04c",
+			"title": "DG-56",
+			"description": "Task: Swap the project to a custom drop-in version of the Kanban addon.\n\nUse the custom addon version as a direct replacement for the current Kanban addon and keep the change isolated in its own ticket in case any follow-up cleanup is needed.",
+			"category": "9509b143-caf2-476d-84d2-062bd75887f9",
+			"steps": [
+				{
+					"details": "Replace the current Kanban addon with the custom drop-in version and confirm the project still opens with the board available.",
+					"done": true
 				}
 			]
 		},

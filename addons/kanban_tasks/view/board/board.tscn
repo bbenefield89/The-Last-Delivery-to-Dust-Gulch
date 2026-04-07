@@ -65,12 +65,6 @@ layout_mode = 2
 tooltip_text = "Open documentation."
 flat = true
 
-[node name="Refresh" type="Button" parent="Header"]
-unique_name_in_owner = true
-layout_mode = 2
-tooltip_text = "Reload the board from disk."
-flat = true
-
 [node name="Settings" type="Button" parent="Header"]
 unique_name_in_owner = true
 layout_mode = 2
