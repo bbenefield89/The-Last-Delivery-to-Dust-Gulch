@@ -12,6 +12,19 @@ const TITLE_SCREEN_SCENE_PATH := "res://Scenes/TitleScreen/TitleScreen.tscn"
 
 const DEV_CHEATS_SCRIPT_PATH := "res://Systems/DevCheats/dev_cheats.gd"
 const FAILURE_STATE_SCRIPT_PATH := "res://Systems/RunState/failure_state.gd"
+const RUN_STATE_MACHINE_SCRIPT_PATH := "res://Scenes/RunScene/FSM/RunStateMachine/run_state_machine.gd"
+const RUN_STATE_MACHINE_STATE_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/States/run_state_machine_state.gd"
+)
+const RUN_STATE_MACHINE_IN_PROGRESS_STATE_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/States/in_progress_state.gd"
+)
+const RUN_STATE_MACHINE_SUCCESS_STATE_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/States/success_state.gd"
+)
+const RUN_STATE_MACHINE_COLLAPSED_STATE_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/States/collapsed_state.gd"
+)
 const HAZARD_DEFINITION_SCRIPT_PATH := "res://Systems/HazardSpawner/hazard_definition.gd"
 const HAZARD_INSTANCE_SCRIPT_PATH := "res://Systems/HazardSpawner/hazard_instance.gd"
 const HAZARD_SCENE_PATH := "res://Systems/HazardSpawner/Hazard.tscn"
