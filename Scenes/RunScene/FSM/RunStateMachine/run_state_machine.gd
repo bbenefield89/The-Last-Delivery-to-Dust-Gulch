@@ -6,7 +6,6 @@ extends RefCounted
 # Imports
 
 const RunStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_KEY_SCRIPT_PATH)
-const RunStateMachineStateBaseType := preload(ProjectPaths.RUN_STATE_MACHINE_STATE_BASE_SCRIPT_PATH)
 const InProgressStateType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_STATE_SCRIPT_PATH)
 const SuccessStateType := preload(ProjectPaths.RUN_STATE_MACHINE_SUCCESS_STATE_SCRIPT_PATH)
 const CollapsedStateType := preload(ProjectPaths.RUN_STATE_MACHINE_COLLAPSED_STATE_SCRIPT_PATH)
@@ -14,8 +13,8 @@ const CollapsedStateType := preload(ProjectPaths.RUN_STATE_MACHINE_COLLAPSED_STA
 
 # Private Fields
 
-var __states: Dictionary[int, RunStateMachineStateBaseType] = {}
-var __current_state: RunStateMachineStateBaseType
+var __states: Dictionary[int, RunStateMachineStateBase] = {}
+var __current_state: RunStateMachineStateBase
 
 
 # Lifecycle Methods
@@ -37,7 +36,7 @@ func bind(scene: Node) -> void:
 
 
 ## Registers one state instance under the top-level machine key owned by that state.
-func register_state(state: RunStateMachineStateBaseType) -> void:
+func register_state(state: RunStateMachineStateBase) -> void:
 	var state_key: int = state.get_state_key()
 	assert(state_key != RunStateMachineKeyType.Key.NONE, "RunStateMachine states must own a non-NONE state key.")
 	if state_key == RunStateMachineKeyType.Key.NONE:

@@ -1,3 +1,4 @@
+class_name RunStateMachineStateBase
 extends RefCounted
 
 ## Defines the minimal typed interface for one top-level RunScene state.

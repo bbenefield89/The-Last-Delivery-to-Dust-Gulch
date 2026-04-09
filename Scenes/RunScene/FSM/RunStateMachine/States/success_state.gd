@@ -1,4 +1,4 @@
-extends "res://Scenes/RunScene/FSM/RunStateMachine/States/run_state_machine_state_base.gd"
+extends RunStateMachineStateBase
 
 ## Placeholder top-level success state for the RunStateMachine.
 
