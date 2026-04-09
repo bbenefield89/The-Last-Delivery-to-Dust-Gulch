@@ -5,11 +5,9 @@ extends GutTest
 # Imports
 
 const ProjectPaths := preload("res://Constants/project_paths.gd")
+const RunStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_KEY_SCRIPT_PATH)
 const RunStateMachineType := preload(ProjectPaths.RUN_STATE_MACHINE_SCRIPT_PATH)
 const RunStateMachineStateBaseType := preload(ProjectPaths.RUN_STATE_MACHINE_STATE_BASE_SCRIPT_PATH)
-const InProgressStateType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_STATE_SCRIPT_PATH)
-const SuccessStateType := preload(ProjectPaths.RUN_STATE_MACHINE_SUCCESS_STATE_SCRIPT_PATH)
-const CollapsedStateType := preload(ProjectPaths.RUN_STATE_MACHINE_COLLAPSED_STATE_SCRIPT_PATH)
 
 
 # Public Methods
@@ -17,27 +15,27 @@ const CollapsedStateType := preload(ProjectPaths.RUN_STATE_MACHINE_COLLAPSED_STA
 ## Verifies one transition exits the old state before entering the new state.
 func test_set_state_when_transition_then_calls_exit_and_enter_with_expected_keys() -> void:
 	var machine := RunStateMachineType.new(false)
-	var first_state := _SpyRunStateMachineState.new("first")
-	var second_state := _SpyRunStateMachineState.new("second")
+	var first_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
+	var second_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.SUCCESS)
 
 	machine.register_state(first_state)
 	machine.register_state(second_state)
 
-	machine.set_state(&"first")
-	machine.set_state(&"second")
+	machine.set_state(RunStateMachineKeyType.Key.IN_PROGRESS)
+	machine.set_state(RunStateMachineKeyType.Key.SUCCESS)
 
-	assert_eq(machine.get_current_state_key(), &"second")
-	assert_eq(first_state.call_log, ["enter:", "exit:second"])
-	assert_eq(second_state.call_log, ["enter:first"])
+	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.SUCCESS)
+	assert_eq(first_state.call_log, ["enter:-1", "exit:1"])
+	assert_eq(second_state.call_log, ["enter:0"])
 
 
 ## Verifies advance delegates to whichever state is currently active.
 func test_advance_when_current_state_exists_then_delegates_to_active_state() -> void:
 	var machine := RunStateMachineType.new(false)
-	var state := _SpyRunStateMachineState.new("active")
+	var state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
 
 	machine.register_state(state)
-	machine.set_state(&"active")
+	machine.set_state(RunStateMachineKeyType.Key.IN_PROGRESS)
 	machine.advance(0.5)
 
 	assert_eq(state.advance_calls, 1)
@@ -47,13 +45,13 @@ func test_advance_when_current_state_exists_then_delegates_to_active_state() -> 
 ## Verifies handle_input delegates to whichever state is currently active.
 func test_handle_input_when_current_state_exists_then_delegates_to_active_state() -> void:
 	var machine := RunStateMachineType.new(false)
-	var state := _SpyRunStateMachineState.new("active")
+	var state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
 	var event := InputEventAction.new()
 	event.action = &"pause_run"
 	event.pressed = true
 
 	machine.register_state(state)
-	machine.set_state(&"active")
+	machine.set_state(RunStateMachineKeyType.Key.IN_PROGRESS)
 	machine.handle_input(event)
 
 	assert_eq(state.input_calls, 1)
@@ -64,33 +62,33 @@ func test_handle_input_when_current_state_exists_then_delegates_to_active_state(
 func test_init_when_register_defaults_then_can_transition_to_expected_states() -> void:
 	var machine := RunStateMachineType.new()
 
-	machine.set_state(InProgressStateType.STATE_KEY)
-	assert_eq(machine.get_current_state_key(), InProgressStateType.STATE_KEY)
+	machine.set_state(RunStateMachineKeyType.Key.IN_PROGRESS)
+	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.IN_PROGRESS)
 
-	machine.set_state(SuccessStateType.STATE_KEY)
-	assert_eq(machine.get_current_state_key(), SuccessStateType.STATE_KEY)
+	machine.set_state(RunStateMachineKeyType.Key.SUCCESS)
+	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.SUCCESS)
 
-	machine.set_state(CollapsedStateType.STATE_KEY)
-	assert_eq(machine.get_current_state_key(), CollapsedStateType.STATE_KEY)
+	machine.set_state(RunStateMachineKeyType.Key.COLLAPSED)
+	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.COLLAPSED)
 
 
 ## Verifies switching to the same state is a no-op and does not re-run enter/exit hooks.
 func test_set_state_when_setting_same_state_then_enter_and_exit_are_not_repeated() -> void:
 	var machine := RunStateMachineType.new(false)
-	var state := _SpyRunStateMachineState.new("active")
+	var state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
 
 	machine.register_state(state)
 
-	machine.set_state(&"active")
-	machine.set_state(&"active")
+	machine.set_state(RunStateMachineKeyType.Key.IN_PROGRESS)
+	machine.set_state(RunStateMachineKeyType.Key.IN_PROGRESS)
 
-	assert_eq(state.call_log, ["enter:"])
+	assert_eq(state.call_log, ["enter:-1"])
 
 
 ## Verifies advance and handle_input are safe when no current state has been set.
 func test_delegation_when_no_current_state_then_no_spy_methods_are_called() -> void:
 	var machine := RunStateMachineType.new(false)
-	var state := _SpyRunStateMachineState.new("active")
+	var state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
 	var event := InputEventAction.new()
 	event.action = &"pause_run"
 	event.pressed = true
@@ -108,7 +106,7 @@ func test_delegation_when_no_current_state_then_no_spy_methods_are_called() -> v
 func test_bind_when_scene_is_set_then_registered_states_receive_bind() -> void:
 	var machine := RunStateMachineType.new(false)
 	var scene := Node.new()
-	var state := _SpyRunStateMachineState.new("active")
+	var state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
 
 	machine.register_state(state)
 	machine.bind(scene)
@@ -122,7 +120,7 @@ func test_bind_when_scene_is_set_then_registered_states_receive_bind() -> void:
 class _SpyRunStateMachineState extends RunStateMachineStateBaseType:
 	## Captures lifecycle, process, and input delegation for one test state.
 
-	var _label: String
+	var _key: int
 	var call_log: Array[String] = []
 	var advance_calls: int = 0
 	var input_calls: int = 0
@@ -131,12 +129,12 @@ class _SpyRunStateMachineState extends RunStateMachineStateBaseType:
 	var bound_scene: Node
 
 	## Builds one named state spy for readable assertion output.
-	func _init(label: String) -> void:
-		_label = label
+	func _init(key: int) -> void:
+		_key = key
 
 	## Returns the top-level machine key owned by this spy state.
-	func get_state_key() -> StringName:
-		return StringName(_label)
+	func get_state_key() -> int:
+		return _key
 
 	## Records the scene from the machine bind.
 	func bind(scene: Node = null) -> void:
@@ -144,12 +142,12 @@ class _SpyRunStateMachineState extends RunStateMachineStateBaseType:
 		super.bind(scene)
 
 	## Records the previous-state handoff for this entry.
-	func enter(previous_state_key: StringName) -> void:
-		call_log.append("enter:%s" % String(previous_state_key))
+	func enter(previous_state_key: int) -> void:
+		call_log.append("enter:%d" % previous_state_key)
 
 	## Records the next-state handoff for this exit.
-	func exit(next_state_key: StringName) -> void:
-		call_log.append("exit:%s" % String(next_state_key))
+	func exit(next_state_key: int) -> void:
+		call_log.append("exit:%d" % next_state_key)
 
 	## Records one delegated advance tick.
 	func advance(delta: float) -> void:

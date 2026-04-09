@@ -54,6 +54,9 @@ const TOUCH_LAYER_SCRIPT_PATH := "res://Scenes/RunScene/touch_layer.gd"
 # RunScene: FSM
 
 const RUN_STATE_MACHINE_SCRIPT_PATH := "res://Scenes/RunScene/FSM/RunStateMachine/run_state_machine.gd"
+const RUN_STATE_MACHINE_KEY_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/Enums/run_state_machine_key.gd"
+)
 const RUN_STATE_MACHINE_STATE_BASE_SCRIPT_PATH := (
 	"res://Scenes/RunScene/FSM/RunStateMachine/States/run_state_machine_state_base.gd"
 )

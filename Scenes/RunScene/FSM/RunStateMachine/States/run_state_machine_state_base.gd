@@ -3,6 +3,11 @@ extends RefCounted
 ## Defines the minimal typed interface for one top-level RunScene state.
 
 
+# Imports
+
+const RunStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_KEY_SCRIPT_PATH)
+
+
 # Private Fields
 
 var __scene: Node
@@ -15,27 +20,27 @@ func bind(scene: Node = null) -> void:
 	__scene = scene
 
 
-## Returns the stable key for this state instance or an empty key when unimplemented.
-func get_state_key() -> StringName:
-	return &""
+## Returns this state's enum key; derived states must override this and return their owned non-NONE key.
+func get_state_key() -> int:
+	return RunStateMachineKeyType.Key.NONE
 
 
-## Runs when the machine transitions into this state.
-func enter(_previous_state_key: StringName) -> void:
+## Handles transition entry; derived states should override this when they need entry behavior.
+func enter(_previous_state_key: int) -> void:
 	pass
 
 
-## Runs when the machine transitions away from this state.
-func exit(_next_state_key: StringName) -> void:
+## Handles transition exit; derived states should override this when they need exit behavior.
+func exit(_next_state_key: int) -> void:
 	pass
 
 
-## Advances this state by one process tick.
+## Advances this state by one process tick; derived states should override this when they own process behavior.
 func advance(_delta: float) -> void:
 	pass
 
 
-## Handles one input event while this state is active.
+## Handles one input event while this state is active; derived states should override this when they own input behavior.
 func handle_input(_event: InputEvent) -> void:
 	pass
 

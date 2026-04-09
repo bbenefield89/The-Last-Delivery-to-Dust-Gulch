@@ -5,6 +5,7 @@ extends RefCounted
 
 # Imports
 
+const RunStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_KEY_SCRIPT_PATH)
 const RunStateMachineStateBaseType := preload(ProjectPaths.RUN_STATE_MACHINE_STATE_BASE_SCRIPT_PATH)
 const InProgressStateType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_STATE_SCRIPT_PATH)
 const SuccessStateType := preload(ProjectPaths.RUN_STATE_MACHINE_SUCCESS_STATE_SCRIPT_PATH)
@@ -13,7 +14,7 @@ const CollapsedStateType := preload(ProjectPaths.RUN_STATE_MACHINE_COLLAPSED_STA
 
 # Private Fields
 
-var __states: Dictionary[StringName, RunStateMachineStateBaseType] = {}
+var __states: Dictionary[int, RunStateMachineStateBaseType] = {}
 var __current_state: RunStateMachineStateBaseType
 
 
@@ -31,31 +32,31 @@ func _init(register_default_states: bool = true) -> void:
 
 ## Binds the live RunScene node instance so states can call into scene-owned services during extraction.
 func bind(scene: Node) -> void:
-	for state_key: StringName in __states.keys():
+	for state_key: int in __states.keys():
 		__states[state_key].bind(scene)
 
 
 ## Registers one state instance under the top-level machine key owned by that state.
 func register_state(state: RunStateMachineStateBaseType) -> void:
-	var state_key := state.get_state_key()
-	assert(state_key != &"", "RunStateMachine states must own a non-empty state key.")
-	if state_key == &"":
-		push_error("RunStateMachine refused to register a state with an empty state key.")
+	var state_key: int = state.get_state_key()
+	assert(state_key != RunStateMachineKeyType.Key.NONE, "RunStateMachine states must own a non-NONE state key.")
+	if state_key == RunStateMachineKeyType.Key.NONE:
+		push_error("RunStateMachine refused to register a state with a NONE state key.")
 		return
 	__states[state_key] = state
 	state.bind()
 
 
-## Returns the key for the currently active top-level state or an empty key when unset.
-func get_current_state_key() -> StringName:
+## Returns the key for the currently active top-level state or `NONE` when unset.
+func get_current_state_key() -> int:
 	if __current_state == null:
-		return &""
+		return RunStateMachineKeyType.Key.NONE
 
 	return __current_state.get_state_key()
 
 
 ## Transitions the machine to the requested top-level state.
-func set_state(state_key: StringName) -> void:
+func set_state(state_key: int) -> void:
 	assert(__states.has(state_key), "RunStateMachine is missing state '%s'." % state_key)
 	if not __states.has(state_key):
 		push_error("RunStateMachine is missing state '%s'." % state_key)
@@ -68,7 +69,7 @@ func set_state(state_key: StringName) -> void:
 	if __current_state == next_state:
 		return
 
-	var previous_state_key := get_current_state_key()
+	var previous_state_key: int = get_current_state_key()
 	if __current_state != null:
 		__current_state.exit(state_key)
 
