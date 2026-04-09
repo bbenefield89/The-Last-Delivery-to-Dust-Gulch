@@ -3,7 +3,7 @@ extends RefCounted
 ## Defines the minimal typed interface for one top-level RunScene state.
 
 
-# Regular Fields
+# Protected Fields
 
 var _scene: Node
 var _state_key: StringName = &""
@@ -11,8 +11,8 @@ var _state_key: StringName = &""
 
 # Public Methods
 
-## Binds the owning scene and state key for one registered machine state.
-func bind(scene: Node, state_key: StringName) -> void:
+## Binds the owning RunScene node instance (or null in unit tests) and the registered state key.
+func bind(scene: Node = null, state_key: StringName = &"") -> void:
 	_scene = scene
 	_state_key = state_key
 

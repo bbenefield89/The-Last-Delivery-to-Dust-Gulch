@@ -4,7 +4,10 @@ extends GutTest
 
 const ProjectPaths := preload("res://Constants/project_paths.gd")
 const RunStateMachineType := preload(ProjectPaths.RUN_STATE_MACHINE_SCRIPT_PATH)
-const RunStateMachineStateType := preload(ProjectPaths.RUN_STATE_MACHINE_STATE_SCRIPT_PATH)
+const RunStateMachineStateBaseType := preload(ProjectPaths.RUN_STATE_MACHINE_STATE_BASE_SCRIPT_PATH)
+const InProgressStateType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_STATE_SCRIPT_PATH)
+const SuccessStateType := preload(ProjectPaths.RUN_STATE_MACHINE_SUCCESS_STATE_SCRIPT_PATH)
+const CollapsedStateType := preload(ProjectPaths.RUN_STATE_MACHINE_COLLAPSED_STATE_SCRIPT_PATH)
 
 
 # Public Methods
@@ -21,7 +24,7 @@ func test_set_state_when_transition_then_calls_exit_and_enter_with_expected_keys
 	machine.set_state(&"first")
 	machine.set_state(&"second")
 
-	assert_eq(machine.current_state_key, &"second")
+	assert_eq(machine.get_current_state_key(), &"second")
 	assert_eq(first_state.call_log, ["enter:", "exit:second"])
 	assert_eq(second_state.call_log, ["enter:first"])
 
@@ -58,14 +61,14 @@ func test_handle_input_when_current_state_exists_then_delegates_to_active_state(
 func test_init_when_register_defaults_then_can_transition_to_expected_states() -> void:
 	var machine := RunStateMachineType.new()
 
-	machine.set_state(RunStateMachineType.STATE_IN_PROGRESS)
-	assert_eq(machine.current_state_key, RunStateMachineType.STATE_IN_PROGRESS)
+	machine.set_state(InProgressStateType.STATE_KEY)
+	assert_eq(machine.get_current_state_key(), InProgressStateType.STATE_KEY)
 
-	machine.set_state(RunStateMachineType.STATE_SUCCESS)
-	assert_eq(machine.current_state_key, RunStateMachineType.STATE_SUCCESS)
+	machine.set_state(SuccessStateType.STATE_KEY)
+	assert_eq(machine.get_current_state_key(), SuccessStateType.STATE_KEY)
 
-	machine.set_state(RunStateMachineType.STATE_COLLAPSED)
-	assert_eq(machine.current_state_key, RunStateMachineType.STATE_COLLAPSED)
+	machine.set_state(CollapsedStateType.STATE_KEY)
+	assert_eq(machine.get_current_state_key(), CollapsedStateType.STATE_KEY)
 
 
 ## Verifies binding a scene propagates to registered state instances.
@@ -84,7 +87,7 @@ func test_bind_when_scene_is_set_then_registered_states_receive_bind() -> void:
 
 # Inner Classes
 
-class _SpyRunStateMachineState extends RunStateMachineStateType:
+class _SpyRunStateMachineState extends RunStateMachineStateBaseType:
 	## Captures lifecycle, process, and input delegation for one test state.
 
 	var _label: String
@@ -101,7 +104,7 @@ class _SpyRunStateMachineState extends RunStateMachineStateType:
 		_label = label
 
 	## Records the scene and registered key from the machine bind.
-	func bind(scene: Node, state_key: StringName) -> void:
+	func bind(scene: Node = null, state_key: StringName = &"") -> void:
 		bound_scene = scene
 		bound_key = state_key
 		super.bind(scene, state_key)
