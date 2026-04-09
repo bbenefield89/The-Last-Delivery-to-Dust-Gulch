@@ -14,4 +14,4 @@ Follow the shared `godot-start-next-task` skill as the base workflow.
 - Ticket key format: `DG-<number>`
 - Base branch for starting new tickets: main
 - The current branch must match the active `Doing` ticket key when one exists
-- Use the repo-local `implementor` and `reviewer` under `.codex/agents/`
+- Use the repo-local `implementor`, `code-reviewer`, and `architecture-reviewer` under `.codex/agents/`

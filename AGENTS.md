@@ -15,7 +15,8 @@ Project-scoped Codex subagent docs live under `.codex/agents/`.
 
 - `implementor.md` owns execution workflow, blocker handling, and implementation reporting expectations.
 - `planner.md` owns planning workflow and detailed ticket-authoring guidance.
-- `reviewer.md` owns review priorities and reviewer output expectations.
+- `code-reviewer.md` owns correctness review, regression detection, and test-quality review.
+- `architecture-reviewer.md` owns ownership review, maintainability review, and GDScript standards enforcement.
 
 ## Product Intent
 
@@ -113,10 +114,10 @@ Keep the center gameplay area clear. Push persistent HUD elements to edges and c
 ## Custom Skills
 
 - `$write-ticket` - Draft or update kanban tickets using the repo-local planner guidance.
-- `$start-next-task` - Resume or start ticketed work using the repo-local implementor and reviewer.
+- `$start-next-task` - Resume or start ticketed work using the repo-local implementor, code-reviewer, and architecture-reviewer.
 - `$finalize-ticket` - Mark the final step complete, move the ticket to Done, ready the draft PR, squash merge, and sync local `main`.
 - `$off-road` - Do intentional non-ticket work on the current non-main branch.
-- `$github-address-comments` - Address PR review comments with implementor/reviewer orchestration.
+- `$github-address-comments` - Address PR review comments with implementor plus focused reviewer orchestration.
 - `$github-open-pr` - Publish the current branch and open a draft PR.
 - `$github-merge-pr` - Merge a PR with a clean conventional squash commit message.
 
@@ -227,8 +228,25 @@ All Godot repos should keep these workflow invariants in place:
 - Maintain `AGENTS.md` as the main repo instructions file.
 - Keep a `Docs/GDD.md` gameplay or product direction document.
 - Keep `Docs/Standards/GDSCRIPT_STANDARDS.md` as the local coding standard reference.
-- Keep repo-local `planner`, `implementor`, and `reviewer` agent docs under `.codex/agents/`.
+- Keep repo-local `planner`, `implementor`, `code-reviewer`, and `architecture-reviewer` agent docs under `.codex/agents/`.
 - Keep repo-local thin wrappers for `write-ticket` and `start-next-task` so repo facts stay local.
 - Keep `start-next-task` ticket-driven and `off-road` branch-driven.
 - Do not let GitHub comment workflows resolve review threads automatically.
+
+## Shared Code Architecture
+
+- Organize project-owned code and assets around slice ownership.
+- Keep scene-specific code, helper files, enums, constants, FSMs, and data inside the owning scene folder under `res://Scenes/<SceneName>/`.
+- Keep prefab-specific code, helper files, enums, constants, FSMs, and data inside the owning prefab folder under `res://Prefabs/<PrefabName>/`.
+- Keep system-specific code, helper files, enums, constants, FSMs, and data inside the owning system folder under `res://Systems/<SystemName>/`.
+- Prefer slice-local placement by default. Promote code or data to a higher-level shared folder only when reuse crosses a slice boundary.
+- If an enum or constant is only used by one file, keep it in that file.
+- If an enum or constant is shared only within one slice, place it under that slice, for example `res://Scenes/<SceneName>/Enums/`, `res://Prefabs/<PrefabName>/Constants/`, or `res://Systems/<SystemName>/Enums/`.
+- If an enum or constant is genuinely shared across multiple slices, promote it to a top-level shared folder such as `res://Enums/` or `res://Constants/`.
+- Do not introduce broad catch-all folders such as `Shared/`, `Utils/`, or `Helpers/` as a dumping ground for slice-owned code.
+- Add subfolders like `Components/`, `Enums/`, `Constants/`, `Data/`, or `FSM/` only when they improve readability for that specific owner.
+- Keep actual game scenes under the top-level `Scenes/` folder.
+- Keep reusable instantiable gameplay objects under the top-level `Prefabs/` folder.
+- Keep reusable runtime owners under `Systems/<Owner>/`.
+- Keep each owner small and cohesive. Prefer adding support files near the owning slice over scattering related logic across the repo.
 <!-- END SHARED GODOT WORKFLOW -->

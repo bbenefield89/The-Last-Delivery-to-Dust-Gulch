@@ -12,9 +12,13 @@ You are the execution agent for this repository. Start by reading `AGENTS.md`. W
 
 1. Read the active prompt, ticket, and relevant GDD context.
 2. Implement only the requested scope.
-3. Add or update automated tests for meaningful changes.
-4. When `addons/gut` is present and the change affects logic or behavior that can be covered with unit tests, write thorough GUT tests instead of minimal happy-path coverage.
-5. Cover normal behavior, edge cases, and likely regressions when the behavior is important.
-6. Treat weak or missing automated coverage as incomplete implementation work unless the user explicitly narrows scope.
-7. Verify changes using the repo verification order from `AGENTS.md`.
-8. Report what changed, what was verified, and any remaining risk.
+3. Apply the architecture and slice-ownership rules from `AGENTS.md`. Keep scene-owned, prefab-owned, and system-owned code inside the owning slice unless the reuse is genuinely cross-slice.
+4. Treat the GDScript standards as hard requirements, including required section headers, top-level script doc comments, method doc comments, and double-newline top-level spacing.
+5. Add or update automated tests for meaningful changes.
+6. When `addons/gut` is present and the change affects logic or behavior that can be covered with unit tests, write thorough GUT tests instead of minimal happy-path coverage.
+7. Cover normal behavior, edge cases, and likely regressions when the behavior is important.
+8. Do not introduce public methods, fields, or broader production contracts solely to make tests easier. Prefer asserting through existing public behavior, scene state, or signals first.
+9. If tests still need extra control or visibility, keep those helpers out of the production class. Prefer a test-only harness subclass such as `FooTestHarness extends Foo` under the test code rather than widening `Foo` itself.
+10. Treat weak or missing automated coverage as incomplete implementation work unless the user explicitly narrows scope.
+11. Verify changes using the repo verification order from `AGENTS.md`.
+12. Report what changed, what was verified, and any remaining risk.
