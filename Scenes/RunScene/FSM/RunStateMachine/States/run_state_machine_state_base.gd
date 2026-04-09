@@ -3,23 +3,21 @@ extends RefCounted
 ## Defines the minimal typed interface for one top-level RunScene state.
 
 
-# Protected Fields
+# Private Fields
 
-var _scene: Node
-var _state_key: StringName = &""
+var __scene: Node
 
 
 # Public Methods
 
-## Binds the owning RunScene node instance (or null in unit tests) and the registered state key.
-func bind(scene: Node = null, state_key: StringName = &"") -> void:
-	_scene = scene
-	_state_key = state_key
+## Binds the owning RunScene node instance or null in unit tests.
+func bind(scene: Node = null) -> void:
+	__scene = scene
 
 
-## Returns the registered key for this state instance.
+## Returns the stable key for this state instance or an empty key when unimplemented.
 func get_state_key() -> StringName:
-	return _state_key
+	return &""
 
 
 ## Runs when the machine transitions into this state.
@@ -46,4 +44,4 @@ func handle_input(_event: InputEvent) -> void:
 
 ## Returns the bound scene for state implementations that need scene-local access.
 func _get_scene() -> Node:
-	return _scene
+	return __scene
