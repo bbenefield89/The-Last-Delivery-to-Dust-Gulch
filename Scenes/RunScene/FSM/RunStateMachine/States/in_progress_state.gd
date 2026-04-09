@@ -4,11 +4,11 @@ extends RunStateMachineStateBase
 
 # Constants
 
-const STATE_KEY: int = RunStateMachineKeyType.Key.IN_PROGRESS
+const STATE_KEY: RunStateMachineKey.Key = RunStateMachineKey.Key.IN_PROGRESS
 
 
 # Public Methods
 
 ## Returns the top-level machine key owned by this derived state.
-func get_state_key() -> int:
+func get_state_key() -> RunStateMachineKey.Key:
 	return STATE_KEY

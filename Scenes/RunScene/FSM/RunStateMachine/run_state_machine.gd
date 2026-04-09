@@ -15,6 +15,7 @@ const CollapsedStateType := preload(ProjectPaths.RUN_STATE_MACHINE_COLLAPSED_STA
 
 var __states: Dictionary[int, RunStateMachineStateBase] = {}
 var __current_state: RunStateMachineStateBase
+var __scene: Node
 
 
 # Lifecycle Methods
@@ -30,7 +31,8 @@ func _init(register_default_states: bool = true) -> void:
 # Public Methods
 
 ## Binds the live RunScene node instance so states can call into scene-owned services during extraction.
-func bind(scene: Node) -> void:
+func bind(scene: Node = null) -> void:
+	__scene = scene
 	for state_key: int in __states.keys():
 		__states[state_key].bind(scene)
 
@@ -43,7 +45,8 @@ func register_state(state: RunStateMachineStateBase) -> void:
 		push_error("RunStateMachine refused to register a state with a NONE state key.")
 		return
 	__states[state_key] = state
-	state.bind()
+	if __scene != null:
+		state.bind(__scene)
 
 
 ## Returns the key for the currently active top-level state or `NONE` when unset.

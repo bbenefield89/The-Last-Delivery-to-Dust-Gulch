@@ -5,11 +5,6 @@ extends RefCounted
 ## Defines the minimal typed interface for one top-level RunScene state.
 
 
-# Imports
-
-const RunStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_KEY_SCRIPT_PATH)
-
-
 # Private Fields
 
 var __scene: Node
@@ -23,8 +18,8 @@ func bind(scene: Node = null) -> void:
 
 
 ## Returns this state's enum key; derived states must override this and return their owned non-NONE key.
-func get_state_key() -> int:
-	return RunStateMachineKeyType.Key.NONE
+func get_state_key() -> RunStateMachineKey.Key:
+	return RunStateMachineKey.Key.NONE
 
 
 ## Handles transition entry; derived states should override this when they need entry behavior.

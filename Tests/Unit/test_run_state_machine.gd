@@ -119,7 +119,7 @@ func test_bind_when_scene_is_set_then_registered_states_receive_bind() -> void:
 class _SpyRunStateMachineState extends "res://Scenes/RunScene/FSM/RunStateMachine/States/run_state_machine_state_base.gd":
 	## Captures lifecycle, process, and input delegation for one test state.
 
-	var _key: int
+	var _key: RunStateMachineKey.Key
 	var call_log: Array[String] = []
 	var advance_calls: int = 0
 	var input_calls: int = 0
@@ -128,11 +128,11 @@ class _SpyRunStateMachineState extends "res://Scenes/RunScene/FSM/RunStateMachin
 	var bound_scene: Node
 
 	## Builds one named state spy for readable assertion output.
-	func _init(key: int) -> void:
+	func _init(key: RunStateMachineKey.Key) -> void:
 		_key = key
 
 	## Returns the top-level machine key owned by this spy state.
-	func get_state_key() -> int:
+	func get_state_key() -> RunStateMachineKey.Key:
 		return _key
 
 	## Records the scene from the machine bind.
