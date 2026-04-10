@@ -533,7 +533,12 @@ func _configure_roadside_scenery() -> void:
 		return
 
 	_roadside_scenery.configure_scenery_art(SHRUB_TEXTURES, SIGN_TEXTURE)
-	_refresh_regular_roadside_sign_spawning()
+	var regular_signs_enabled := true
+	if _run_state != null:
+		var route_phase := RunDirectorType.get_route_phase_for_progress(_run_state.get_delivery_progress_ratio())
+		regular_signs_enabled = route_phase != ROUTE_PHASE_RESET_BEFORE_FINALE \
+			and route_phase != ROUTE_PHASE_FINAL_STRETCH
+	_roadside_scenery.set_regular_sign_spawning_enabled(regular_signs_enabled)
 
 
 ## Rebuilds the distance bar markers from the authored route-band thresholds.
@@ -625,40 +630,6 @@ func _input(event: InputEvent) -> void:
 	_run_state_machine.handle_input(event)
 
 
-## Handles pause, onboarding, and recovery input for the active run scene.
-func _handle_run_input(event: InputEvent) -> void:
-	var ui_input_result := _run_ui_presenter.route_input(event, PAUSE_ACTION)
-	if ui_input_result.pause_command == GameplayUiLayerType.PAUSE_COMMAND_TOGGLE:
-		_set_pause_state(not _run_ui_presenter.is_pause_menu_open)
-		return
-	if ui_input_result.pause_command == GameplayUiLayerType.PAUSE_COMMAND_CLOSE:
-		_set_pause_state(false)
-		return
-
-	if ui_input_result.did_dismiss_onboarding:
-		_run_ui_presenter.dismiss_onboarding()
-		if _run_director.route_phase_callout_zone == ROUTE_PHASE_WARM_UP:
-			_show_phase_callout(_get_route_phase_display_name(_run_director.route_phase_callout_zone))
-		return
-
-	if _run_state == null or ui_input_result.recovery_action == &"":
-		return
-
-	var recovery_result: RefCounted = _run_director.handle_recovery_action(ui_input_result.recovery_action)
-	if recovery_result.was_wrong_input:
-		return
-
-	if recovery_result.bonus_callout_text != "":
-		_show_bonus_callout(recovery_result.bonus_callout_text)
-	if recovery_result.play_step_sound:
-		_run_audio_presenter.play_recovery_step()
-	if recovery_result.recovery_completed:
-		_run_audio_presenter.play_recovery_success()
-
-	_run_ui_presenter.refresh_status()
-	_run_ui_presenter.refresh_recovery_prompt()
-
-
 ## Updates the wagon position to match the current lateral run-state offset.
 func _update_wagon_visual() -> void:
 	_run_presentation.update_wagon_visual()
@@ -669,89 +640,18 @@ func _update_camera_framing() -> void:
 	_run_presentation.update_camera_framing()
 
 
-## Applies scene-owned presentation side effects emitted by the extracted run director.
-func _handle_run_director_update(update: RefCounted) -> void:
+## Advances failure state timers and starts timer-driven bad luck when its scheduled roll matures.
+func _advance_failure_triggers(delta: float) -> void:
+	if _run_state == null:
+		return
+
+	var update: RefCounted = _run_director.advance(delta)
 	if update == null:
 		return
 	if update.phase_callout_text != "":
 		_run_ui_presenter.show_phase_callout(update.phase_callout_text)
 	if update.recovery_penalty_applied:
 		_run_audio_presenter.play_recovery_fail()
-
-
-## Applies scene-owned impact and bonus presentation emitted by the hazard resolver.
-func _handle_run_hazard_update(update: RefCounted) -> void:
-	if update == null:
-		return
-
-	for hazard_type in update.impact_hazard_types:
-		_trigger_impact_feedback()
-		_play_hazard_impact(hazard_type)
-
-	for bonus_callout_text in update.bonus_callout_texts:
-		_show_bonus_callout(bonus_callout_text)
-
-
-## Advances failure state timers and starts timer-driven bad luck when its scheduled roll matures.
-func _advance_failure_triggers(delta: float) -> void:
-	if _run_state == null:
-		return
-
-	_handle_run_director_update(_run_director.advance(delta))
-
-
-## Synchronizes the route phase against the current run progress and refreshes bad-luck timing when it changes.
-func _sync_route_phase() -> void:
-	if _run_state == null:
-		return
-
-	_handle_run_director_update(_run_director.sync_route_phase())
-
-
-## Keeps regular roadside signs out of the finale so the forced finish sign owns the end beat.
-func _refresh_regular_roadside_sign_spawning() -> void:
-	if _roadside_scenery == null:
-		return
-
-	_roadside_scenery.set_regular_sign_spawning_enabled(_should_allow_regular_roadside_signs())
-
-
-## Returns whether the regular roadside sign cadence should still be active for the current run state.
-func _should_allow_regular_roadside_signs() -> bool:
-	if _run_state == null:
-		return true
-
-	var route_phase := _get_route_phase(_run_state.get_delivery_progress_ratio())
-	return route_phase != ROUTE_PHASE_RESET_BEFORE_FINALE and route_phase != ROUTE_PHASE_FINAL_STRETCH
-
-
-## Spawns the dedicated finish sign exactly once when the run first enters the finish buffer.
-func _try_spawn_finish_buffer_sign() -> void:
-	if _run_state == null or _roadside_scenery == null:
-		return
-	if not _run_state.has_crossed_finish_line or _previous_frame_has_crossed_finish_line:
-		return
-	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		return
-
-	_roadside_scenery.spawn_forced_finish_sign()
-
-
-## Tracks the amount of world scroll that has happened after crossing the finish threshold.
-func _advance_finish_buffer_runoff(scroll_distance: float, distance_remaining_before_travel: float) -> void:
-	if _run_state == null or _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		return
-	if not _run_state.has_crossed_finish_line:
-		return
-
-	var runoff_distance := scroll_distance
-	if not _previous_frame_has_crossed_finish_line:
-		runoff_distance = maxf(0.0, scroll_distance - maxf(distance_remaining_before_travel, 0.0))
-
-	if runoff_distance <= 0.0:
-		return
-
-	_finish_buffer_scroll_distance += runoff_distance
 
 
 ## Enables or disables hazard spawning and active hazard resolution for local testing.
@@ -766,21 +666,6 @@ func set_hazards_enabled(enabled: bool) -> void:
 		_hazard_spawner.clear_runtime_hazards()
 
 	_show_bonus_callout("HAZARDS ON" if _dev_cheats.are_runtime_hazards_enabled else "HAZARDS OFF")
-
-
-## Converts a crossed finish line into true success only after the last live hazard has cleared.
-func _try_finalize_finish_success() -> void:
-	if _run_state == null or _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		return
-	if not _run_state.has_crossed_finish_line:
-		return
-	if _finish_buffer_scroll_distance < FINISH_RUNOFF_DISTANCE:
-		return
-	if _hazard_spawner != null and _hazard_spawner.has_runtime_hazards():
-		return
-
-	_run_state.result = RunStateType.RESULT_SUCCESS
-	_run_state.current_speed = 0.0
 
 
 ## Stores transition-sensitive run state so frame-entry checks can fire exactly once.
@@ -814,11 +699,6 @@ func _update_impact_feedback(delta: float) -> void:
 	_run_presentation.update_impact_feedback(delta)
 
 
-## Triggers the authored impact flash, wobble, and shake presentation state.
-func _trigger_impact_feedback() -> void:
-	_run_presentation.trigger_impact_feedback()
-
-
 ## Routes a hazard collision to its dedicated impact player and falls back to the generic impact cue.
 func _play_hazard_impact(hazard_type: StringName) -> void:
 	_run_audio_presenter.play_hazard_impact(hazard_type)
@@ -837,14 +717,6 @@ func _on_tumbleweed_impact_timeout(serial: int) -> void:
 ## Updates the looping world segments and tiled environment scroll windows.
 func _update_scroll_visuals() -> void:
 	_run_presentation.update_scroll_visuals()
-
-
-## Advances the dedicated roadside scenery owner using traveled distance.
-func _advance_roadside_scenery(distance_delta: float) -> void:
-	if _roadside_scenery == null:
-		return
-
-	_roadside_scenery.advance(distance_delta)
 
 
 ## Applies the authored dust particle configuration through the presentation owner.

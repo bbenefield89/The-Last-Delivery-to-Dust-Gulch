@@ -39,7 +39,7 @@ func advance(_delta: float) -> void:
 
 ## Handles one input event while this state is active; derived states should override this when they own input behavior.
 func handle_input(event: InputEvent) -> void:
-	_route_run_input(event)
+	pass
 
 
 # Protected Methods
@@ -47,17 +47,6 @@ func handle_input(event: InputEvent) -> void:
 ## Returns the bound scene for state implementations that need scene-local access.
 func _get_scene() -> Node:
 	return __scene
-
-
-## Routes shared RunScene input handling when the bound scene exposes it.
-func _route_run_input(event: InputEvent) -> void:
-	if __scene == null:
-		return
-
-	if not __scene.has_method(&"_handle_run_input"):
-		return
-
-	__scene.call(&"_handle_run_input", event)
 
 
 ## Advances one paused frame while the pause menu is open.

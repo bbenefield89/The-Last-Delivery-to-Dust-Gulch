@@ -4389,6 +4389,25 @@ func test_run_scene_includes_dedicated_roadside_scenery_owner() -> void:
 	assert_eq(roadside_scenery.get_parent(), scene.get_node("World"))
 
 
+## Verifies legacy in-progress frame helpers are no longer owned by the RunScene script.
+func test_run_scene_does_not_expose_legacy_in_progress_frame_helpers() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	assert_false(scene.has_method(&"_handle_run_input"))
+	assert_false(scene.has_method(&"_handle_run_director_update"))
+	assert_false(scene.has_method(&"_handle_run_hazard_update"))
+	assert_false(scene.has_method(&"_sync_route_phase"))
+	assert_false(scene.has_method(&"_refresh_regular_roadside_sign_spawning"))
+	assert_false(scene.has_method(&"_should_allow_regular_roadside_signs"))
+	assert_false(scene.has_method(&"_try_spawn_finish_buffer_sign"))
+	assert_false(scene.has_method(&"_advance_finish_buffer_runoff"))
+	assert_false(scene.has_method(&"_try_finalize_finish_success"))
+	assert_false(scene.has_method(&"_advance_roadside_scenery"))
+	assert_false(scene.has_method(&"_trigger_impact_feedback"))
+
+
 ## Verifies step4 environment art replaces route placeholder geometry.
 
 func test_step4_environment_art_replaces_route_placeholder_geometry() -> void:
