@@ -1,3 +1,4 @@
+class_name RunStateMachine
 extends RefCounted
 
 ## Owns the top-level RunScene outcome states and delegates frame and input flow.
@@ -9,6 +10,7 @@ const RunStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_KEY_SCRIP
 const InProgressStateType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_STATE_SCRIPT_PATH)
 const SuccessStateType := preload(ProjectPaths.RUN_STATE_MACHINE_SUCCESS_STATE_SCRIPT_PATH)
 const CollapsedStateType := preload(ProjectPaths.RUN_STATE_MACHINE_COLLAPSED_STATE_SCRIPT_PATH)
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 
 # Private Fields
@@ -26,6 +28,40 @@ func _init(register_default_states: bool = true) -> void:
 		register_state(InProgressStateType.new())
 		register_state(SuccessStateType.new())
 		register_state(CollapsedStateType.new())
+
+## Synchronizes the active top-level state against the currently bound RunState result.
+func __sync_state_for_bound_scene() -> bool:
+	var desired_state_key: int = __get_desired_state_key_for_bound_scene()
+	if desired_state_key == RunStateMachineKeyType.Key.NONE:
+		return false
+
+	if get_current_state_key() == desired_state_key:
+		return false
+
+	set_state(desired_state_key)
+	return true
+
+
+## Returns the desired top-level state key for the currently bound scene or `NONE` when unavailable.
+func __get_desired_state_key_for_bound_scene() -> int:
+	if __scene == null:
+		return RunStateMachineKeyType.Key.NONE
+	if not __scene.has_method(&"get_run_state"):
+		return RunStateMachineKeyType.Key.NONE
+
+	var run_state := __scene.call(&"get_run_state") as RunStateType
+	if run_state == null:
+		return RunStateMachineKeyType.Key.NONE
+
+	match run_state.result:
+		RunStateType.RESULT_IN_PROGRESS:
+			return RunStateMachineKeyType.Key.IN_PROGRESS
+		RunStateType.RESULT_SUCCESS:
+			return RunStateMachineKeyType.Key.SUCCESS
+		RunStateType.RESULT_COLLAPSED:
+			return RunStateMachineKeyType.Key.COLLAPSED
+		_:
+			return RunStateMachineKeyType.Key.IN_PROGRESS
 
 
 # Public Methods
@@ -81,14 +117,17 @@ func set_state(state_key: int) -> void:
 
 ## Advances the current top-level state by one process tick.
 func advance(delta: float) -> void:
+	__sync_state_for_bound_scene()
 	if __current_state == null:
 		return
 
 	__current_state.advance(delta)
+	__sync_state_for_bound_scene()
 
 
 ## Routes one input event to the current top-level state.
 func handle_input(event: InputEvent) -> void:
+	__sync_state_for_bound_scene()
 	if __current_state == null:
 		return
 

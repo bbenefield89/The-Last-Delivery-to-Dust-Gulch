@@ -18,6 +18,7 @@ const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_P
 const RunDirectorType := preload(ProjectPaths.RUN_DIRECTOR_SCRIPT_PATH)
 const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_PATH)
 const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
+const RunStateMachineType := preload(ProjectPaths.RUN_STATE_MACHINE_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 const PhaseCalloutLayerType := preload(ProjectPaths.PHASE_CALLOUT_LAYER_SCRIPT_PATH)
 const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
@@ -157,15 +158,16 @@ var _run_presentation: RunPresentationType = RunPresentationType.new()
 var _run_audio_presenter: RunAudioPresenterType = RunAudioPresenterType.new()
 var _run_director: RefCounted = RunDirectorType.new()
 var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
+var _run_state_machine: RefCounted
 var _navigation_click_in_progress := false
 var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
 var _dev_cheats: DevCheatsType
-var _is_success_exit_beat_active := false
-var _has_finished_success_exit_beat := false
 var _previous_frame_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var _previous_frame_has_crossed_finish_line := false
 var _finish_buffer_scroll_distance := 0.0
+var _is_success_exit_beat_active := false
+var _has_finished_success_exit_beat := false
 
 
 # Private Fields: OnReady
@@ -293,6 +295,11 @@ var _ui_click_player: AudioStreamPlayer = %UIClickPlayer
 
 # Public Methods
 
+## Returns the currently bound run state or null when the scene has not been set up yet.
+func get_run_state() -> RunStateType:
+	return _run_state
+
+
 ## Binds a fresh run state and the shared build-owned dev cheats service for one run scene.
 func setup(run_state: RunStateType, dev_cheats: DevCheatsType = null) -> void:
 	_run_state = run_state
@@ -304,17 +311,19 @@ func setup(run_state: RunStateType, dev_cheats: DevCheatsType = null) -> void:
 	_run_state.load_persisted_best_run(_best_run_save_path)
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		_run_state.record_best_run_if_needed(_best_run_save_path)
-	_is_success_exit_beat_active = false
-	_has_finished_success_exit_beat = false
 	_previous_frame_result = _run_state.result
 	_previous_frame_has_crossed_finish_line = _run_state.has_crossed_finish_line
 	_finish_buffer_scroll_distance = 0.0
+	_is_success_exit_beat_active = false
+	_has_finished_success_exit_beat = false
 	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
 	_run_director.bind_run_state(_run_state, _recovery_sequence_generator)
 	_run_presentation.bind_run_state(_run_state)
 	_run_presentation.reset_success_arrival()
+	_run_state_machine = RunStateMachineType.new()
+	_run_state_machine.bind(self)
 	_run_ui_presenter.refresh_status()
 	_run_ui_presenter.refresh_onboarding_prompt()
 	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
@@ -580,57 +589,73 @@ func _process(delta: float) -> void:
 		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
 		return
 
-	if _run_ui_presenter.is_pause_menu_open:
-		_sync_previous_frame_state()
-		_run_ui_presenter.refresh_onboarding_prompt()
-		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-		_run_ui_presenter.refresh_pause_menu()
-		_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
-		_run_ui_presenter.refresh_touch_controls()
-		_refresh_audio_presentation()
+	if _run_state_machine == null:
+		_run_state_machine = RunStateMachineType.new()
+		_run_state_machine.bind(self)
+
+	_run_state_machine.advance(delta)
+
+
+## Advances one paused frame while the pause menu is open.
+func _advance_paused_frame(delta: float) -> void:
+	_sync_previous_frame_state()
+	_run_ui_presenter.refresh_onboarding_prompt()
+	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
+	_run_ui_presenter.refresh_pause_menu()
+	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+	_run_ui_presenter.refresh_touch_controls()
+	_refresh_audio_presentation()
+
+
+## Advances one success-exit-beat frame while the wagon rides off after success.
+func _advance_success_exit_beat_frame(delta: float) -> void:
+	_sync_previous_frame_state()
+	_refresh_success_arrival_frame(delta)
+
+
+## Advances one completed-run frame while the result screen is visible.
+func _advance_completed_result_frame(delta: float, should_update_presentation: bool) -> void:
+	if _run_state == null:
 		return
 
-	if _is_success_exit_beat_active:
-		_sync_previous_frame_state()
-		_refresh_success_arrival_frame(delta)
-		return
-
-	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		_sync_previous_frame_state()
-		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-		if not (_has_finished_success_exit_beat and _run_state.result == RunStateType.RESULT_SUCCESS):
-			_update_impact_feedback(delta)
-			_update_wagon_visual()
-			_update_camera_framing()
-
-		_run_ui_presenter.refresh_status()
-		_run_ui_presenter.refresh_onboarding_prompt()
-		_run_ui_presenter.refresh_pause_menu()
-		_run_ui_presenter.refresh_recovery_prompt()
-		_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
-		_run_ui_presenter.refresh_touch_controls()
-		_refresh_audio_presentation()
-		return
-
-	if _run_ui_presenter.is_onboarding_active:
-		_sync_previous_frame_state()
-		_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-		_run_presentation.advance_scroll(_run_state.current_speed, delta)
-		_refresh_regular_roadside_sign_spawning()
-		_advance_roadside_scenery(_run_state.current_speed * delta)
+	_sync_previous_frame_state()
+	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
+	if should_update_presentation:
 		_update_impact_feedback(delta)
 		_update_wagon_visual()
-		_update_scroll_visuals()
 		_update_camera_framing()
-		_run_ui_presenter.refresh_status()
-		_run_ui_presenter.refresh_onboarding_prompt()
-		_run_ui_presenter.refresh_pause_menu()
-		_run_ui_presenter.refresh_recovery_prompt()
-		_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
-		_run_ui_presenter.refresh_touch_controls()
-		_refresh_audio_presentation()
-		return
 
+	_run_ui_presenter.refresh_status()
+	_run_ui_presenter.refresh_onboarding_prompt()
+	_run_ui_presenter.refresh_pause_menu()
+	_run_ui_presenter.refresh_recovery_prompt()
+	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+	_run_ui_presenter.refresh_touch_controls()
+	_refresh_audio_presentation()
+
+
+## Advances one onboarding frame while the onboarding overlay is active.
+func _advance_onboarding_frame(delta: float) -> void:
+	_sync_previous_frame_state()
+	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
+	_run_presentation.advance_scroll(_run_state.current_speed, delta)
+	_refresh_regular_roadside_sign_spawning()
+	_advance_roadside_scenery(_run_state.current_speed * delta)
+	_update_impact_feedback(delta)
+	_update_wagon_visual()
+	_update_scroll_visuals()
+	_update_camera_framing()
+	_run_ui_presenter.refresh_status()
+	_run_ui_presenter.refresh_onboarding_prompt()
+	_run_ui_presenter.refresh_pause_menu()
+	_run_ui_presenter.refresh_recovery_prompt()
+	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
+	_run_ui_presenter.refresh_touch_controls()
+	_refresh_audio_presentation()
+
+
+## Advances one active gameplay frame while the run is in progress.
+func _advance_active_drive_frame(delta: float) -> void:
 	var steer_input := Input.get_axis(STEER_ACTION_NEGATIVE, STEER_ACTION_POSITIVE)
 	var steer_multiplier := 1.0
 	var lateral_drift := 0.0
@@ -688,11 +713,7 @@ func _process(delta: float) -> void:
 	_try_spawn_finish_buffer_sign()
 	_try_finalize_finish_success()
 	_sync_completed_run_best_state()
-
 	if _should_start_success_arrival():
-		_start_success_arrival_transition()
-		_sync_previous_frame_state()
-		_refresh_success_arrival_frame(0.0)
 		return
 
 	_sync_previous_frame_state()
@@ -744,6 +765,15 @@ func _input(event: InputEvent) -> void:
 		set_hazards_enabled(not _dev_cheats.are_runtime_hazards_enabled)
 		return
 
+	if _run_state_machine == null:
+		_run_state_machine = RunStateMachineType.new()
+		_run_state_machine.bind(self)
+
+	_run_state_machine.handle_input(event)
+
+
+## Handles pause, onboarding, and recovery input for the active run scene.
+func _handle_run_input(event: InputEvent) -> void:
 	var ui_input_result := _run_ui_presenter.route_input(event, PAUSE_ACTION)
 	if ui_input_result.pause_command == GameplayUiLayerType.PAUSE_COMMAND_TOGGLE:
 		_set_pause_state(not _run_ui_presenter.is_pause_menu_open)
