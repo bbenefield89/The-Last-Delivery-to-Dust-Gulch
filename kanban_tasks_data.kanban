@@ -1037,7 +1037,7 @@
 			"steps": [
 				{
 					"details": "Create the scene-local RunStateMachine structure under Scenes/RunScene/FSM/RunStateMachine/ using the agreed layout of one machine script plus a States/ folder. Add explicit `in_progress`, `success`, and `collapsed` state objects with a narrow typed interface that RunScene can delegate to for top-level frame and input flow without introducing child FSMs yet.\n\nDone when: the RunScene slice contains a concrete RunStateMachine and three top-level state scripts in the agreed folder structure, and the machine can represent the current top-level run outcome states without relying on a flat branch block inside run_scene.gd.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Move the current top-level run outcome branching out of run_scene.gd and into the new state objects while preserving existing behavior. `in_progress` should continue to own the current in-progress branch, `success` should continue to own the success exit beat and post-success result presentation logic internally for now, and `collapsed` should continue to own the collapsed-result branch. Do not split onboarding, pause, active gameplay, or deeper failure/recovery flow into separate FSMs in this ticket.\n\nDone when: run_scene.gd delegates top-level outcome decisions to RunStateMachine instead of directly branching on result and success-exit flags, and a reviewer can play through normal driving, pause, collapse, and success flow with no behavior regression.",
