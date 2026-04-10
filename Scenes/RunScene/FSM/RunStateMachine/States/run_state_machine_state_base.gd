@@ -58,3 +58,46 @@ func _route_run_input(event: InputEvent) -> void:
 		return
 
 	__scene.call(&"_handle_run_input", event)
+
+
+## Advances one paused frame while the pause menu is open.
+func _advance_paused_frame(delta: float) -> void:
+	if __scene == null:
+		return
+
+	var ui_presenter: Variant = __scene.get(&"_run_ui_presenter")
+	if ui_presenter == null:
+		return
+
+	__scene.call(&"_sync_previous_frame_state")
+	ui_presenter.refresh_onboarding_prompt()
+	ui_presenter.advance_callouts(delta, __scene.get_viewport().get_canvas_transform())
+	ui_presenter.refresh_pause_menu()
+	ui_presenter.refresh_result_screen(__scene.call(&"_build_best_run_summary"))
+	ui_presenter.refresh_touch_controls()
+	__scene.call(&"_refresh_audio_presentation")
+
+
+## Advances one completed-run frame while the result screen is visible.
+func _advance_completed_result_frame(delta: float, should_update_presentation: bool) -> void:
+	if __scene == null:
+		return
+
+	var ui_presenter: Variant = __scene.get(&"_run_ui_presenter")
+	if ui_presenter == null:
+		return
+
+	__scene.call(&"_sync_previous_frame_state")
+	ui_presenter.advance_callouts(delta, __scene.get_viewport().get_canvas_transform())
+	if should_update_presentation:
+		__scene.call(&"_update_impact_feedback", delta)
+		__scene.call(&"_update_wagon_visual")
+		__scene.call(&"_update_camera_framing")
+
+	ui_presenter.refresh_status()
+	ui_presenter.refresh_onboarding_prompt()
+	ui_presenter.refresh_pause_menu()
+	ui_presenter.refresh_recovery_prompt()
+	ui_presenter.refresh_result_screen(__scene.call(&"_build_best_run_summary"))
+	ui_presenter.refresh_touch_controls()
+	__scene.call(&"_refresh_audio_presentation")

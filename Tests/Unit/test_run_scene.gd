@@ -12,6 +12,7 @@ const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_P
 const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
 const ResultPanelUiType := preload(ProjectPaths.RESULT_PANEL_UI_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+const RunSceneTuningType := preload(ProjectPaths.RUN_SCENE_TUNING_SCRIPT_PATH)
 const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
 const PhaseCalloutLayerType := preload(ProjectPaths.PHASE_CALLOUT_LAYER_SCRIPT_PATH)
 const PauseLayerType := preload(ProjectPaths.PAUSE_LAYER_SCRIPT_PATH)
@@ -897,7 +898,8 @@ func test_hazard_toggle_when_dev_cheats_are_disabled_then_input_and_runtime_call
 
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
-	_spawn_test_hazard(scene, &"rock")
+	var hazard := _spawn_test_hazard(scene, &"rock")
+	hazard.position = Vector2(0.0, -200.0)
 	scene._dev_cheats.force_disable_for_tests()
 
 	assert_true(scene._dev_cheats.are_runtime_hazards_enabled)
@@ -1139,7 +1141,7 @@ func test_process_clamps_lateral_position_to_road_bounds() -> void:
 	scene._process(1.0)
 	Input.action_release("steer_right")
 
-	assert_eq(state.lateral_position, scene.ROAD_HALF_WIDTH)
+	assert_eq(state.lateral_position, RunSceneTuningType.ROAD_HALF_WIDTH)
 
 
 ## Verifies hazard collision reduces health and records last hit type.
@@ -1632,9 +1634,9 @@ func test_reaching_dust_gulch_when_live_hazard_remains_then_success_waits_for_cl
 	assert_false(result_panel.visible)
 
 	var lateral_position_before_buffer := state.lateral_position
-	Input.action_press(scene.STEER_ACTION_POSITIVE)
+	Input.action_press(RunSceneTuningType.STEER_ACTION_POSITIVE)
 	scene._process(0.1)
-	Input.action_release(scene.STEER_ACTION_POSITIVE)
+	Input.action_release(RunSceneTuningType.STEER_ACTION_POSITIVE)
 
 	assert_true(state.lateral_position > lateral_position_before_buffer)
 	assert_eq(state.result, RunStateType.RESULT_IN_PROGRESS)
@@ -2147,7 +2149,7 @@ func test_wheel_loose_reduces_steering_authority_without_one_side_lock() -> void
 	scene._process(1.0)
 	Input.action_release("steer_left")
 
-	assert_almost_eq(state.lateral_position, -scene.ROAD_HALF_WIDTH, 0.01)
+	assert_almost_eq(state.lateral_position, -RunSceneTuningType.ROAD_HALF_WIDTH, 0.01)
 
 
 ## Verifies wheel loose drift oscillates instead of always pulling right.

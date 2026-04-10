@@ -22,7 +22,7 @@ func advance(delta: float) -> void:
 
 	var ui_presenter: Variant = scene.get(&"_run_ui_presenter")
 	if ui_presenter != null and bool(ui_presenter.is_pause_menu_open):
-		scene.call(&"_advance_paused_frame", delta)
+		_advance_paused_frame(delta)
 		return
 
-	scene.call(&"_advance_completed_result_frame", delta, true)
+	_advance_completed_result_frame(delta, true)

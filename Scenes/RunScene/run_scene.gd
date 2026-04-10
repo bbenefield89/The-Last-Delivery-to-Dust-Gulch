@@ -20,6 +20,7 @@ const RunHazardResolverType := preload(ProjectPaths.RUN_HAZARD_RESOLVER_SCRIPT_P
 const RunPresentationType := preload(ProjectPaths.RUN_PRESENTATION_SCRIPT_PATH)
 const RunStateMachineType := preload(ProjectPaths.RUN_STATE_MACHINE_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+const RunSceneTuningType := preload(ProjectPaths.RUN_SCENE_TUNING_SCRIPT_PATH)
 const PhaseCalloutLayerType := preload(ProjectPaths.PHASE_CALLOUT_LAYER_SCRIPT_PATH)
 const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
 const PauseLayerType := preload(ProjectPaths.PAUSE_LAYER_SCRIPT_PATH)
@@ -67,11 +68,7 @@ const WIN_STINGER := preload(AssetPaths.WIN_STINGER_SOUND_PATH)
 const COLLAPSE_STINGER := preload(AssetPaths.COLLAPSE_STINGER_SOUND_PATH)
 const HORSE_SPOOK_SOUND := preload(AssetPaths.HORSE_PANIC_AMBIENT_SOUND_PATH)
 const UI_CLICK_SOUND := preload(AssetPaths.UI_CLICK_SOUND_PATH)
-const STEER_ACTION_NEGATIVE := "steer_left"
-const STEER_ACTION_POSITIVE := "steer_right"
 const PAUSE_ACTION := "pause_run"
-const STEER_SPEED := 180.0
-const ROAD_HALF_WIDTH := 104.0
 const HAZARD_COLLISION_LAYER := 1
 const WAGON_COLLISION_LAYER := 2
 const HAZARD_CLEANUP_COLLISION_LAYER := 4
@@ -84,14 +81,8 @@ const IMPACT_SHAKE_DURATION := RunPresentationType.IMPACT_SHAKE_DURATION
 const IMPACT_WOBBLE_DEGREES := RunPresentationType.IMPACT_WOBBLE_DEGREES
 const IMPACT_WOBBLE_FREQUENCY := RunPresentationType.IMPACT_WOBBLE_FREQUENCY
 const IMPACT_SHAKE_AMPLITUDE := RunPresentationType.IMPACT_SHAKE_AMPLITUDE
-const WHEEL_LOOSE_STEER_MULTIPLIER := 0.6
-const WHEEL_LOOSE_DRIFT_SPEED := 32.0
-const WHEEL_LOOSE_DRIFT_FREQUENCY := 8.0
 const WHEEL_LOOSE_WOBBLE_DEGREES := RunPresentationType.WHEEL_LOOSE_WOBBLE_DEGREES
 const WHEEL_LOOSE_WOBBLE_FREQUENCY := RunPresentationType.WHEEL_LOOSE_WOBBLE_FREQUENCY
-const HORSE_PANIC_STEER_MULTIPLIER := 0.3
-const HORSE_PANIC_DRIFT_SPEED := 150.0
-const HORSE_PANIC_DRIFT_FREQUENCY := 5.0
 const HORSE_PANIC_WOBBLE_DEGREES := RunPresentationType.HORSE_PANIC_WOBBLE_DEGREES
 const HORSE_PANIC_WOBBLE_FREQUENCY := RunPresentationType.HORSE_PANIC_WOBBLE_FREQUENCY
 const ROUTE_PHASE_WARM_UP := RunDirectorType.ROUTE_PHASE_WARM_UP
@@ -126,9 +117,6 @@ const BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX := RunDirectorType.BAD_LUCK_INTE
 const RECOVERY_PROMPT_POOL: Array[StringName] = RunDirectorType.RECOVERY_PROMPT_POOL
 const WHEEL_LOOSE_RECOVERY_DURATION := RunDirectorType.WHEEL_LOOSE_RECOVERY_DURATION
 const HORSE_PANIC_RECOVERY_DURATION := RunDirectorType.HORSE_PANIC_RECOVERY_DURATION
-const POST_FAILURE_STEER_MULTIPLIER := 0.75
-const POST_FAILURE_DRIFT_SPEED := 55.0
-const POST_FAILURE_DRIFT_FREQUENCY := 6.0
 const WHEEL_LOOSE_FAILURE_HEALTH_LOSS := RunDirectorType.WHEEL_LOOSE_FAILURE_HEALTH_LOSS
 const WHEEL_LOOSE_FAILURE_CARGO_LOSS := RunDirectorType.WHEEL_LOOSE_FAILURE_CARGO_LOSS
 const WHEEL_LOOSE_FAILURE_SPEED_LOSS := RunDirectorType.WHEEL_LOOSE_FAILURE_SPEED_LOSS
@@ -596,141 +584,6 @@ func _process(delta: float) -> void:
 	_run_state_machine.advance(delta)
 
 
-## Advances one paused frame while the pause menu is open.
-func _advance_paused_frame(delta: float) -> void:
-	_sync_previous_frame_state()
-	_run_ui_presenter.refresh_onboarding_prompt()
-	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-	_run_ui_presenter.refresh_pause_menu()
-	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
-	_run_ui_presenter.refresh_touch_controls()
-	_refresh_audio_presentation()
-
-
-## Advances one success-exit-beat frame while the wagon rides off after success.
-func _advance_success_exit_beat_frame(delta: float) -> void:
-	_sync_previous_frame_state()
-	_refresh_success_arrival_frame(delta)
-
-
-## Advances one completed-run frame while the result screen is visible.
-func _advance_completed_result_frame(delta: float, should_update_presentation: bool) -> void:
-	if _run_state == null:
-		return
-
-	_sync_previous_frame_state()
-	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-	if should_update_presentation:
-		_update_impact_feedback(delta)
-		_update_wagon_visual()
-		_update_camera_framing()
-
-	_run_ui_presenter.refresh_status()
-	_run_ui_presenter.refresh_onboarding_prompt()
-	_run_ui_presenter.refresh_pause_menu()
-	_run_ui_presenter.refresh_recovery_prompt()
-	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
-	_run_ui_presenter.refresh_touch_controls()
-	_refresh_audio_presentation()
-
-
-## Advances one onboarding frame while the onboarding overlay is active.
-func _advance_onboarding_frame(delta: float) -> void:
-	_sync_previous_frame_state()
-	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-	_run_presentation.advance_scroll(_run_state.current_speed, delta)
-	_refresh_regular_roadside_sign_spawning()
-	_advance_roadside_scenery(_run_state.current_speed * delta)
-	_update_impact_feedback(delta)
-	_update_wagon_visual()
-	_update_scroll_visuals()
-	_update_camera_framing()
-	_run_ui_presenter.refresh_status()
-	_run_ui_presenter.refresh_onboarding_prompt()
-	_run_ui_presenter.refresh_pause_menu()
-	_run_ui_presenter.refresh_recovery_prompt()
-	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
-	_run_ui_presenter.refresh_touch_controls()
-	_refresh_audio_presentation()
-
-
-## Advances one active gameplay frame while the run is in progress.
-func _advance_active_drive_frame(delta: float) -> void:
-	var steer_input := Input.get_axis(STEER_ACTION_NEGATIVE, STEER_ACTION_POSITIVE)
-	var steer_multiplier := 1.0
-	var lateral_drift := 0.0
-	match _run_state.active_failure:
-		&"wheel_loose":
-			steer_multiplier = WHEEL_LOOSE_STEER_MULTIPLIER
-			lateral_drift = sin(_run_presentation.impact_time * WHEEL_LOOSE_DRIFT_FREQUENCY) * WHEEL_LOOSE_DRIFT_SPEED
-		&"horse_panic":
-			steer_multiplier = HORSE_PANIC_STEER_MULTIPLIER
-			lateral_drift = sin(_run_presentation.impact_time * HORSE_PANIC_DRIFT_FREQUENCY) * HORSE_PANIC_DRIFT_SPEED
-		_:
-			if _run_state.has_temporary_control_instability():
-				steer_multiplier = POST_FAILURE_STEER_MULTIPLIER
-				lateral_drift = sin(_run_presentation.impact_time * POST_FAILURE_DRIFT_FREQUENCY) * POST_FAILURE_DRIFT_SPEED
-
-	_run_state.lateral_position = clamp(
-		_run_state.lateral_position + ((steer_input * STEER_SPEED * steer_multiplier) + lateral_drift) * delta,
-		-ROAD_HALF_WIDTH,
-		ROAD_HALF_WIDTH,
-	)
-
-	_update_wagon_visual()
-	_run_state.recover_speed(delta)
-	var distance_remaining_before_travel := _run_state.distance_remaining
-	_run_state.distance_remaining = max(
-		0.0,
-		_run_state.distance_remaining - _run_state.current_speed * delta,
-	)
-
-	var scroll_distance := _run_state.current_speed * delta
-	_run_presentation.advance_scroll(_run_state.current_speed, delta)
-	_refresh_regular_roadside_sign_spawning()
-	_advance_roadside_scenery(scroll_distance)
-	_sync_route_phase()
-
-	var should_process_runtime_hazards := _dev_cheats == null or _dev_cheats.are_runtime_hazards_enabled
-	if should_process_runtime_hazards:
-		_hazard_spawner.advance(
-			scroll_distance,
-			_run_state.get_delivery_progress_ratio(),
-			_run_state.distance_remaining,
-			_run_state.route_distance
-		)
-
-		_handle_run_hazard_update(
-			_run_hazard_resolver.resolve_frame(
-				_hazard_spawner,
-				_run_state,
-				_run_director
-			)
-		)
-
-	_advance_failure_triggers(delta)
-	_advance_finish_buffer_runoff(scroll_distance, distance_remaining_before_travel)
-	_try_spawn_finish_buffer_sign()
-	_try_finalize_finish_success()
-	_sync_completed_run_best_state()
-	if _should_start_success_arrival():
-		return
-
-	_sync_previous_frame_state()
-	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-	_update_impact_feedback(delta)
-	_update_wagon_visual()
-	_update_scroll_visuals()
-	_update_camera_framing()
-	_run_ui_presenter.refresh_status()
-	_run_ui_presenter.refresh_onboarding_prompt()
-	_run_ui_presenter.refresh_pause_menu()
-	_run_ui_presenter.refresh_recovery_prompt()
-	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
-	_run_ui_presenter.refresh_touch_controls()
-	_refresh_audio_presentation()
-
-
 ## Persists a newly completed run exactly once when it beats the stored best score.
 func _sync_completed_run_best_state() -> void:
 	if _run_state == null:
@@ -901,17 +754,6 @@ func _advance_finish_buffer_runoff(scroll_distance: float, distance_remaining_be
 	_finish_buffer_scroll_distance += runoff_distance
 
 
-## Returns whether the scripted success-arrival beat should start on this gameplay frame.
-func _should_start_success_arrival() -> bool:
-	return (
-		_run_state != null
-		and _run_state.result == RunStateType.RESULT_SUCCESS
-		and _previous_frame_result == RunStateType.RESULT_IN_PROGRESS
-		and not _is_success_exit_beat_active
-		and not _has_finished_success_exit_beat
-	)
-
-
 ## Enables or disables hazard spawning and active hazard resolution for local testing.
 func set_hazards_enabled(enabled: bool) -> void:
 	if _dev_cheats == null or not _dev_cheats.are_cheats_available():
@@ -939,32 +781,6 @@ func _try_finalize_finish_success() -> void:
 
 	_run_state.result = RunStateType.RESULT_SUCCESS
 	_run_state.current_speed = 0.0
-
-
-## Starts the scripted success-arrival beat from the frozen true-success finish frame.
-func _start_success_arrival_transition() -> void:
-	_is_success_exit_beat_active = true
-	_has_finished_success_exit_beat = false
-	_run_presentation.start_success_arrival()
-
-
-## Advances the scripted success-arrival beat while keeping end-of-run UI hidden until it completes.
-func _refresh_success_arrival_frame(delta: float) -> void:
-	_run_ui_presenter.advance_callouts(delta, get_viewport().get_canvas_transform())
-	var arrival_completed := _run_presentation.advance_success_arrival(delta)
-	_run_ui_presenter.refresh_status()
-	_run_ui_presenter.refresh_onboarding_prompt()
-	_run_ui_presenter.refresh_pause_menu()
-	_run_ui_presenter.refresh_recovery_prompt()
-	_run_ui_presenter.refresh_touch_controls()
-	_sync_completed_run_best_state()
-	_refresh_audio_presentation()
-	if not arrival_completed:
-		return
-
-	_is_success_exit_beat_active = false
-	_has_finished_success_exit_beat = true
-	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
 
 
 ## Stores transition-sensitive run state so frame-entry checks can fire exactly once.
@@ -1076,8 +892,8 @@ func _refresh_failure_ambient_audio() -> void:
 
 ## Helper for ensure input actions.
 func _ensure_input_actions() -> void:
-	_register_action(STEER_ACTION_NEGATIVE, [KEY_A, KEY_LEFT])
-	_register_action(STEER_ACTION_POSITIVE, [KEY_D, KEY_RIGHT])
+	_register_action(RunSceneTuningType.STEER_ACTION_NEGATIVE, [KEY_A, KEY_LEFT])
+	_register_action(RunSceneTuningType.STEER_ACTION_POSITIVE, [KEY_D, KEY_RIGHT])
 	_register_action(PAUSE_ACTION, [KEY_ESCAPE])
 
 

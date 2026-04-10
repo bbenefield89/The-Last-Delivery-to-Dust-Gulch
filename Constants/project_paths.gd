@@ -51,6 +51,10 @@ const RECOVERY_LAYER_SCRIPT_PATH := "res://Scenes/RunScene/recovery_layer.gd"
 const RESULT_LAYER_SCRIPT_PATH := "res://Scenes/RunScene/result_layer.gd"
 const TOUCH_LAYER_SCRIPT_PATH := "res://Scenes/RunScene/touch_layer.gd"
 
+# RunScene: Constants
+
+const RUN_SCENE_TUNING_SCRIPT_PATH := "res://Scenes/RunScene/Constants/run_scene_tuning.gd"
+
 # RunScene: FSM
 
 const RUN_STATE_MACHINE_SCRIPT_PATH := "res://Scenes/RunScene/FSM/RunStateMachine/run_state_machine.gd"
