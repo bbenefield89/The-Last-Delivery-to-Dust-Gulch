@@ -38,7 +38,7 @@ func advance(_delta: float) -> void:
 
 
 ## Handles one input event while this state is active; derived states should override this when they own input behavior.
-func handle_input(event: InputEvent) -> void:
+func handle_input(_event: InputEvent) -> void:
 	pass
 
 
