@@ -33,14 +33,13 @@
 		{
 			"uuid": "c670d77d-01d6-45a7-aa5b-94f564b959c3",
 			"title": "Doing",
-			"tasks": [
-				"25cdcf3c-c089-4a6d-bf7f-e3366868edce"
-			]
+			"tasks": []
 		},
 		{
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"25cdcf3c-c089-4a6d-bf7f-e3366868edce",
 				"f33330b5-2e0e-4288-a20b-f14ffed81ce3",
 				"313e5d7e-e509-49a5-b3d0-850b7af8d5a6",
 				"0c47c4ef-e0ff-4edd-9bd8-cffff12e913c",
@@ -1045,7 +1044,7 @@
 				},
 				{
 					"details": "Add or update automated coverage for the new top-level FSM ownership. Cover at minimum the default `in_progress` path, transition into `success`, the current success exit beat before the result screen appears, and transition into `collapsed`, while keeping the existing RunScene integration coverage green.\n\nDone when: automated tests prove the top-level machine routes the run through `in_progress`, `success`, and `collapsed` correctly, preserves the current success exit beat timing, and the standard verification flow still passes.",
-					"done": false
+					"done": true
 				}
 			]
 		},
