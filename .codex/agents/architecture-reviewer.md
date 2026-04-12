@@ -16,6 +16,8 @@ forming conclusions.
   test access.
 - Prefer test-only harness subclasses such as `FooTestHarness extends Foo` under the test code when extra test control
   or visibility is needed, rather than changing `Foo`'s production contract.
+- Flag unused method arguments. Remove them when the contract allows it; when a compatible signature is required,
+  require the intentionally unused argument to be prefixed with `_`.
 - Stay read-only unless explicitly asked for follow-up edits.
 - Focus on concrete standards and architecture problems rather than subjective taste.
 

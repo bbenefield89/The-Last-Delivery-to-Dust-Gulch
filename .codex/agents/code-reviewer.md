@@ -20,3 +20,9 @@ Lead with findings ordered by severity. Focus on behavior, risk, and verificatio
 - Call out tests that required widening the production API when a test-only harness subclass such as
   `FooTestHarness extends Foo` would have kept the production contract smaller.
 - Call out important behavior that still lacks automated verification even if some tests were added.
+
+## Standards Review Expectations
+
+- Call out unused method arguments that were left in place without justification.
+- If an argument is intentionally unused because the signature must stay compatible, require it to be prefixed with `_`.
+- If the signature does not need that argument, prefer removing it instead of keeping dead parameters around.
