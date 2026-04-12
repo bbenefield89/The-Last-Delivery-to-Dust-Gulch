@@ -7,6 +7,7 @@ extends GutTest
 const ProjectPaths := preload("res://Constants/project_paths.gd")
 const RunStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_KEY_SCRIPT_PATH)
 const RunStateMachineType := preload(ProjectPaths.RUN_STATE_MACHINE_SCRIPT_PATH)
+const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 
 # Public Methods
@@ -114,6 +115,64 @@ func test_bind_when_scene_is_set_then_registered_states_receive_bind() -> void:
 	scene.free()
 
 
+## Verifies advance syncs the active top-level state from the bound RunState result before delegation.
+func test_advance_when_bound_scene_result_changes_then_machine_routes_in_progress_success_and_collapsed() -> void:
+	var machine = RunStateMachineType.new(false)
+	var in_progress_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
+	var success_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.SUCCESS)
+	var collapsed_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.COLLAPSED)
+	var scene := _RunStateMachineSceneStub.new()
+
+	machine.register_state(in_progress_state)
+	machine.register_state(success_state)
+	machine.register_state(collapsed_state)
+	machine.bind(scene)
+
+	scene.run_state.result = RunStateType.RESULT_IN_PROGRESS
+	machine.advance(0.1)
+	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.IN_PROGRESS)
+	assert_eq(in_progress_state.advance_calls, 1)
+
+	scene.run_state.result = RunStateType.RESULT_SUCCESS
+	machine.advance(0.2)
+	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.SUCCESS)
+	assert_eq(success_state.advance_calls, 1)
+	assert_eq(in_progress_state.call_log, ["enter:-1", "exit:1"])
+
+	scene.run_state.result = RunStateType.RESULT_COLLAPSED
+	machine.advance(0.3)
+	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.COLLAPSED)
+	assert_eq(collapsed_state.advance_calls, 1)
+	assert_eq(success_state.call_log, ["enter:0", "exit:2"])
+
+	scene.free()
+
+
+## Verifies input delegation also syncs from the bound RunState result before routing the event.
+func test_handle_input_when_bound_scene_result_is_collapsed_then_machine_syncs_before_delegating() -> void:
+	var machine = RunStateMachineType.new(false)
+	var in_progress_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
+	var collapsed_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.COLLAPSED)
+	var scene := _RunStateMachineSceneStub.new()
+	var event := InputEventAction.new()
+	event.action = &"pause_run"
+	event.pressed = true
+
+	machine.register_state(in_progress_state)
+	machine.register_state(collapsed_state)
+	machine.bind(scene)
+
+	scene.run_state.result = RunStateType.RESULT_COLLAPSED
+	machine.handle_input(event)
+
+	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.COLLAPSED)
+	assert_eq(in_progress_state.input_calls, 0)
+	assert_eq(collapsed_state.input_calls, 1)
+	assert_same(collapsed_state.last_event, event)
+
+	scene.free()
+
+
 # Inner Classes
 
 class _SpyRunStateMachineState extends "res://Scenes/RunScene/FSM/RunStateMachine/States/run_state_machine_state_base.gd":
@@ -157,3 +216,13 @@ class _SpyRunStateMachineState extends "res://Scenes/RunScene/FSM/RunStateMachin
 	func handle_input(event: InputEvent) -> void:
 		input_calls += 1
 		last_event = event
+
+
+class _RunStateMachineSceneStub extends Node:
+	## Exposes a mutable RunState instance through the same method the machine uses at runtime.
+
+	var run_state := RunStateType.new()
+
+	## Returns the current stub RunState for top-level machine sync tests.
+	func get_run_state() -> RunStateType:
+		return run_state
