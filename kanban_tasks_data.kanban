@@ -22,7 +22,6 @@
 			"title": "Todo",
 			"tasks": [
 				"89ee2054-af77-46f7-a339-9385d64fa8a4",
-				"25cdcf3c-c089-4a6d-bf7f-e3366868edce",
 				"79dcaab3-01e9-4089-baae-3a3eed280941",
 				"59792f74-44a8-40d7-8260-61899cc1d11f",
 				"46a90030-8590-4e49-89bf-9b72fa9b5d96",
@@ -40,6 +39,7 @@
 			"uuid": "bcdfc14b-1917-44f0-948d-fece03972128",
 			"title": "Done",
 			"tasks": [
+				"25cdcf3c-c089-4a6d-bf7f-e3366868edce",
 				"f33330b5-2e0e-4288-a20b-f14ffed81ce3",
 				"313e5d7e-e509-49a5-b3d0-850b7af8d5a6",
 				"0c47c4ef-e0ff-4edd-9bd8-cffff12e913c",
@@ -1036,15 +1036,15 @@
 			"steps": [
 				{
 					"details": "Create the scene-local RunStateMachine structure under Scenes/RunScene/FSM/RunStateMachine/ using the agreed layout of one machine script plus a States/ folder. Add explicit `in_progress`, `success`, and `collapsed` state objects with a narrow typed interface that RunScene can delegate to for top-level frame and input flow without introducing child FSMs yet.\n\nDone when: the RunScene slice contains a concrete RunStateMachine and three top-level state scripts in the agreed folder structure, and the machine can represent the current top-level run outcome states without relying on a flat branch block inside run_scene.gd.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Move the current top-level run outcome branching out of run_scene.gd and into the new state objects while preserving existing behavior. `in_progress` should continue to own the current in-progress branch, `success` should continue to own the success exit beat and post-success result presentation logic internally for now, and `collapsed` should continue to own the collapsed-result branch. Do not split onboarding, pause, active gameplay, or deeper failure/recovery flow into separate FSMs in this ticket.\n\nDone when: run_scene.gd delegates top-level outcome decisions to RunStateMachine instead of directly branching on result and success-exit flags, and a reviewer can play through normal driving, pause, collapse, and success flow with no behavior regression.",
-					"done": false
+					"done": true
 				},
 				{
 					"details": "Add or update automated coverage for the new top-level FSM ownership. Cover at minimum the default `in_progress` path, transition into `success`, the current success exit beat before the result screen appears, and transition into `collapsed`, while keeping the existing RunScene integration coverage green.\n\nDone when: automated tests prove the top-level machine routes the run through `in_progress`, `success`, and `collapsed` correctly, preserves the current success exit beat timing, and the standard verification flow still passes.",
-					"done": false
+					"done": true
 				}
 			]
 		},
