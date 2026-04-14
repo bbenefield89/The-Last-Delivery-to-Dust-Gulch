@@ -71,17 +71,17 @@ Bandits may appear only as flavor or simple environmental pressure if they can b
 
 If a request conflicts with the current release direction, call that out clearly and proceed only after the user confirms the expansion.
 
-## Kanban Ticket Rules
+## Jira Ticket Rules
 
-This project uses the Kanban Tasks Todo Manager 2 addon as its board system.
+This project uses Jira as its ticket source of truth.
 
 When creating tickets:
 
 - Title format must be exactly `DG-<number>`
 - Numbering starts at `1`
 - Increment numbers sequentially
-- Every open work ticket must include an ordered `steps` array when it is created.
-- Open work tickets in `Todo` or `Doing` must not be left step-less; backfill missing steps before they are worked or merged.
+- Every open parent issue must include ordered implementation steps represented as Jira subtasks when it is created.
+- Open parent issues in `To Do` or `In Progress` must not be left step-less; backfill missing subtasks before they are worked or merged.
 
 Write a ticket when a plan or feature has been agreed upon in conversation, without waiting for the user to explicitly ask.
 Use `$write-ticket` only when the user wants a ticket written directly without a planning discussion first.
@@ -113,9 +113,9 @@ Keep the center gameplay area clear. Push persistent HUD elements to edges and c
 
 ## Custom Skills
 
-- `$write-ticket` - Draft or update kanban tickets using the repo-local planner guidance.
+- `$write-ticket` - Draft or update Jira tickets using the repo-local planner guidance.
 - `$start-next-task` - Resume or start ticketed work using the repo-local implementor, code-reviewer, and architecture-reviewer.
-- `$finalize-ticket` - Mark the final step complete, move the ticket to Done, ready the draft PR, squash merge, and sync local `main`.
+- `$finalize-ticket` - Mark the final Jira subtask complete, move the Jira parent ticket to Done, ready the draft PR, squash merge, and sync local `main`.
 - `$off-road` - Do intentional non-ticket work on the current non-main branch.
 - `$github-address-comments` - Address PR review comments with implementor plus focused reviewer orchestration.
 - `$github-open-pr` - Publish the current branch and open a draft PR.

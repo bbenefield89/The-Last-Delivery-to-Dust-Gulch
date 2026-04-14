@@ -1,9 +1,25 @@
 {
   "project_name": "Last Delivery to Dust Gulch",
-  "board_file": "kanban_tasks_data.kanban",
-  "board_file_exists": true,
+  "ticket_system": "jira",
   "ticket_prefix": "DG",
-  "ticket_prefix_source": "board",
+  "ticket_prefix_source": "jira_project",
+  "jira": {
+    "site": "brandork.atlassian.net",
+    "cloud_id": "39915fce-c9fe-4c9a-8d4d-60399e5d245f",
+    "project_key": "DG",
+    "board_id": 1,
+    "parent_issue_types": [
+      "Story",
+      "Feature",
+      "Bug"
+    ],
+    "subtask_issue_type": "Subtask",
+    "statuses": {
+      "todo": "To Do",
+      "in_progress": "In Progress",
+      "done": "Done"
+    }
+  },
   "ticket_categories": [
     "Task",
     "TechDebt",
