@@ -1,5 +1,17 @@
 # AGENTS.md
 
+## Table Formatting
+
+When presenting tabular information:
+
+- If the environment is Codex CLI, do not use Markdown pipe tables by default.
+- In Codex CLI, prefer aligned Unicode box-drawing tables using standard box-drawing characters.
+- In Codex CLI, give each data row dedicated boxed cells by separating every row with horizontal dividers.
+- In Codex CLI, keep columns padded and visually aligned for monospace display.
+- If the environment is the Codex desktop app, prefer fully rendered Markdown pipe tables.
+- In the desktop app, fall back to Unicode or ASCII boxed tables only when the user explicitly asks for them or when Markdown table rendering is unavailable.
+- Fall back to ASCII tables only when Unicode rendering would be unsafe or when the user requests ASCII.
+
 ## Project
 
 `Last Delivery to Dust Gulch` is a polished mobile-forward 2D top-down western stagecoach survival runner. The player drives a stagecoach through a dangerous desert route, dodging hazards and managing cascading wagon failures, trying to reach Dust Gulch before the wagon completely falls apart. The project is no longer being treated as a jam build; the current direction is a polished release with short, finishable runs and strong replay value.
@@ -80,8 +92,8 @@ When creating tickets:
 - Title format must be exactly `DG-<number>`
 - Numbering starts at `1`
 - Increment numbers sequentially
-- Every open parent issue must include ordered implementation steps represented as Jira subtasks when it is created.
-- Open parent issues in `To Do` or `In Progress` must not be left step-less; backfill missing subtasks before they are worked or merged.
+- Every open parent issue must include ordered implementation steps in its Jira description when it is created.
+- Open parent issues in `To Do` or `In Progress` must not be left step-less; backfill missing ordered steps in the parent issue description before they are worked or merged.
 
 Write a ticket when a plan or feature has been agreed upon in conversation, without waiting for the user to explicitly ask.
 Use `$write-ticket` only when the user wants a ticket written directly without a planning discussion first.
@@ -111,12 +123,28 @@ Keep the center gameplay area clear. Push persistent HUD elements to edges and c
 
 `Docs/GDD.md` is the source of truth. If a planning discussion or implemented ticket changes or contradicts design intent, update the design document to reflect the agreed direction before or alongside writing the ticket.
 
+## Default Coding Orchestration
+
+For every coding task in this repo, without exception, use the three-agent execution flow even when the user does not
+invoke a named workflow skill.
+
+- The main agent should keep overall orchestration and user communication.
+- Use the repo-local `implementor` to make the change.
+- Then use the repo-local `code-reviewer` to review correctness, regressions, and test quality.
+- Then use the repo-local `architecture-reviewer` to review ownership, maintainability, and GDScript standards.
+- If either reviewer finds meaningful issues, send the work back to the repo-local `implementor` to address them.
+- After fixes, run both reviewers again.
+- Continue that implementor -> code-reviewer -> architecture-reviewer loop until both reviewers report no meaningful
+  issues or the user explicitly stops the loop.
+- The user owns ticket selection, Jira state movement, and task scoping unless they explicitly ask for a workflow that
+  automates those parts.
+- Do not skip the two reviewer passes for coding work.
+
 ## Custom Skills
 
 - `$write-ticket` - Draft or update Jira tickets using the repo-local planner guidance.
 - `$start-next-task` - Resume or start ticketed work using the repo-local implementor, code-reviewer, and architecture-reviewer.
-- `$finalize-ticket` - Mark the final Jira subtask complete, move the Jira parent ticket to Done, ready the draft PR, squash merge, and sync local `main`.
-- `$off-road` - Do intentional non-ticket work on the current non-main branch.
+- `$finalize-ticket` - Move the active Jira parent ticket to Done, ready the draft PR, squash merge, and sync local `main`.
 - `$github-address-comments` - Address PR review comments with implementor plus focused reviewer orchestration.
 - `$github-open-pr` - Publish the current branch and open a draft PR.
 - `$github-merge-pr` - Merge a PR with a clean conventional squash commit message.
@@ -229,8 +257,10 @@ All Godot repos should keep these workflow invariants in place:
 - Keep a `Docs/GDD.md` gameplay or product direction document.
 - Keep `Docs/Standards/GDSCRIPT_STANDARDS.md` as the local coding standard reference.
 - Keep repo-local `planner`, `implementor`, `code-reviewer`, and `architecture-reviewer` agent docs under `.codex/agents/`.
+- Treat meaningful coding work as implementor + code-reviewer + architecture-reviewer by default, even when the user
+  does not invoke a named workflow skill.
 - Keep repo-local thin wrappers for `write-ticket` and `start-next-task` so repo facts stay local.
-- Keep `start-next-task` ticket-driven and `off-road` branch-driven.
+- Keep `start-next-task` as the ticket-driven lane.
 - Do not let GitHub comment workflows resolve review threads automatically.
 
 ## Shared Code Architecture

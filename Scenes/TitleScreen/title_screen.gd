@@ -21,7 +21,6 @@ const BEST_RUN_EMPTY_TEXT := "Best Run: None yet"
 # Private Fields
 
 var _navigation_click_in_progress: bool = false
-var _best_run_save_path: String = RunStateType.BEST_RUN_SAVE_PATH
 
 
 # Private Fields: OnReady
@@ -110,7 +109,7 @@ func _refresh_best_run_summary() -> void:
 	if _best_run_summary == null:
 		return
 
-	var best_run := RunStateType.load_best_run(_best_run_save_path)
+	var best_run := RunStateType.load_best_run(RunStateType.BEST_RUN_SAVE_PATH)
 	if not best_run.has_value:
 		_best_run_summary.text = BEST_RUN_EMPTY_TEXT
 		return

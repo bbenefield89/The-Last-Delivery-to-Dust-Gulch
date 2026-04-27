@@ -7,6 +7,7 @@ extends GutTest
 const ProjectPaths := preload("res://Constants/project_paths.gd")
 const RunStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_KEY_SCRIPT_PATH)
 const RunStateMachineType := preload(ProjectPaths.RUN_STATE_MACHINE_SCRIPT_PATH)
+const RunSceneType := preload(ProjectPaths.RUN_SCENE_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 
@@ -105,7 +106,7 @@ func test_delegation_when_no_current_state_then_no_spy_methods_are_called() -> v
 ## Verifies binding a scene propagates to registered state instances.
 func test_bind_when_scene_is_set_then_registered_states_receive_bind() -> void:
 	var machine = RunStateMachineType.new(false)
-	var scene := Node.new()
+	var scene := RunSceneType.new()
 	var state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
 
 	machine.register_state(state)
@@ -121,25 +122,26 @@ func test_advance_when_bound_scene_result_changes_then_machine_routes_in_progres
 	var in_progress_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
 	var success_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.SUCCESS)
 	var collapsed_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.COLLAPSED)
-	var scene := _RunStateMachineSceneStub.new()
+	var scene := RunSceneType.new()
+	scene._run_state = RunStateType.new()
 
 	machine.register_state(in_progress_state)
 	machine.register_state(success_state)
 	machine.register_state(collapsed_state)
 	machine.bind(scene)
 
-	scene.run_state.result = RunStateType.RESULT_IN_PROGRESS
+	scene._run_state.result = RunStateType.RESULT_IN_PROGRESS
 	machine.advance(0.1)
 	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.IN_PROGRESS)
 	assert_eq(in_progress_state.advance_calls, 1)
 
-	scene.run_state.result = RunStateType.RESULT_SUCCESS
+	scene._run_state.result = RunStateType.RESULT_SUCCESS
 	machine.advance(0.2)
 	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.SUCCESS)
 	assert_eq(success_state.advance_calls, 1)
 	assert_eq(in_progress_state.call_log, ["enter:-1", "exit:1"])
 
-	scene.run_state.result = RunStateType.RESULT_COLLAPSED
+	scene._run_state.result = RunStateType.RESULT_COLLAPSED
 	machine.advance(0.3)
 	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.COLLAPSED)
 	assert_eq(collapsed_state.advance_calls, 1)
@@ -153,7 +155,8 @@ func test_handle_input_when_bound_scene_result_is_collapsed_then_machine_syncs_b
 	var machine = RunStateMachineType.new(false)
 	var in_progress_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.IN_PROGRESS)
 	var collapsed_state := _SpyRunStateMachineState.new(RunStateMachineKeyType.Key.COLLAPSED)
-	var scene := _RunStateMachineSceneStub.new()
+	var scene := RunSceneType.new()
+	scene._run_state = RunStateType.new()
 	var event := InputEventAction.new()
 	event.action = &"pause_run"
 	event.pressed = true
@@ -162,7 +165,7 @@ func test_handle_input_when_bound_scene_result_is_collapsed_then_machine_syncs_b
 	machine.register_state(collapsed_state)
 	machine.bind(scene)
 
-	scene.run_state.result = RunStateType.RESULT_COLLAPSED
+	scene._run_state.result = RunStateType.RESULT_COLLAPSED
 	machine.handle_input(event)
 
 	assert_eq(machine.get_current_state_key(), RunStateMachineKeyType.Key.COLLAPSED)
@@ -184,7 +187,7 @@ class _SpyRunStateMachineState extends "res://Scenes/RunScene/FSM/RunStateMachin
 	var input_calls: int = 0
 	var last_delta: float = -1.0
 	var last_event: InputEvent
-	var bound_scene: Node
+	var bound_scene: RunSceneType
 
 	## Builds one named state spy for readable assertion output.
 	func _init(key: RunStateMachineKey.Key) -> void:
@@ -195,7 +198,7 @@ class _SpyRunStateMachineState extends "res://Scenes/RunScene/FSM/RunStateMachin
 		return _key
 
 	## Records the scene from the machine bind.
-	func bind(scene: Node = null) -> void:
+	func bind(scene: RunSceneType = null) -> void:
 		bound_scene = scene
 		super.bind(scene)
 
@@ -216,13 +219,3 @@ class _SpyRunStateMachineState extends "res://Scenes/RunScene/FSM/RunStateMachin
 	func handle_input(event: InputEvent) -> void:
 		input_calls += 1
 		last_event = event
-
-
-class _RunStateMachineSceneStub extends Node:
-	## Exposes a mutable RunState instance through the same method the machine uses at runtime.
-
-	var run_state := RunStateType.new()
-
-	## Returns the current stub RunState for top-level machine sync tests.
-	func get_run_state() -> RunStateType:
-		return run_state

@@ -5,19 +5,29 @@ const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 
 const TITLE_SCREEN_SCENE := preload(ProjectPaths.TITLE_SCREEN_SCENE_PATH)
-const TEST_BEST_RUN_SAVE_PATH := SavePaths.TEST_TITLE_SCREEN_BEST_RUN_SAVE_PATH
+
+
+# Private Fields
+
+var _default_best_run_backup: PackedByteArray = PackedByteArray()
+var _had_default_best_run_backup := false
+
+
 # Public Methods
 
 
 
 ## Runs before each.
 func before_each() -> void:
-	_delete_test_best_run_file()
+	_backup_default_best_run_file()
+	_delete_default_best_run_file()
 
 
 ## Runs after each.
 func after_each() -> void:
-	_delete_test_best_run_file()
+	_restore_default_best_run_file()
+
+
 # Private Methods
 
 
@@ -37,6 +47,45 @@ func _send_key_input(keycode_value: Key) -> void:
 	release.pressed = false
 	Input.parse_input_event(release)
 	await wait_process_frames(1)
+
+
+## Saves any existing default best-run file so title-screen tests can restore it after isolation cleanup.
+func _backup_default_best_run_file() -> void:
+	_default_best_run_backup = PackedByteArray()
+	_had_default_best_run_backup = false
+	if not FileAccess.file_exists(RunStateType.BEST_RUN_SAVE_PATH):
+		return
+
+	var file := FileAccess.open(RunStateType.BEST_RUN_SAVE_PATH, FileAccess.READ)
+	if file == null:
+		return
+
+	_default_best_run_backup = file.get_buffer(file.get_length())
+	_had_default_best_run_backup = true
+
+
+## Restores the caller's default best-run file after each title-screen test run.
+func _restore_default_best_run_file() -> void:
+	_delete_default_best_run_file()
+	if not _had_default_best_run_backup:
+		return
+
+	var file := FileAccess.open(RunStateType.BEST_RUN_SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+
+	file.store_buffer(_default_best_run_backup)
+	_default_best_run_backup = PackedByteArray()
+	_had_default_best_run_backup = false
+
+
+## Deletes the default best-run file so title-screen tests can drive real _ready() summary loading deterministically.
+func _delete_default_best_run_file() -> void:
+	var absolute_path := ProjectSettings.globalize_path(RunStateType.BEST_RUN_SAVE_PATH)
+	if FileAccess.file_exists(RunStateType.BEST_RUN_SAVE_PATH):
+		DirAccess.remove_absolute(absolute_path)
+
+
 # Public Methods
 
 
@@ -201,7 +250,6 @@ func test_title_screen_starts_menu_music() -> void:
 
 func test_title_screen_when_no_best_run_exists_then_empty_summary_is_shown() -> void:
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
-	title_screen._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(title_screen)
 
 	var best_summary: Label = title_screen.get_node("%BestRunSummary")
@@ -213,22 +261,13 @@ func test_title_screen_when_no_best_run_exists_then_empty_summary_is_shown() -> 
 
 func test_title_screen_when_best_run_exists_then_score_and_grade_are_shown() -> void:
 	assert_eq(
-		RunStateType.save_best_run(RunStateType.BestRunData.new(2185, "S", true), TEST_BEST_RUN_SAVE_PATH),
+		RunStateType.save_best_run(RunStateType.BestRunData.new(2185, "S", true), RunStateType.BEST_RUN_SAVE_PATH),
 		OK
 	)
 	var title_screen = TITLE_SCREEN_SCENE.instantiate()
-	title_screen._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(title_screen)
 
 	var best_summary: Label = title_screen.get_node("%BestRunSummary")
 
 	assert_string_contains(best_summary.text, "Best Score: 2185")
 	assert_string_contains(best_summary.text, "Best Grade: S")
-
-
-## Helper for delete test best run file.
-func _delete_test_best_run_file() -> void:
-	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
-	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
-		DirAccess.remove_absolute(absolute_path)
-

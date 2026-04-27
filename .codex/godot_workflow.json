@@ -13,7 +13,7 @@
       "Feature",
       "Bug"
     ],
-    "subtask_issue_type": "Subtask",
+    "story_points_field": "customfield_10016",
     "statuses": {
       "todo": "To Do",
       "in_progress": "In Progress",

@@ -96,7 +96,7 @@ Endless survival is not the primary mode. If an endless variant exists later, it
 
 - desktop: `Left / Right` or `A / D` to steer
 - mobile: left and right touch steering with a simple pause affordance
-- recovery sequences use short directional or button prompts
+- hazard consequences should not rely on modal prompt sequences
 
 Controls must remain arcade-simple. The game should be immediately understandable on a phone and should not depend on complex multi-button inputs.
 
@@ -142,21 +142,21 @@ Only one failure should be active at a time unless the design intentionally expa
 
 ### Recovery Sequences
 
-Recovery sequences are brief emergency actions, not punishing QTE traps.
+Recovery sequences should stay readable and in-world, not modal QTE popups.
 
 Goals for recovery sequences:
 
 - create panic and variety
-- briefly interrupt normal driving
-- give the player something active to do
+- preserve focus on steering and road readability
+- avoid center-screen prompt panels that pause the driving conversation
 - cause penalties on failure, not instant death
 
 Example implementations:
 
-- `Wheel Loose`: directional input pattern to secure the wheel and resume movement
-- `Horse Panic`: calming input sequence while steering becomes unstable
-- `Cargo Spill`: rapid input sequence to secure cargo before more is lost
-- `Axle Jam`: mash or alternating input to free the wagon
+- `Wheel Loose`: short handling instability or drift that the player rides out while steering
+- `Horse Panic`: temporary control instability or speed disruption without a modal prompt
+- `Cargo Spill`: immediate cargo-loss consequence with optional later tuning for non-modal recovery
+- `Axle Jam`: temporary movement penalty or friction spike without a separate prompt layer
 
 Recovery failures should cause:
 

@@ -68,7 +68,7 @@ const WIN_STINGER := preload(AssetPaths.WIN_STINGER_SOUND_PATH)
 const COLLAPSE_STINGER := preload(AssetPaths.COLLAPSE_STINGER_SOUND_PATH)
 const HORSE_SPOOK_SOUND := preload(AssetPaths.HORSE_PANIC_AMBIENT_SOUND_PATH)
 const UI_CLICK_SOUND := preload(AssetPaths.UI_CLICK_SOUND_PATH)
-const PAUSE_ACTION := "pause_run"
+const PAUSE_ACTION: StringName = &"pause_run"
 const HAZARD_COLLISION_LAYER := 1
 const WAGON_COLLISION_LAYER := 2
 const HAZARD_CLEANUP_COLLISION_LAYER := 4
@@ -129,12 +129,6 @@ const SUCCESS_EXIT_BEAT_DURATION := RunPresentationType.SUCCESS_ARRIVAL_DURATION
 const SCRUB_COLOR := Color(0.47451, 0.443137, 0.219608, 0.95)
 const DUST_BASE_AMOUNT_RATIO := RunPresentationType.DUST_BASE_AMOUNT_RATIO
 const FINISH_RUNOFF_DISTANCE := 250.0
-const ONBOARDING_TITLE := "Last Delivery to Dust Gulch"
-const ONBOARDING_BODY := (
-	"Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, "
-	+ "and hold the wagon together until you reach Dust Gulch."
-)
-const ONBOARDING_HINT := "Press Left, Right, Enter, or click to begin the run."
 const WAGON_LOOP_START_SECONDS := 5.0
 const WAGON_LOOP_END_SECONDS := 10.0
 
@@ -144,16 +138,14 @@ const WAGON_LOOP_END_SECONDS := 10.0
 var _run_state: RunStateType
 var _run_presentation: RunPresentationType = RunPresentationType.new()
 var _run_audio_presenter: RunAudioPresenterType = RunAudioPresenterType.new()
-var _run_director: RefCounted = RunDirectorType.new()
-var _run_hazard_resolver: RefCounted = RunHazardResolverType.new()
-var _run_state_machine: RefCounted
+var _run_director: RunDirectorType = RunDirectorType.new()
+var _run_hazard_resolver: RunHazardResolverType = RunHazardResolverType.new()
+var _run_state_machine: RunStateMachine
 var _navigation_click_in_progress := false
-var _best_run_save_path := RunStateType.BEST_RUN_SAVE_PATH
 var _recovery_sequence_generator: RecoverySequenceGeneratorType = RecoverySequenceGeneratorType.new()
 var _dev_cheats: DevCheatsType
 var _previous_frame_result: StringName = RunStateType.RESULT_IN_PROGRESS
 var _previous_frame_has_crossed_finish_line := false
-var _finish_buffer_scroll_distance := 0.0
 var _is_success_exit_beat_active := false
 var _has_finished_success_exit_beat := false
 
@@ -289,21 +281,30 @@ func get_run_state() -> RunStateType:
 
 
 ## Binds a fresh run state and the shared build-owned dev cheats service for one run scene.
-func setup(run_state: RunStateType, dev_cheats: DevCheatsType = null) -> void:
+func setup(
+	run_state: RunStateType,
+	dev_cheats: DevCheatsType = null
+) -> void:
 	_run_state = run_state
+
 	if dev_cheats != null:
 		_dev_cheats = dev_cheats
 	elif _dev_cheats == null:
 		_dev_cheats = DevCheatsType.new()
+
 	_dev_cheats.register_input_actions()
-	_run_state.load_persisted_best_run(_best_run_save_path)
+	_run_state.load_persisted_best_run(RunStateType.BEST_RUN_SAVE_PATH)
+
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
-		_run_state.record_best_run_if_needed(_best_run_save_path)
+		_run_state.record_best_run_if_needed(RunStateType.BEST_RUN_SAVE_PATH)
+		
 	_previous_frame_result = _run_state.result
 	_previous_frame_has_crossed_finish_line = _run_state.has_crossed_finish_line
-	_finish_buffer_scroll_distance = 0.0
+
 	_is_success_exit_beat_active = false
+
 	_has_finished_success_exit_beat = false
+
 	_run_audio_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.bind_run_state(_run_state)
 	_run_ui_presenter.reset_for_new_run()
@@ -313,13 +314,13 @@ func setup(run_state: RunStateType, dev_cheats: DevCheatsType = null) -> void:
 	_run_state_machine = RunStateMachineType.new()
 	_run_state_machine.bind(self)
 	_run_ui_presenter.refresh_status()
-	_run_ui_presenter.refresh_onboarding_prompt()
 	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
 	_run_ui_presenter.refresh_phase_callout()
 	_run_ui_presenter.refresh_recovery_prompt()
 	_run_ui_presenter.refresh_pause_menu()
 	_run_ui_presenter.refresh_result_screen(_build_best_run_summary())
 	_run_ui_presenter.refresh_touch_controls()
+	
 	_refresh_audio_presentation()
 
 
@@ -373,21 +374,6 @@ func _ready() -> void:
 	_configure_dust_trail()
 	_configure_audio_players()
 
-	if _touch_layer != null and not _touch_layer.pause_requested.is_connected(_on_touch_pause_button_pressed):
-		_touch_layer.pause_requested.connect(_on_touch_pause_button_pressed)
-
-	if _pause_layer != null and not _pause_layer.resume_requested.is_connected(_on_pause_resume_pressed):
-		_pause_layer.resume_requested.connect(_on_pause_resume_pressed)
-
-	if _pause_layer != null and not _pause_layer.restart_requested.is_connected(_on_pause_restart_pressed):
-		_pause_layer.restart_requested.connect(_on_pause_restart_pressed)
-
-	if (
-		_pause_layer != null
-		and not _pause_layer.return_to_title_requested.is_connected(_on_pause_return_to_title_pressed)
-	):
-		_pause_layer.return_to_title_requested.connect(_on_pause_return_to_title_pressed)
-
 	if _result_layer != null and not _result_layer.restart_requested.is_connected(_on_result_restart_pressed):
 		_result_layer.restart_requested.connect(_on_result_restart_pressed)
 
@@ -397,10 +383,8 @@ func _ready() -> void:
 	):
 		_result_layer.return_to_title_requested.connect(_on_result_return_to_title_pressed)
 	_update_wagon_visual()
-	_update_scroll_visuals()
 	_update_camera_framing()
 	_run_ui_presenter.refresh_status()
-	_run_ui_presenter.refresh_onboarding_prompt()
 	_run_ui_presenter.refresh_bonus_callout(get_viewport().get_canvas_transform())
 	_run_ui_presenter.refresh_pause_menu()
 	_run_ui_presenter.refresh_recovery_prompt()
@@ -593,12 +577,14 @@ func _process(delta: float) -> void:
 func _sync_completed_run_best_state() -> void:
 	if _run_state == null:
 		return
+
 	if _run_state.result == RunStateType.RESULT_IN_PROGRESS:
 		return
+
 	if _run_audio_presenter.last_announced_result == _run_state.result:
 		return
 
-	_run_state.record_best_run_if_needed(_best_run_save_path)
+	_run_state.record_best_run_if_needed(RunStateType.BEST_RUN_SAVE_PATH)
 
 
 ## Builds the compact best-run summary line set for the completed-run result panel.
@@ -619,10 +605,6 @@ func _build_best_run_summary() -> String:
 
 ## Routes pause, onboarding, and recovery input for the run scene.
 func _input(event: InputEvent) -> void:
-	if _dev_cheats != null and _dev_cheats.consume_input(event):
-		set_hazards_enabled(not _dev_cheats.are_runtime_hazards_enabled)
-		return
-
 	if _run_state_machine == null:
 		_run_state_machine = RunStateMachineType.new()
 		_run_state_machine.bind(self)
@@ -640,34 +622,6 @@ func _update_camera_framing() -> void:
 	_run_presentation.update_camera_framing()
 
 
-## Advances failure state timers and starts timer-driven bad luck when its scheduled roll matures.
-func _advance_failure_triggers(delta: float) -> void:
-	if _run_state == null:
-		return
-
-	var update: RefCounted = _run_director.advance(delta)
-	if update == null:
-		return
-	if update.phase_callout_text != "":
-		_run_ui_presenter.show_phase_callout(update.phase_callout_text)
-	if update.recovery_penalty_applied:
-		_run_audio_presenter.play_recovery_fail()
-
-
-## Enables or disables hazard spawning and active hazard resolution for local testing.
-func set_hazards_enabled(enabled: bool) -> void:
-	if _dev_cheats == null or not _dev_cheats.are_cheats_available():
-		return
-	if _dev_cheats.are_runtime_hazards_enabled == enabled:
-		return
-
-	_dev_cheats.are_runtime_hazards_enabled = enabled
-	if not _dev_cheats.are_runtime_hazards_enabled and _hazard_spawner != null:
-		_hazard_spawner.clear_runtime_hazards()
-
-	_show_bonus_callout("HAZARDS ON" if _dev_cheats.are_runtime_hazards_enabled else "HAZARDS OFF")
-
-
 ## Stores transition-sensitive run state so frame-entry checks can fire exactly once.
 func _sync_previous_frame_state() -> void:
 	if _run_state == null:
@@ -679,44 +633,9 @@ func _sync_previous_frame_state() -> void:
 	_previous_frame_has_crossed_finish_line = _run_state.has_crossed_finish_line
 
 
-## Returns the current authored phase for one route-progress ratio.
-func _get_route_phase(progress_ratio: float) -> StringName:
-	return RunDirectorType.get_route_phase_for_progress(progress_ratio)
-
-
-## Returns the current cue region for one route-progress ratio.
-func _get_route_phase_callout_zone(progress_ratio: float) -> StringName:
-	return RunDirectorType.get_route_phase_callout_zone_for_progress(progress_ratio)
-
-
-## Returns a readable label for the current authored route phase.
-func _get_route_phase_display_name(route_phase: StringName) -> String:
-	return RunDirectorType.get_route_phase_display_name(route_phase)
-
-
 ## Updates the wagon flash, wobble, and shake presentation for the current run state.
 func _update_impact_feedback(delta: float) -> void:
 	_run_presentation.update_impact_feedback(delta)
-
-
-## Routes a hazard collision to its dedicated impact player and falls back to the generic impact cue.
-func _play_hazard_impact(hazard_type: StringName) -> void:
-	_run_audio_presenter.play_hazard_impact(hazard_type)
-
-
-## Stops the tumbleweed cue after the same playback window used by the crash impact cue.
-func _schedule_tumbleweed_impact_stop(serial: int) -> void:
-	_run_audio_presenter.schedule_tumbleweed_impact_stop(serial)
-
-
-## Stops the active tumbleweed cue only if a newer tumbleweed playback has not replaced it.
-func _on_tumbleweed_impact_timeout(serial: int) -> void:
-	_run_audio_presenter.on_tumbleweed_impact_timeout(serial)
-
-
-## Updates the looping world segments and tiled environment scroll windows.
-func _update_scroll_visuals() -> void:
-	_run_presentation.update_scroll_visuals()
 
 
 ## Applies the authored dust particle configuration through the presentation owner.
@@ -757,11 +676,6 @@ func _refresh_audio_presentation() -> void:
 	_run_audio_presenter.refresh_audio_presentation()
 
 
-## Starts and stops sustained failure ambients according to the active failure and run state.
-func _refresh_failure_ambient_audio() -> void:
-	_run_audio_presenter.refresh_failure_ambient_audio()
-
-
 ## Helper for ensure input actions.
 func _ensure_input_actions() -> void:
 	_register_action(RunSceneTuningType.STEER_ACTION_NEGATIVE, [KEY_A, KEY_LEFT])
@@ -779,88 +693,6 @@ func _register_action(action_name: StringName, keys: Array[int]) -> void:
 		event.physical_keycode = keycode
 		if not InputMap.action_has_event(action_name, event):
 			InputMap.action_add_event(action_name, event)
-
-
-## Preserves compatibility for legacy scene-state property access now owned by extracted presenters.
-func _get(property: StringName) -> Variant:
-	match property:
-		&"_onboarding_active":
-			return _run_ui_presenter.is_onboarding_active
-		&"_pause_menu_open":
-			return _run_ui_presenter.is_pause_menu_open
-		&"_touch_controls_enabled_for_runtime":
-			return _run_ui_presenter.are_touch_controls_enabled_for_runtime
-		&"_has_native_mobile_runtime_override":
-			return _run_ui_presenter.has_native_mobile_runtime_override
-		&"_native_mobile_runtime_override":
-			return _run_ui_presenter.is_native_mobile_runtime_override
-		&"_has_mobile_web_runtime_override":
-			return _run_ui_presenter.has_mobile_web_runtime_override
-		&"_mobile_web_runtime_override":
-			return _run_ui_presenter.is_mobile_web_runtime_override
-		&"_has_touchscreen_available_override":
-			return _run_ui_presenter.has_touchscreen_available_override
-		&"_touchscreen_available_override":
-			return _run_ui_presenter.is_touchscreen_available_override
-		_:
-			return null
-
-
-## Preserves compatibility for legacy scene-state overrides now owned by extracted presenters.
-func _set(property: StringName, value: Variant) -> bool:
-	match property:
-		&"_onboarding_active":
-			_run_ui_presenter.is_onboarding_active = bool(value)
-			return true
-		&"_pause_menu_open":
-			_run_ui_presenter.is_pause_menu_open = bool(value)
-			return true
-		&"_touch_controls_enabled_for_runtime":
-			_run_ui_presenter.are_touch_controls_enabled_for_runtime = bool(value)
-			return true
-		&"_has_native_mobile_runtime_override":
-			_run_ui_presenter.has_native_mobile_runtime_override = bool(value)
-			return true
-		&"_native_mobile_runtime_override":
-			_run_ui_presenter.is_native_mobile_runtime_override = bool(value)
-			return true
-		&"_has_mobile_web_runtime_override":
-			_run_ui_presenter.has_mobile_web_runtime_override = bool(value)
-			return true
-		&"_mobile_web_runtime_override":
-			_run_ui_presenter.is_mobile_web_runtime_override = bool(value)
-			return true
-		&"_has_touchscreen_available_override":
-			_run_ui_presenter.has_touchscreen_available_override = bool(value)
-			return true
-		&"_touchscreen_available_override":
-			_run_ui_presenter.is_touchscreen_available_override = bool(value)
-			return true
-		_:
-			return false
-
-
-## Helper for apply recovery failure penalty.
-func _apply_recovery_failure_penalty() -> void:
-	_run_director.apply_recovery_failure_penalty()
-	_run_audio_presenter.play_recovery_fail()
-	_run_ui_presenter.refresh_status()
-	_run_ui_presenter.refresh_recovery_prompt()
-
-
-## Starts or refreshes the short-lived in-run bonus callout text.
-func _show_bonus_callout(text: String) -> void:
-	var anchor_world_position := Vector2.ZERO if _wagon == null else _wagon.global_position
-	_run_ui_presenter.show_bonus_callout(
-		text,
-		anchor_world_position,
-		get_viewport().get_canvas_transform()
-	)
-
-
-## Starts or refreshes the short-lived on-screen phase cue.
-func _show_phase_callout(text: String) -> void:
-	_run_ui_presenter.show_phase_callout(text)
 
 
 ## Plays the shared menu click cue for pause and result buttons.
@@ -893,44 +725,3 @@ func _on_result_return_to_title_pressed() -> void:
 	return_to_title_requested.emit()
 
 
-## Updates the pause state and keeps the keyboard focus anchored to the active pause menu.
-func _set_pause_state(paused: bool) -> void:
-	var was_paused := _run_ui_presenter.is_pause_menu_open
-	if not _run_ui_presenter.set_pause_state(paused):
-		return
-	_run_audio_presenter.play_pause_toggle()
-	if _run_ui_presenter.is_pause_menu_open and not was_paused and _pause_layer != null:
-		_pause_layer.focus_default_button()
-
-
-## Resumes gameplay after playing the pause-menu click cue.
-func _on_pause_resume_pressed() -> void:
-	_play_ui_click()
-	_set_pause_state(false)
-
-
-## Restarts the run after playing the pause-menu click cue.
-func _on_pause_restart_pressed() -> void:
-	if _navigation_click_in_progress:
-		return
-	_navigation_click_in_progress = true
-	await _play_ui_click_and_wait()
-	_navigation_click_in_progress = false
-	_set_pause_state(false)
-	restart_requested.emit()
-
-
-## Returns to title after playing the pause-menu click cue.
-func _on_pause_return_to_title_pressed() -> void:
-	if _navigation_click_in_progress:
-		return
-	_navigation_click_in_progress = true
-	await _play_ui_click_and_wait()
-	_navigation_click_in_progress = false
-	_set_pause_state(false)
-	return_to_title_requested.emit()
-
-
-## Opens the pause menu from the mobile pause button when gameplay is active.
-func _on_touch_pause_button_pressed() -> void:
-	_set_pause_state(true)
