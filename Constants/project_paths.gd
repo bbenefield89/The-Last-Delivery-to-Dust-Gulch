@@ -53,6 +53,7 @@ const TOUCH_LAYER_SCRIPT_PATH := "res://Scenes/RunScene/touch_layer.gd"
 
 # RunScene: Constants
 
+const RUN_SCENE_SCRIPT_PATH := "res://Scenes/RunScene/run_scene.gd"
 const RUN_SCENE_TUNING_SCRIPT_PATH := "res://Scenes/RunScene/Constants/run_scene_tuning.gd"
 
 # RunScene: FSM
@@ -66,6 +67,30 @@ const RUN_STATE_MACHINE_STATE_BASE_SCRIPT_PATH := (
 )
 const RUN_STATE_MACHINE_IN_PROGRESS_STATE_SCRIPT_PATH := (
 	"res://Scenes/RunScene/FSM/RunStateMachine/States/in_progress_state.gd"
+)
+const RUN_STATE_MACHINE_IN_PROGRESS_CONTEXT_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/FSM/InProgressStateMachine/in_progress_context.gd"
+)
+const RUN_STATE_MACHINE_IN_PROGRESS_STATE_MACHINE_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/FSM/InProgressStateMachine/in_progress_state_machine.gd"
+)
+const RUN_STATE_MACHINE_IN_PROGRESS_KEY_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/FSM/InProgressStateMachine/Enums/in_progress_state_machine_key.gd"
+)
+const RUN_STATE_MACHINE_IN_PROGRESS_STATE_PROPS_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/FSM/InProgressStateMachine/in_progress_state_props.gd"
+)
+const RUN_STATE_MACHINE_IN_PROGRESS_STATE_BASE_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/FSM/InProgressStateMachine/States/in_progress_state_machine_state_base.gd"
+)
+const RUN_STATE_MACHINE_IN_PROGRESS_ONBOARDING_STATE_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/FSM/InProgressStateMachine/States/onboarding_state.gd"
+)
+const RUN_STATE_MACHINE_IN_PROGRESS_ACTIVE_GAMEPLAY_STATE_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/FSM/InProgressStateMachine/States/active_gameplay_state.gd"
+)
+const RUN_STATE_MACHINE_IN_PROGRESS_PAUSED_STATE_SCRIPT_PATH := (
+	"res://Scenes/RunScene/FSM/RunStateMachine/FSM/InProgressStateMachine/States/paused_state.gd"
 )
 const RUN_STATE_MACHINE_SUCCESS_STATE_SCRIPT_PATH := (
 	"res://Scenes/RunScene/FSM/RunStateMachine/States/success_state.gd"

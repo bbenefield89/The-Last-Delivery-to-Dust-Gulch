@@ -39,11 +39,6 @@ func advance(delta: float) -> void:
 	if scene == null:
 		return
 
-	var ui_presenter: Variant = scene.get(&"_run_ui_presenter")
-	if ui_presenter != null and bool(ui_presenter.is_pause_menu_open):
-		_advance_paused_frame(delta)
-		return
-
 	if bool(scene.get(&"_is_success_exit_beat_active")):
 		__refresh_success_arrival_frame(scene, delta)
 		return
@@ -75,8 +70,6 @@ func __refresh_success_arrival_frame(scene: Node, delta: float) -> void:
 	ui_presenter.advance_callouts(delta, scene.get_viewport().get_canvas_transform())
 	var arrival_completed := bool(run_presentation.advance_success_arrival(delta))
 	ui_presenter.refresh_status()
-	ui_presenter.refresh_onboarding_prompt()
-	ui_presenter.refresh_pause_menu()
 	ui_presenter.refresh_recovery_prompt()
 	ui_presenter.refresh_touch_controls()
 	scene.call(&"_sync_completed_run_best_state")

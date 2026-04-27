@@ -10,6 +10,7 @@ const RunStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_KEY_SCRIP
 const InProgressStateType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_STATE_SCRIPT_PATH)
 const SuccessStateType := preload(ProjectPaths.RUN_STATE_MACHINE_SUCCESS_STATE_SCRIPT_PATH)
 const CollapsedStateType := preload(ProjectPaths.RUN_STATE_MACHINE_COLLAPSED_STATE_SCRIPT_PATH)
+const RunSceneType := preload(ProjectPaths.RUN_SCENE_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 
@@ -17,7 +18,7 @@ const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
 
 var __states: Dictionary[int, RunStateMachineStateBase] = {}
 var __current_state: RunStateMachineStateBase
-var __scene: Node
+var __scene: RunSceneType
 
 
 # Lifecycle Methods
@@ -28,6 +29,7 @@ func _init(register_default_states: bool = true) -> void:
 		register_state(InProgressStateType.new())
 		register_state(SuccessStateType.new())
 		register_state(CollapsedStateType.new())
+
 
 ## Synchronizes the active top-level state against the currently bound RunState result.
 func __sync_state_for_bound_scene() -> bool:
@@ -46,10 +48,8 @@ func __sync_state_for_bound_scene() -> bool:
 func __get_desired_state_key_for_bound_scene() -> int:
 	if __scene == null:
 		return RunStateMachineKeyType.Key.NONE
-	if not __scene.has_method(&"get_run_state"):
-		return RunStateMachineKeyType.Key.NONE
 
-	var run_state := __scene.call(&"get_run_state") as RunStateType
+	var run_state: RunStateType = __scene.get_run_state()
 	if run_state == null:
 		return RunStateMachineKeyType.Key.NONE
 
@@ -67,7 +67,7 @@ func __get_desired_state_key_for_bound_scene() -> int:
 # Public Methods
 
 ## Binds the live RunScene node instance so states can call into scene-owned services during extraction.
-func bind(scene: Node = null) -> void:
+func bind(scene: RunSceneType = null) -> void:
 	__scene = scene
 	for state_key: int in __states.keys():
 		__states[state_key].bind(scene)

@@ -2,7 +2,9 @@ extends SceneTree
 
 
 # Constants
+const InProgressContextType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_CONTEXT_SCRIPT_PATH)
 const RunStateType := preload(ProjectPaths.RUN_STATE_SCRIPT_PATH)
+const GameplayUiLayerType := preload(ProjectPaths.GAMEPLAY_UI_LAYER_SCRIPT_PATH)
 
 
 const APP_ROOT_SCENE := preload(ProjectPaths.APP_ROOT_SCENE_PATH)
@@ -74,6 +76,31 @@ func _assert_title_screen(app_root: Node) -> bool:
 	return true
 
 
+## Builds the live in-progress context from the wired smoke-test run scene.
+func _build_in_progress_context(run_scene: Node) -> InProgressContextType:
+	var context := InProgressContextType.new()
+	context.bind_dependencies(
+		run_scene._run_state,
+		run_scene._run_ui_presenter,
+		run_scene._run_presentation,
+		run_scene._run_director,
+		run_scene._run_audio_presenter,
+		run_scene._run_hazard_resolver,
+		run_scene._roadside_scenery,
+		run_scene._hazard_spawner,
+		run_scene._pause_layer,
+		run_scene._touch_layer,
+		run_scene._dev_cheats,
+		run_scene._wagon,
+		run_scene.get_viewport(),
+		run_scene.PAUSE_ACTION,
+		run_scene.FINISH_RUNOFF_DISTANCE,
+		run_scene._previous_frame_result,
+		run_scene._previous_frame_has_crossed_finish_line
+	)
+	return context
+
+
 ## Helper for start run from title.
 func _start_run_from_title(app_root: Node) -> bool:
 	await app_root._title_screen._on_play_pressed()
@@ -99,7 +126,16 @@ func _assert_bootstrap(app_root: Node) -> bool:
 
 ## Helper for dismiss onboarding.
 func _dismiss_onboarding(run_scene: Node) -> void:
-	if run_scene == null or not run_scene.has_method("_input") or not run_scene._onboarding_active:
+	if run_scene == null or not run_scene.has_method("_input"):
+		return
+
+	var ui_presenter := run_scene.get_node_or_null("%GameplayUiLayer") as GameplayUiLayerType
+	if ui_presenter == null:
+		return
+
+	# Onboarding is asserted by the InProgress onboarding substate on first process tick.
+	await process_frame
+	if not ui_presenter.is_onboarding_active:
 		return
 
 	var event := InputEventAction.new()
@@ -181,13 +217,19 @@ func _assert_success_path(app_root: Node) -> bool:
 ## Helper for assert pause path.
 func _assert_pause_path(app_root: Node) -> bool:
 	var run_scene = app_root._run_scene
-	run_scene._set_pause_state(true)
+	var ui_presenter := run_scene.get_node_or_null("%GameplayUiLayer") as GameplayUiLayerType
+	if ui_presenter == null:
+		push_error("Smoke test failed: RunScene is missing GameplayUiLayer.")
+		quit(1)
+		return false
+
+	run_scene._touch_layer.pause_requested.emit()
 	await process_frame
 
 	var pause_overlay: Control = run_scene.get_node("%PauseOverlay")
 	var pause_panel: PanelContainer = run_scene.get_node("%PausePanel")
 	var resume_button: Button = run_scene.get_node("%PauseResumeButton")
-	if not run_scene._pause_menu_open:
+	if not ui_presenter.is_pause_menu_open:
 		push_error("Smoke test failed: pause menu did not enter paused gameplay state.")
 		quit(1)
 		return false
@@ -202,7 +244,7 @@ func _assert_pause_path(app_root: Node) -> bool:
 
 	resume_button.pressed.emit()
 	await process_frame
-	if run_scene._pause_menu_open:
+	if ui_presenter.is_pause_menu_open:
 		push_error("Smoke test failed: resume did not close the pause state.")
 		quit(1)
 		return false
@@ -218,7 +260,7 @@ func _assert_pause_restart_path(app_root: Node) -> bool:
 	var prior_run_state = app_root.run_state
 	var prior_run_scene = app_root._run_scene
 	var run_scene = app_root._run_scene
-	run_scene._set_pause_state(true)
+	run_scene._touch_layer.pause_requested.emit()
 	await process_frame
 
 	var restart_button: Button = run_scene.get_node("%PauseRestartButton")
@@ -245,7 +287,7 @@ func _assert_pause_restart_path(app_root: Node) -> bool:
 ## Helper for assert pause return to title path.
 func _assert_pause_return_to_title_path(app_root: Node) -> bool:
 	var run_scene = app_root._run_scene
-	run_scene._set_pause_state(true)
+	run_scene._touch_layer.pause_requested.emit()
 	await process_frame
 
 	var return_button: Button = run_scene.get_node("%PauseReturnButton")
@@ -273,7 +315,7 @@ func _assert_pause_return_to_title_path(app_root: Node) -> bool:
 func _assert_collapse_path(app_root: Node) -> bool:
 	var run_scene = app_root._run_scene
 	app_root.run_state.start_failure(&"wheel_loose", &"rock")
-	run_scene._advance_failure_triggers(0.0)
+	_build_in_progress_context(run_scene).advance_failure_triggers(0.0)
 	app_root.run_state.wagon_health = 0
 	run_scene._process(0.0)
 	await process_frame

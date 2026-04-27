@@ -151,7 +151,7 @@ func advance_scroll(current_speed: float, delta: float) -> void:
 
 
 ## Updates the wagon transform from the bound run state's lateral position.
-func update_wagon_visual() -> void:
+func update_wagon_visual() -> void: 
 	if _wagon == null or _run_state == null:
 		return
 

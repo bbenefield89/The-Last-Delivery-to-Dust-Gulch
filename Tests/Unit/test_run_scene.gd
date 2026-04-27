@@ -4,6 +4,12 @@ extends GutTest
 const DevCheatsType := preload(ProjectPaths.DEV_CHEATS_SCRIPT_PATH)
 const HazardInstanceType := preload(ProjectPaths.HAZARD_INSTANCE_SCRIPT_PATH)
 const HazardSpawnerType := preload(ProjectPaths.HAZARD_SPAWNER_SCRIPT_PATH)
+const InProgressContextType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_CONTEXT_SCRIPT_PATH)
+const InProgressStateMachineKeyType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_KEY_SCRIPT_PATH)
+const InProgressStateMachineType := preload(ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_STATE_MACHINE_SCRIPT_PATH)
+const InProgressStateMachineStateBaseType := preload(
+	ProjectPaths.RUN_STATE_MACHINE_IN_PROGRESS_STATE_BASE_SCRIPT_PATH
+)
 const RecoverySequenceGeneratorType := preload(ProjectPaths.RECOVERY_SEQUENCE_GENERATOR_SCRIPT_PATH)
 const RoadsideSceneryType := preload(ProjectPaths.ROADSIDE_SCENERY_SCRIPT_PATH)
 const RunAudioPresenterType := preload(ProjectPaths.RUN_AUDIO_PRESENTER_SCRIPT_PATH)
@@ -21,22 +27,39 @@ const ResultLayerType := preload(ProjectPaths.RESULT_LAYER_SCRIPT_PATH)
 const TouchLayerType := preload(ProjectPaths.TOUCH_LAYER_SCRIPT_PATH)
 const RunUiPresenterType := GameplayUiLayerType
 
+const EXPECTED_ONBOARDING_TITLE: String = "Last Delivery to Dust Gulch"
+const EXPECTED_ONBOARDING_BODY: String = (
+	"Steer with A/D or Left/Right. Dodge the hazards, protect your cargo, "
+	+ "and hold the wagon together until you reach Dust Gulch."
+)
+const EXPECTED_ONBOARDING_HINT: String = "Press Left, Right, Enter, or click to begin the run."
+
 
 const RUN_SCENE := preload(ProjectPaths.RUN_SCENE_PATH)
 const LIVESTOCK_TEXTURE := preload(AssetPaths.LIVESTOCK_TEXTURE_PATH)
-const TEST_BEST_RUN_SAVE_PATH := SavePaths.TEST_RUN_SCENE_BEST_RUN_SAVE_PATH
+
+
+# Private Fields
+
+var _default_best_run_backup: PackedByteArray = PackedByteArray()
+var _had_default_best_run_backup := false
+
+
 # Public Methods
 
 
 
-## Clears the scene-level best-run fixture before each test uses the override save path.
+## Saves and clears the default best-run file so run-scene tests can use the production path deterministically.
 func before_each() -> void:
-	_delete_test_best_run_file()
+	_backup_default_best_run_file()
+	_delete_default_best_run_file()
 
 
-## Clears the scene-level best-run fixture after each test completes.
+## Restores the caller's default best-run file after each isolated run-scene test completes.
 func after_each() -> void:
-	_delete_test_best_run_file()
+	_restore_default_best_run_file()
+
+
 # Private Methods
 
 
@@ -81,12 +104,74 @@ func _setup_active_run_at_progress(scene: Node, state: RunStateType, progress_ra
 
 ## Returns the extracted run director bound to the active test scene.
 func _get_run_director(scene: Node) -> RunDirectorType:
-	return scene._run_director as RunDirectorType
+	return scene._run_director
+
+
+## Returns the extracted in-progress child FSM currently owned by the bound top-level run state.
+func _get_in_progress_state_machine(scene: Node) -> InProgressStateMachineType:
+	return scene._run_state_machine.get(&"__current_state").get(
+		&"__in_progress_state_machine"
+	) as InProgressStateMachineType
+
+
+## Returns the registered active-gameplay child state so tests can inspect its private runoff ownership.
+func _get_active_gameplay_state(scene: Node) -> InProgressStateMachineStateBaseType:
+	var in_progress_state_machine := _get_in_progress_state_machine(scene)
+	return (
+		in_progress_state_machine.get(&"__states")[InProgressStateMachineKeyType.Key.ACTIVE_GAMEPLAY]
+		as InProgressStateMachineStateBaseType
+	)
+
+
+## Returns the active gameplay state's private finish-buffer runoff distance.
+func _get_finish_buffer_scroll_distance(scene: Node) -> float:
+	return float(_get_active_gameplay_state(scene).get(&"__finish_buffer_scroll_distance"))
+
+
+## Builds the live in-progress context from the wired run scene so tests can hit production helpers directly.
+func _build_in_progress_context(scene: Node) -> InProgressContextType:
+	var context := InProgressContextType.new()
+	context.bind_dependencies(
+		scene._run_state,
+		scene._run_ui_presenter,
+		scene._run_presentation,
+		scene._run_director,
+		scene._run_audio_presenter,
+		scene._run_hazard_resolver,
+		scene._roadside_scenery,
+		scene._hazard_spawner,
+		scene._pause_layer,
+		scene._touch_layer,
+		scene._dev_cheats,
+		scene._wagon,
+		scene.get_viewport(),
+		scene.PAUSE_ACTION,
+		scene.FINISH_RUNOFF_DISTANCE,
+		scene._previous_frame_result,
+		scene._previous_frame_has_crossed_finish_line
+	)
+	return context
+
+
+## Advances failure timers through the real in-progress context helper instead of the deleted RunScene shim.
+func _advance_failure_triggers(scene: Node, delta: float) -> void:
+	_build_in_progress_context(scene).advance_failure_triggers(delta)
+
+
+## Advances exactly the remaining finish-buffer runoff owned by the active gameplay child state.
+func _advance_remaining_finish_buffer_runoff(scene: Node) -> void:
+	var run_state := scene._run_state as RunStateType
+	var remaining_runoff_distance := maxf(
+		0.0,
+		scene.FINISH_RUNOFF_DISTANCE - _get_finish_buffer_scroll_distance(scene)
+	)
+	scene._process(remaining_runoff_distance / run_state.current_speed)
+	scene._process(0.0)
 
 
 ## Returns the extracted hazard resolver bound to the active test scene.
 func _get_run_hazard_resolver(scene: Node) -> RunHazardResolverType:
-	return scene._run_hazard_resolver as RunHazardResolverType
+	return scene._run_hazard_resolver
 
 
 ## Returns the extracted presentation owner bound to the active test scene.
@@ -97,6 +182,22 @@ func _get_run_presentation(scene: Node) -> RunPresentationType:
 ## Returns the extracted audio presenter bound to the active test scene.
 func _get_run_audio_presenter(scene: Node) -> RunAudioPresenterType:
 	return scene._run_audio_presenter as RunAudioPresenterType
+
+
+## Shows a gameplay bonus callout through the real UI presenter instead of a RunScene wrapper.
+func _show_bonus_callout(scene: Node, text: String) -> void:
+	var wagon := scene._wagon as Node2D
+	var anchor_world_position := Vector2.ZERO if wagon == null else wagon.global_position
+	_get_run_ui_presenter(scene).show_bonus_callout(
+		text,
+		anchor_world_position,
+		scene.get_viewport().get_canvas_transform()
+	)
+
+
+## Shows a gameplay phase callout through the real UI presenter instead of a RunScene wrapper.
+func _show_phase_callout(scene: Node, text: String) -> void:
+	_get_run_ui_presenter(scene).show_phase_callout(text)
 
 
 ## Returns the node-backed roadside scenery owner attached to the run scene world.
@@ -163,6 +264,43 @@ func _get_live_roadside_signs(scene: Node) -> Array[Area2D]:
 ## Returns the extracted UI presenter bound to the active test scene.
 func _get_run_ui_presenter(scene: Node) -> RunUiPresenterType:
 	return scene._run_ui_presenter as RunUiPresenterType
+
+
+## Saves any existing default best-run file so run-scene tests can restore it after isolation cleanup.
+func _backup_default_best_run_file() -> void:
+	_default_best_run_backup = PackedByteArray()
+	_had_default_best_run_backup = false
+	if not FileAccess.file_exists(RunStateType.BEST_RUN_SAVE_PATH):
+		return
+
+	var file := FileAccess.open(RunStateType.BEST_RUN_SAVE_PATH, FileAccess.READ)
+	if file == null:
+		return
+
+	_default_best_run_backup = file.get_buffer(file.get_length())
+	_had_default_best_run_backup = true
+
+
+## Restores the caller's default best-run file after each run-scene test run.
+func _restore_default_best_run_file() -> void:
+	_delete_default_best_run_file()
+	if not _had_default_best_run_backup:
+		return
+
+	var file := FileAccess.open(RunStateType.BEST_RUN_SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+
+	file.store_buffer(_default_best_run_backup)
+	_default_best_run_backup = PackedByteArray()
+	_had_default_best_run_backup = false
+
+
+## Deletes the default best-run file so run-scene tests can drive real persistence deterministically.
+func _delete_default_best_run_file() -> void:
+	var absolute_path := ProjectSettings.globalize_path(RunStateType.BEST_RUN_SAVE_PATH)
+	if FileAccess.file_exists(RunStateType.BEST_RUN_SAVE_PATH):
+		DirAccess.remove_absolute(absolute_path)
 
 
 ## Returns the node-backed gameplay UI owner attached to the run scene canvas layer.
@@ -424,7 +562,7 @@ func test_route_phase_when_progress_enters_final_stretch_then_bad_luck_is_disabl
 	assert_eq(run_director.bad_luck_elapsed, 0.0)
 	assert_false(run_director.pending_bad_luck_trigger)
 
-	scene._advance_failure_triggers(999.0)
+	_advance_failure_triggers(scene, 999.0)
 
 	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_FINAL_STRETCH)
 	assert_eq(state.active_failure, &"")
@@ -580,6 +718,7 @@ func test_setup_binds_run_ui_presenter_without_scene_ui_state_mirrors() -> void:
 
 	var state := RunStateType.new()
 	scene.setup(state)
+	scene._process(0.0)
 
 	var property_names := scene.get_property_list().map(
 		func(property_data: Dictionary) -> String:
@@ -671,7 +810,7 @@ func _build_expected_recovery_sequence(scene: Node, progress: float, seed: int) 
 ## Triggers a seeded failure flow and returns the expected authored recovery sequence.
 func _start_seeded_recovery_sequence(scene: Node, state: RunStateType, seed: int) -> Array[StringName]:
 	scene._recovery_sequence_generator.set_seed(seed)
-	scene._advance_failure_triggers(0.0)
+	_advance_failure_triggers(scene, 0.0)
 	return _build_expected_recovery_sequence(scene, state.get_delivery_progress_ratio(), seed)
 
 
@@ -753,12 +892,13 @@ func test_setup_shows_onboarding_panel_at_run_start() -> void:
 
 	var state := RunStateType.new()
 	scene.setup(state)
+	scene._process(0.0)
 
 	var onboarding_panel: PanelContainer = scene.get_node("%OnboardingPanel")
 	var onboarding_title: Label = scene.get_node("%OnboardingTitle")
 	assert_true(_get_run_ui_presenter(scene).is_onboarding_active)
 	assert_true(onboarding_panel.visible)
-	assert_eq(onboarding_title.text, scene.ONBOARDING_TITLE)
+	assert_eq(onboarding_title.text, EXPECTED_ONBOARDING_TITLE)
 
 
 ## Verifies onboarding freezes distance and hazard spawning while road scrolls.
@@ -864,8 +1004,8 @@ func test_toggle_hazards_action_when_pressed_then_live_hazards_clear() -> void:
 	assert_eq(_get_hazard_spawner(scene).get_child_count(), 0)
 
 
-## Verifies disabling hazards suppresses new spawns until the testing toggle is turned back on.
-func test_set_hazards_enabled_when_toggled_off_and_on_then_spawning_stops_and_resumes() -> void:
+## Verifies the active-gameplay hazard toggle suppresses new spawns until the player turns hazards back on.
+func test_toggle_hazards_when_toggled_off_and_on_then_spawning_stops_and_resumes() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
@@ -875,14 +1015,14 @@ func test_set_hazards_enabled_when_toggled_off_and_on_then_spawning_stops_and_re
 	_setup_active_run(scene, state)
 	var hazard_spawner := _get_hazard_spawner(scene)
 
-	scene.set_hazards_enabled(false)
+	await _send_key_input(KEY_H)
 	hazard_spawner._distance_until_next_spawn = 1.0
 	scene._process(2.0 / state.current_speed)
 
 	assert_false(scene._dev_cheats.are_runtime_hazards_enabled)
 	assert_eq(hazard_spawner.get_child_count(), 0)
 
-	scene.set_hazards_enabled(true)
+	await _send_key_input(KEY_H)
 	hazard_spawner._distance_until_next_spawn = 1.0
 	scene._process(3.0)
 
@@ -890,8 +1030,8 @@ func test_set_hazards_enabled_when_toggled_off_and_on_then_spawning_stops_and_re
 	assert_true(hazard_spawner.get_child_count() > 0)
 
 
-## Verifies cheat input and direct cheat calls stay inert when the runtime is not a debug build.
-func test_hazard_toggle_when_dev_cheats_are_disabled_then_input_and_runtime_calls_are_ignored() -> void:
+## Verifies active-gameplay cheat input stays inert when the runtime is not a debug build.
+func test_hazard_toggle_when_dev_cheats_are_disabled_then_input_is_ignored() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
@@ -906,7 +1046,6 @@ func test_hazard_toggle_when_dev_cheats_are_disabled_then_input_and_runtime_call
 	assert_eq(_get_hazard_spawner(scene).get_child_count(), 1)
 
 	await _send_key_input(KEY_H)
-	scene.set_hazards_enabled(false)
 
 	assert_true(scene._dev_cheats.are_runtime_hazards_enabled)
 	assert_eq(_get_hazard_spawner(scene).get_child_count(), 1)
@@ -942,7 +1081,7 @@ func test_ui_presenter_when_pause_resume_button_is_clicked_then_route_input_cons
 
 	var state := RunStateType.new()
 	_setup_active_run(scene, state)
-	scene._set_pause_state(true)
+	scene._touch_layer.pause_requested.emit()
 
 	var resume_button: Button = scene.get_node("%PauseResumeButton")
 	var click_event := InputEventMouseButton.new()
@@ -990,7 +1129,7 @@ func test_pause_menu_when_open_then_keyboard_navigation_and_restart_confirm_work
 	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
 
 	assert_signal_emitted(scene, "restart_requested")
-	assert_false(_get_run_ui_presenter(scene).is_pause_menu_open)
+	assert_true(_get_run_ui_presenter(scene).is_pause_menu_open)
 
 
 ## Verifies the existing cancel input closes the pause menu without needing a mouse click.
@@ -1645,10 +1784,8 @@ func test_reaching_dust_gulch_when_live_hazard_remains_then_success_waits_for_cl
 	scene._process(0.0)
 
 	assert_eq(state.result, RunStateType.RESULT_IN_PROGRESS)
-
-	var remaining_runoff_distance := maxf(0.0, scene.FINISH_RUNOFF_DISTANCE - scene._finish_buffer_scroll_distance)
-	scene._process(remaining_runoff_distance / state.current_speed)
-	scene._process(0.0)
+	assert_true(_get_finish_buffer_scroll_distance(scene) > 0.0)
+	_advance_remaining_finish_buffer_runoff(scene)
 
 	assert_eq(state.result, RunStateType.RESULT_SUCCESS)
 	assert_eq(state.current_speed, 0.0)
@@ -1701,10 +1838,8 @@ func test_finish_buffer_when_crossed_on_long_route_then_forced_finish_sign_spawn
 	scene._process(0.0)
 
 	assert_eq(state.result, RunStateType.RESULT_IN_PROGRESS)
-
-	var remaining_runoff_distance := maxf(0.0, scene.FINISH_RUNOFF_DISTANCE - scene._finish_buffer_scroll_distance)
-	scene._process(remaining_runoff_distance / state.current_speed)
-	scene._process(0.0)
+	assert_true(_get_finish_buffer_scroll_distance(scene) > 0.0)
+	_advance_remaining_finish_buffer_runoff(scene)
 
 	assert_eq(state.result, RunStateType.RESULT_SUCCESS)
 	assert_true(scene._is_success_exit_beat_active)
@@ -1712,6 +1847,56 @@ func test_finish_buffer_when_crossed_on_long_route_then_forced_finish_sign_spawn
 	var frozen_sign_y := finish_sign.position.y
 	scene._process(0.1)
 	assert_eq(finish_sign.position.y, frozen_sign_y)
+
+
+## Verifies pausing inside the finish buffer preserves the active gameplay state's runoff progress until resume.
+func test_finish_buffer_when_paused_and_resumed_then_runoff_progress_persists_until_success() -> void:
+	var scene = RUN_SCENE.instantiate()
+	add_child_autofree(scene)
+	await wait_process_frames(1)
+
+	var state := RunStateType.new()
+	state.distance_remaining = 20.0
+	state.current_speed = 280.0
+	_setup_active_run(scene, state)
+
+	scene._process(0.1)
+
+	assert_true(state.has_crossed_finish_line)
+	assert_eq(state.result, RunStateType.RESULT_IN_PROGRESS)
+
+	var runoff_before_pause := _get_finish_buffer_scroll_distance(scene)
+	assert_true(runoff_before_pause > 0.0)
+
+	var pause_event := InputEventAction.new()
+	pause_event.action = scene.PAUSE_ACTION
+	pause_event.pressed = true
+	scene._input(pause_event)
+
+	assert_true(_get_run_ui_presenter(scene).is_pause_menu_open)
+	assert_eq(
+		_get_in_progress_state_machine(scene).get_current_state_key(),
+		InProgressStateMachineKeyType.Key.PAUSED
+	)
+
+	scene._process(1.0)
+
+	assert_eq(_get_finish_buffer_scroll_distance(scene), runoff_before_pause)
+	assert_eq(state.result, RunStateType.RESULT_IN_PROGRESS)
+
+	scene._input(pause_event)
+
+	assert_false(_get_run_ui_presenter(scene).is_pause_menu_open)
+	assert_eq(
+		_get_in_progress_state_machine(scene).get_current_state_key(),
+		InProgressStateMachineKeyType.Key.ACTIVE_GAMEPLAY
+	)
+	assert_eq(_get_finish_buffer_scroll_distance(scene), runoff_before_pause)
+
+	_advance_remaining_finish_buffer_runoff(scene)
+
+	assert_eq(state.result, RunStateType.RESULT_SUCCESS)
+	assert_true(scene._is_success_exit_beat_active)
 
 
 ## Verifies the player can still collapse after crossing the finish if a live hazard hits before the field clears.
@@ -1762,10 +1947,8 @@ func test_success_arrival_transition_when_completed_then_success_result_panel_op
 	scene._process(0.1)
 	assert_true(state.has_crossed_finish_line)
 	assert_eq(state.result, RunStateType.RESULT_IN_PROGRESS)
-
-	var remaining_runoff_distance := maxf(0.0, scene.FINISH_RUNOFF_DISTANCE - scene._finish_buffer_scroll_distance)
-	scene._process(remaining_runoff_distance / state.current_speed)
-	scene._process(0.0)
+	assert_true(_get_finish_buffer_scroll_distance(scene) > 0.0)
+	_advance_remaining_finish_buffer_runoff(scene)
 
 	assert_true(scene._is_success_exit_beat_active)
 	assert_false((scene.get_node("%ResultPanel") as PanelContainer).visible)
@@ -1875,7 +2058,7 @@ func test_bad_luck_timer_triggers_failure_when_no_active_failure_exists() -> voi
 	run_director.bad_luck_rng.seed = 7
 	_setup_active_run_at_progress(scene, state, 0.8)
 
-	scene._advance_failure_triggers(run_director.scheduled_bad_luck_interval)
+	_advance_failure_triggers(scene, run_director.scheduled_bad_luck_interval)
 
 	assert_eq(state.active_failure, &"horse_panic")
 	assert_eq(state.current_failure.source_hazard, &"bad_luck")
@@ -1930,7 +2113,10 @@ func test_bad_luck_interval_range_uses_route_phase_windows() -> void:
 			scene.BAD_LUCK_INTERVAL_RESET_BEFORE_FINALE_MAX
 		)
 	)
-	assert_eq(scene._get_route_phase(0.88), scene.ROUTE_PHASE_FINAL_STRETCH)
+	assert_eq(
+		RunDirectorType.get_route_phase_for_progress(0.88),
+		scene.ROUTE_PHASE_FINAL_STRETCH
+	)
 	assert_eq(run_director.get_bad_luck_interval_range(0.88), Vector2.ZERO)
 
 
@@ -1945,7 +2131,7 @@ func test_bad_luck_timer_when_run_starts_in_warm_up_then_it_stays_disabled() -> 
 	scene.setup(state)
 	var run_director := _get_run_director(scene)
 
-	scene._advance_failure_triggers(10.0)
+	_advance_failure_triggers(scene, 10.0)
 
 	assert_eq(run_director.route_phase, scene.ROUTE_PHASE_WARM_UP)
 	assert_eq(run_director.scheduled_bad_luck_interval, 0.0)
@@ -2000,7 +2186,7 @@ func test_bad_luck_timer_does_not_replace_existing_failure() -> void:
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
 
-	scene._advance_failure_triggers(10.0)
+	_advance_failure_triggers(scene, 10.0)
 
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
@@ -2050,13 +2236,13 @@ func test_bad_luck_timer_arms_one_pending_trigger_during_recovery_cooldown() -> 
 	run_director.scheduled_bad_luck_interval = 0.2
 	run_director.bad_luck_elapsed = 0.0
 
-	scene._advance_failure_triggers(0.2)
+	_advance_failure_triggers(scene, 0.2)
 
 	assert_eq(state.active_failure, &"")
 	assert_true(run_director.pending_bad_luck_trigger)
 	assert_eq(run_director.bad_luck_elapsed, 0.0)
 
-	scene._advance_failure_triggers(0.1)
+	_advance_failure_triggers(scene, 0.1)
 
 	assert_eq(state.active_failure, &"")
 	assert_true(run_director.pending_bad_luck_trigger)
@@ -2077,7 +2263,7 @@ func test_bad_luck_timer_arms_one_pending_trigger_during_active_failure() -> voi
 	run_director.scheduled_bad_luck_interval = 0.2
 	run_director.bad_luck_elapsed = 0.0
 
-	scene._advance_failure_triggers(0.2)
+	_advance_failure_triggers(scene, 0.2)
 
 	assert_eq(state.active_failure, &"wheel_loose")
 	assert_eq(state.current_failure.source_hazard, &"rock")
@@ -2099,8 +2285,8 @@ func test_pending_bad_luck_fires_on_first_frame_after_cooldown_clears() -> void:
 	state.recovery_cooldown_remaining = 0.1
 	run_director.scheduled_bad_luck_interval = 0.05
 
-	scene._advance_failure_triggers(0.05)
-	scene._advance_failure_triggers(0.05)
+	_advance_failure_triggers(scene, 0.05)
+	_advance_failure_triggers(scene, 0.05)
 
 	assert_eq(state.active_failure, &"horse_panic")
 	assert_eq(state.current_failure.source_hazard, &"bad_luck")
@@ -2122,11 +2308,11 @@ func test_pending_bad_luck_does_not_stack_or_reroll_while_blocked() -> void:
 	run_director.scheduled_bad_luck_interval = 0.2
 	run_director.bad_luck_elapsed = 0.0
 
-	scene._advance_failure_triggers(0.2)
+	_advance_failure_triggers(scene, 0.2)
 	var scheduled_interval_after_pending: float = run_director.scheduled_bad_luck_interval
 
-	scene._advance_failure_triggers(0.2)
-	scene._advance_failure_triggers(0.1)
+	_advance_failure_triggers(scene, 0.2)
+	_advance_failure_triggers(scene, 0.1)
 
 	assert_true(run_director.pending_bad_luck_trigger)
 	assert_eq(run_director.bad_luck_elapsed, 0.0)
@@ -2575,8 +2761,8 @@ func test_wheel_loose_recovery_timeout_applies_health_and_speed_penalty() -> voi
 	scene.setup(state)
 	var recovery_fail_player: AudioStreamPlayer = scene.get_node("%RecoveryFailPlayer")
 
-	scene._advance_failure_triggers(0.0)
-	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+	_advance_failure_triggers(scene, 0.0)
+	_advance_failure_triggers(scene, scene.WHEEL_LOOSE_RECOVERY_DURATION)
 
 	assert_eq(state.active_failure, &"")
 	assert_eq(state.perfect_recoveries, 0)
@@ -2601,8 +2787,8 @@ func test_horse_panic_recovery_timeout_applies_cargo_and_speed_penalty() -> void
 	state.start_failure(&"horse_panic", &"tumbleweed")
 	scene.setup(state)
 
-	scene._advance_failure_triggers(0.0)
-	scene._advance_failure_triggers(scene.HORSE_PANIC_RECOVERY_DURATION)
+	_advance_failure_triggers(scene, 0.0)
+	_advance_failure_triggers(scene, scene.HORSE_PANIC_RECOVERY_DURATION)
 
 	assert_eq(state.active_failure, &"")
 	assert_eq(state.perfect_recoveries, 0)
@@ -2708,8 +2894,8 @@ func test_perfect_recovery_bonus_is_not_awarded_after_timeout() -> void:
 	state.start_failure(&"wheel_loose", &"rock")
 	scene.setup(state)
 
-	scene._advance_failure_triggers(0.0)
-	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+	_advance_failure_triggers(scene, 0.0)
+	_advance_failure_triggers(scene, scene.WHEEL_LOOSE_RECOVERY_DURATION)
 
 	var bonus_callout_panel: Control = scene.get_node("%BonusCalloutPanel")
 	assert_eq(state.last_recovery_outcome, &"failure")
@@ -2730,8 +2916,8 @@ func test_failed_recovery_causes_temporary_control_instability_after_failure_cle
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
 
-	scene._advance_failure_triggers(0.0)
-	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+	_advance_failure_triggers(scene, 0.0)
+	_advance_failure_triggers(scene, scene.WHEEL_LOOSE_RECOVERY_DURATION)
 	scene._process(0.17)
 	scene._process(0.19)
 
@@ -2767,8 +2953,8 @@ func test_recovery_outcome_message_and_cooldown_clear_after_post_failure_window(
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
-	scene._advance_failure_triggers(0.0)
-	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+	_advance_failure_triggers(scene, 0.0)
+	_advance_failure_triggers(scene, scene.WHEEL_LOOSE_RECOVERY_DURATION)
 
 	scene._process(3.0)
 	_refresh_status(scene)
@@ -2886,6 +3072,7 @@ func test_setup_when_run_starts_then_gameplay_ui_wrapper_visibility_and_mouse_fi
 
 	var state := RunStateType.new()
 	scene.setup(state)
+	scene._process(0.0)
 
 	_assert_gameplay_ui_wrapper_state(scene, "HUDLayer", true, Control.MOUSE_FILTER_IGNORE)
 	_assert_gameplay_ui_wrapper_state(scene, "BonusCalloutLayer", false, Control.MOUSE_FILTER_IGNORE)
@@ -2908,8 +3095,8 @@ func test_active_run_when_touch_recovery_and_callouts_are_visible_then_gameplay_
 	_enable_touch_controls_for_native_mobile(scene)
 	state.start_failure(&"wheel_loose", &"rock")
 	_start_seeded_recovery_sequence(scene, state, 10)
-	scene._show_bonus_callout("NEAR MISS +50")
-	scene._show_phase_callout("First Trouble")
+	_show_bonus_callout(scene, "NEAR MISS +50")
+	_show_phase_callout(scene, "First Trouble")
 	_refresh_recovery_prompt(scene)
 
 	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", true, Control.MOUSE_FILTER_IGNORE)
@@ -2935,7 +3122,7 @@ func test_pause_overlay_when_opened_then_wrapper_visibility_and_mouse_filters_be
 	state.start_failure(&"wheel_loose", &"rock")
 	_start_seeded_recovery_sequence(scene, state, 10)
 	_refresh_recovery_prompt(scene)
-	scene._set_pause_state(true)
+	scene._touch_layer.pause_requested.emit()
 
 	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", false, Control.MOUSE_FILTER_IGNORE)
 	_assert_gameplay_ui_wrapper_state(scene, "RecoveryLayer", false, Control.MOUSE_FILTER_IGNORE)
@@ -2953,6 +3140,7 @@ func test_touch_runtime_when_onboarding_is_dismissed_then_modal_wrapper_yields_t
 	var state := RunStateType.new()
 	scene.setup(state)
 	_enable_touch_controls_for_native_mobile(scene)
+	scene._process(0.0)
 
 	_assert_gameplay_ui_wrapper_state(scene, "TouchLayer", true, Control.MOUSE_FILTER_IGNORE)
 	_assert_gameplay_ui_wrapper_state(scene, "OnboardingLayer", true, Control.MOUSE_FILTER_STOP)
@@ -3317,9 +3505,9 @@ func test_onboarding_prompt_uses_scene_authored_copy_when_refreshed() -> void:
 	scene.setup(state)
 	_get_gameplay_ui_layer(scene).refresh_onboarding_prompt()
 
-	assert_eq(initial_title, scene.ONBOARDING_TITLE)
-	assert_eq(initial_body, scene.ONBOARDING_BODY)
-	assert_eq(initial_hint, scene.ONBOARDING_HINT)
+	assert_eq(initial_title, EXPECTED_ONBOARDING_TITLE)
+	assert_eq(initial_body, EXPECTED_ONBOARDING_BODY)
+	assert_eq(initial_hint, EXPECTED_ONBOARDING_HINT)
 	assert_eq(onboarding_title.text, initial_title)
 	assert_eq(onboarding_body.text, initial_body)
 	assert_eq(onboarding_hint.text, initial_hint)
@@ -3352,8 +3540,8 @@ func test_temporary_instability_resolves_back_to_normal_driving() -> void:
 	state.distance_remaining = 10000.0
 	state.start_failure(&"wheel_loose", &"rock")
 	_setup_active_run(scene, state)
-	scene._advance_failure_triggers(0.0)
-	scene._advance_failure_triggers(scene.WHEEL_LOOSE_RECOVERY_DURATION)
+	_advance_failure_triggers(scene, 0.0)
+	_advance_failure_triggers(scene, scene.WHEEL_LOOSE_RECOVERY_DURATION)
 	scene._process(0.2)
 	scene._process(3.0)
 
@@ -3377,7 +3565,7 @@ func test_recovery_panel_title_shows_active_failure_warning() -> void:
 	var state := RunStateType.new()
 	state.start_failure(&"wheel_loose", &"rock")
 	scene.setup(state)
-	scene._advance_failure_triggers(0.0)
+	_advance_failure_triggers(scene, 0.0)
 	_refresh_recovery_prompt(scene)
 
 	var recovery_title: Label = scene.get_node("%RecoveryTitle")
@@ -3406,7 +3594,7 @@ func test_recovery_hint_matches_active_failure_type() -> void:
 	var state := RunStateType.new()
 	state.start_failure(&"horse_panic", &"tumbleweed")
 	scene.setup(state)
-	scene._advance_failure_triggers(0.0)
+	_advance_failure_triggers(scene, 0.0)
 	_refresh_recovery_prompt(scene)
 
 	var recovery_hint: Label = scene.get_node("%RecoveryHint")
@@ -3536,7 +3724,6 @@ func test_result_panel_when_confirming_focused_return_then_return_to_title_reque
 
 func test_result_panel_includes_score_grade_and_small_stats_summary_for_success() -> void:
 	var scene = RUN_SCENE.instantiate()
-	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -3581,7 +3768,6 @@ func test_result_panel_includes_score_grade_and_small_stats_summary_for_success(
 
 func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 	var scene = RUN_SCENE.instantiate()
-	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -3621,11 +3807,10 @@ func test_result_panel_includes_score_and_grade_for_collapse() -> void:
 
 func test_result_flow_when_completed_score_is_lower_then_stored_best_run_is_unchanged() -> void:
 	assert_eq(
-		RunStateType.save_best_run(RunStateType.BestRunData.new(1700, "A", true), TEST_BEST_RUN_SAVE_PATH),
+		RunStateType.save_best_run(RunStateType.BestRunData.new(1700, "A", true), RunStateType.BEST_RUN_SAVE_PATH),
 		OK
 	)
 	var scene = RUN_SCENE.instantiate()
-	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -3636,7 +3821,7 @@ func test_result_flow_when_completed_score_is_lower_then_stored_best_run_is_unch
 	state.wagon_health = 20
 	scene.setup(state)
 
-	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+	var stored_best := RunStateType.load_best_run(RunStateType.BEST_RUN_SAVE_PATH)
 	var result_summary: Label = scene.get_node("%ResultSummary")
 
 	assert_false(state.current_run_is_new_best)
@@ -3652,11 +3837,10 @@ func test_result_flow_when_completed_score_is_lower_then_stored_best_run_is_unch
 
 func test_result_flow_when_completed_score_is_higher_then_new_best_run_is_saved() -> void:
 	assert_eq(
-		RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), TEST_BEST_RUN_SAVE_PATH),
+		RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), RunStateType.BEST_RUN_SAVE_PATH),
 		OK
 	)
 	var scene = RUN_SCENE.instantiate()
-	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -3667,7 +3851,7 @@ func test_result_flow_when_completed_score_is_higher_then_new_best_run_is_saved(
 	state.wagon_health = 54
 	scene.setup(state)
 
-	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+	var stored_best := RunStateType.load_best_run(RunStateType.BEST_RUN_SAVE_PATH)
 	var result_summary: Label = scene.get_node("%ResultSummary")
 
 	assert_true(state.current_run_is_new_best)
@@ -3681,7 +3865,6 @@ func test_result_flow_when_completed_score_is_higher_then_new_best_run_is_saved(
 
 func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -> void:
 	var scene = RUN_SCENE.instantiate()
-	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -3720,7 +3903,6 @@ func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_success() -
 
 func test_result_panel_fits_viewport_with_full_mastery_breakdown_for_collapse() -> void:
 	var scene = RUN_SCENE.instantiate()
-	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -3942,9 +4124,9 @@ func test_pause_menu_toggles_tree_pause_and_visibility() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene.setup(state)
+	_setup_active_run(scene, state)
 
-	scene._set_pause_state(true)
+	scene._touch_layer.pause_requested.emit()
 	await wait_process_frames(1)
 	var pause_overlay: Control = scene.get_node("%PauseOverlay")
 	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
@@ -3960,7 +4142,8 @@ func test_pause_menu_toggles_tree_pause_and_visibility() -> void:
 	assert_eq(pause_toggle_player.stream, scene.PAUSE_TOGGLE_SOUND)
 
 	pause_toggle_player.stop()
-	scene._set_pause_state(false)
+	resume_button.pressed.emit()
+	await wait_process_frames(1)
 	assert_false(_get_run_ui_presenter(scene).is_pause_menu_open)
 	assert_false(get_tree().paused)
 	assert_false(pause_overlay.visible)
@@ -3969,16 +4152,16 @@ func test_pause_menu_toggles_tree_pause_and_visibility() -> void:
 	assert_true(pause_toggle_player.playing)
 
 
-## Verifies pause menu buttons emit restart and return after unpausing.
+## Verifies pause menu buttons emit restart and return without resuming gameplay.
 
-func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
+func test_pause_menu_buttons_emit_restart_and_return_without_resuming() -> void:
 	var scene = RUN_SCENE.instantiate()
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene.setup(state)
-	scene._set_pause_state(true)
+	_setup_active_run(scene, state)
+	scene._touch_layer.pause_requested.emit()
 	await wait_process_frames(1)
 	watch_signals(scene)
 	var restart_button: Button = scene.get_node("%PauseRestartButton")
@@ -3986,15 +4169,15 @@ func test_pause_menu_buttons_emit_restart_and_return_after_unpausing() -> void:
 
 	restart_button.pressed.emit()
 	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
-	assert_false(_get_run_ui_presenter(scene).is_pause_menu_open)
+	assert_true(_get_run_ui_presenter(scene).is_pause_menu_open)
 	assert_false(get_tree().paused)
 	assert_signal_emitted(scene, "restart_requested")
 
-	scene._set_pause_state(true)
+	scene._touch_layer.pause_requested.emit()
 	await wait_process_frames(1)
 	return_button.pressed.emit()
 	await get_tree().create_timer(scene.UI_CLICK_SOUND.get_length(), false).timeout
-	assert_false(_get_run_ui_presenter(scene).is_pause_menu_open)
+	assert_true(_get_run_ui_presenter(scene).is_pause_menu_open)
 	assert_false(get_tree().paused)
 	assert_signal_emitted(scene, "return_to_title_requested")
 
@@ -4007,8 +4190,8 @@ func test_pause_resume_button_unpauses_through_button_signal() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene.setup(state)
-	scene._set_pause_state(true)
+	_setup_active_run(scene, state)
+	scene._touch_layer.pause_requested.emit()
 	await wait_process_frames(1)
 
 	var resume_button: Button = scene.get_node("%PauseResumeButton")
@@ -4029,10 +4212,13 @@ func test_pause_menu_and_result_buttons_share_ui_click_sound() -> void:
 	await wait_process_frames(1)
 
 	var state := RunStateType.new()
-	scene.setup(state)
+	_setup_active_run(scene, state)
 	var ui_click_player: AudioStreamPlayer = scene.get_node("%UIClickPlayer")
+	scene._touch_layer.pause_requested.emit()
+	await wait_process_frames(1)
+	var resume_button: Button = scene.get_node("%PauseResumeButton")
 
-	scene._on_pause_resume_pressed()
+	resume_button.pressed.emit()
 	assert_true(ui_click_player.playing)
 	assert_eq(ui_click_player.stream, scene.UI_CLICK_SOUND)
 
@@ -4057,7 +4243,7 @@ func test_pause_menu_does_not_show_after_run_is_over() -> void:
 	state.result = RunStateType.RESULT_SUCCESS
 	scene.setup(state)
 
-	scene._set_pause_state(true)
+	scene._touch_layer.pause_requested.emit()
 	var pause_panel: PanelContainer = scene.get_node("%PausePanel")
 	assert_false(_get_run_ui_presenter(scene).is_pause_menu_open)
 	assert_false(get_tree().paused)
@@ -4075,7 +4261,7 @@ func test_recovery_panel_hides_when_run_is_over() -> void:
 	state.start_failure(&"wheel_loose", &"rock")
 	state.result = RunStateType.RESULT_COLLAPSED
 	scene.setup(state)
-	scene._advance_failure_triggers(0.0)
+	_advance_failure_triggers(scene, 0.0)
 	_refresh_recovery_prompt(scene)
 
 	var recovery_panel: PanelContainer = scene.get_node("%RecoveryPanel")
@@ -4159,69 +4345,6 @@ func test_ready_starts_music_and_dust_presentation() -> void:
 	assert_true(wagon_loop_player.playing)
 	assert_eq(wagon_loop_player.stream, scene.WAGON_LOOP_SOUND)
 	assert_true(wagon_loop_player.get_playback_position() >= scene.WAGON_LOOP_START_SECONDS)
-
-
-## Verifies hazard impact audio dispatches to specific players and fallback.
-
-func test_hazard_impact_audio_dispatches_to_specific_players_and_fallback() -> void:
-	var scene = RUN_SCENE.instantiate()
-	add_child_autofree(scene)
-	await wait_process_frames(1)
-
-	var run_audio_presenter := _get_run_audio_presenter(scene)
-	var pothole_impact_player: AudioStreamPlayer = scene.get_node("%PotholeImpactPlayer")
-	var rock_impact_player: AudioStreamPlayer = scene.get_node("%RockImpactPlayer")
-	var tumbleweed_impact_player: AudioStreamPlayer = scene.get_node("%TumbleweedImpactPlayer")
-	var impact_player: AudioStreamPlayer = scene.get_node("%ImpactPlayer")
-
-	scene._play_hazard_impact(&"pothole")
-	assert_true(pothole_impact_player.playing)
-	assert_eq(pothole_impact_player.stream, scene.POTHOLE_IMPACT_SOUND)
-
-	pothole_impact_player.stop()
-	scene._play_hazard_impact(&"rock")
-	assert_true(rock_impact_player.playing)
-	assert_eq(rock_impact_player.stream, scene.ROCK_IMPACT_SOUND)
-	assert_eq(rock_impact_player.stream, scene.POTHOLE_IMPACT_SOUND)
-
-	rock_impact_player.stop()
-	scene._play_hazard_impact(&"tumbleweed")
-	assert_eq(run_audio_presenter.tumbleweed_impact_serial, 1)
-	assert_true(tumbleweed_impact_player.playing)
-	assert_eq(tumbleweed_impact_player.stream, scene.TUMBLEWEED_IMPACT_SOUND)
-	await get_tree().create_timer(scene.IMPACT_SOUND.get_length() + 0.05, false).timeout
-	assert_false(tumbleweed_impact_player.playing)
-
-	tumbleweed_impact_player.stop()
-	scene._play_hazard_impact(&"unknown")
-	assert_true(impact_player.playing)
-	assert_eq(impact_player.stream, scene.IMPACT_SOUND)
-	assert_eq(impact_player.volume_db, -4.5)
-
-
-## Verifies tumbleweed timeout when newer impact replaces older then stale stop is ignored.
-
-func test_tumbleweed_timeout_when_newer_impact_replaces_older_then_stale_stop_is_ignored() -> void:
-	var scene = RUN_SCENE.instantiate()
-	add_child_autofree(scene)
-	await wait_process_frames(1)
-
-	var run_audio_presenter := _get_run_audio_presenter(scene)
-	var tumbleweed_impact_player: AudioStreamPlayer = scene.get_node("%TumbleweedImpactPlayer")
-
-	scene._play_hazard_impact(&"tumbleweed")
-	var first_serial := run_audio_presenter.tumbleweed_impact_serial
-	scene._play_hazard_impact(&"tumbleweed")
-	var second_serial := run_audio_presenter.tumbleweed_impact_serial
-
-	assert_true(tumbleweed_impact_player.playing)
-	assert_true(second_serial > first_serial)
-
-	scene._on_tumbleweed_impact_timeout(first_serial)
-	assert_true(tumbleweed_impact_player.playing)
-
-	scene._on_tumbleweed_impact_timeout(second_serial)
-	assert_false(tumbleweed_impact_player.playing)
 
 
 ## Verifies new failure plays failure audio cue.
@@ -4329,11 +4452,10 @@ func test_collapse_result_plays_collapse_stinger() -> void:
 
 func test_sync_completed_run_best_state_uses_audio_presenter_result_tracking() -> void:
 	assert_eq(
-		RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), TEST_BEST_RUN_SAVE_PATH),
+		RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), RunStateType.BEST_RUN_SAVE_PATH),
 		OK
 	)
 	var scene = RUN_SCENE.instantiate()
-	scene._best_run_save_path = TEST_BEST_RUN_SAVE_PATH
 	add_child_autofree(scene)
 	await wait_process_frames(1)
 
@@ -4344,18 +4466,19 @@ func test_sync_completed_run_best_state_uses_audio_presenter_result_tracking() -
 	state.cargo_value = 95
 	state.wagon_health = 90
 
+	var context := _build_in_progress_context(scene)
 	var run_audio_presenter := _get_run_audio_presenter(scene)
 	run_audio_presenter.last_announced_result = RunStateType.RESULT_IN_PROGRESS
-	scene._sync_completed_run_best_state()
+	context.sync_completed_run_best_state()
 
-	var stored_best := RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+	var stored_best := RunStateType.load_best_run(RunStateType.BEST_RUN_SAVE_PATH)
 	assert_eq(stored_best.score, state.get_score())
 
-	RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), TEST_BEST_RUN_SAVE_PATH)
+	RunStateType.save_best_run(RunStateType.BestRunData.new(1200, "B", true), RunStateType.BEST_RUN_SAVE_PATH)
 	run_audio_presenter.last_announced_result = state.result
-	scene._sync_completed_run_best_state()
+	context.sync_completed_run_best_state()
 
-	stored_best = RunStateType.load_best_run(TEST_BEST_RUN_SAVE_PATH)
+	stored_best = RunStateType.load_best_run(RunStateType.BEST_RUN_SAVE_PATH)
 	assert_eq(stored_best.score, 1200)
 
 
@@ -4751,10 +4874,3 @@ func test_step3_panel_styles_use_western_palette() -> void:
 	assert_not_null(recovery_style)
 	assert_true(hud_style.bg_color.r < 0.3)
 	assert_true(recovery_style.border_color.g > 0.5)
-
-
-## Removes the persisted best-run fixture file when the test created one.
-func _delete_test_best_run_file() -> void:
-	var absolute_path := ProjectSettings.globalize_path(TEST_BEST_RUN_SAVE_PATH)
-	if FileAccess.file_exists(TEST_BEST_RUN_SAVE_PATH):
-		DirAccess.remove_absolute(absolute_path)

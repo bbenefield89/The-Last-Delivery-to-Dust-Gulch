@@ -15,10 +15,11 @@ Follow the shared `godot-write-ticket` skill as the base workflow.
 - Jira project key: `DG`
 - Jira board id: `1`
 - Jira parent issue types: `Story`, `Feature`, `Bug`
-- Jira step issue type: `Subtask`
+- Jira story points field: `customfield_10016`
 - Jira workflow statuses:
   `To Do` -> `In Progress` -> `Done`
 - Ticket titles must begin with `DG-<number>`
 - Valid categories: `Task`, `TechDebt`, `Bug`
 - Use the repo-local `planner` guidance under `.codex/agents/planner.md`
-- Every open Jira parent issue in `To Do` or `In Progress` must have subtasks for its ordered steps
+- Keep ordered implementation steps in the parent Jira issue description
+- Every Jira parent issue created by this workflow must be pointed when it is created

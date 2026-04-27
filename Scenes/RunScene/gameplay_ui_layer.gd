@@ -212,7 +212,6 @@ func bind_run_state(run_state: RunStateType) -> void:
 
 ## Resets transient UI flow for a newly bound run without clearing runtime capability overrides.
 func reset_for_new_run() -> void:
-	is_onboarding_active = true
 	is_pause_menu_open = false
 	if _bonus_callout_layer != null:
 		_bonus_callout_layer.clear_callout()
@@ -336,17 +335,19 @@ func refresh_touch_controls() -> void:
 func set_pause_state(paused: bool) -> bool:
 	if _run_state == null:
 		return false
+		
 	if _run_state.result != RunStateType.RESULT_IN_PROGRESS:
 		paused = false
 
 	var was_paused := is_pause_menu_open
 	is_pause_menu_open = paused
 	var has_changed_pause_state := was_paused != is_pause_menu_open
+
 	if has_changed_pause_state:
-		refresh_onboarding_prompt()
 		refresh_pause_menu()
 		refresh_recovery_prompt()
 		refresh_touch_controls()
+	
 	return has_changed_pause_state
 
 
@@ -389,7 +390,7 @@ func route_input(event: InputEvent, pause_action: StringName) -> UiInputResult:
 
 	if is_onboarding_active:
 		if should_dismiss_onboarding(event):
-			result.did_dismiss_onboarding = true
+			result.should_dismiss_onboarding_ui_prompt = true
 			result.is_consumed = true
 		return result
 
@@ -600,6 +601,6 @@ class UiInputResult:
 	## Captures the UI-specific interpretation of a single input event.
 
 	var is_consumed := false
-	var did_dismiss_onboarding := false
+	var should_dismiss_onboarding_ui_prompt := false
 	var pause_command: StringName = PAUSE_COMMAND_NONE
 	var recovery_action: StringName = &""

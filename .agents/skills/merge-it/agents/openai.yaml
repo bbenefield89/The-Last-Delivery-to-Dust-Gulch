@@ -1,4 +1,0 @@
-interface:
-  display_name: "Merge It"
-  short_description: "Finish and merge a ticket cleanly"
-  default_prompt: "Explain that $merge-it is retired and direct the user to use $godot-workflow:finalize-ticket for the Jira-based workflow."

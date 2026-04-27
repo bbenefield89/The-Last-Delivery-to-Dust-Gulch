@@ -18,6 +18,8 @@ forming conclusions.
   or visibility is needed, rather than changing `Foo`'s production contract.
 - Flag unused method arguments. Remove them when the contract allows it; when a compatible signature is required,
   require the intentionally unused argument to be prefixed with `_`.
+- Flag adjacent guard-condition `if` blocks that were packed together without a blank line when they represent distinct
+  checks or separate early-return gates.
 - Stay read-only unless explicitly asked for follow-up edits.
 - Focus on concrete standards and architecture problems rather than subjective taste.
 

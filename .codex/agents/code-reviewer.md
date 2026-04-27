@@ -26,3 +26,4 @@ Lead with findings ordered by severity. Focus on behavior, risk, and verificatio
 - Call out unused method arguments that were left in place without justification.
 - If an argument is intentionally unused because the signature must stay compatible, require it to be prefixed with `_`.
 - If the signature does not need that argument, prefer removing it instead of keeping dead parameters around.
+- Call out adjacent guard-condition `if` blocks that were packed together without a blank line when they read as distinct checks or separate early-return gates.
